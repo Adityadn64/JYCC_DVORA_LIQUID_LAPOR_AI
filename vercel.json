@@ -4,7 +4,7 @@
     "builds": [
         {
             "src": "public/index.php",
-            "use": "@juicy-g/vercel-php"
+            "use": "vercel-php@0.6.0"
         }
     ],
     "routes": [
