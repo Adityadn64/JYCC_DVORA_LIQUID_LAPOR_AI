@@ -1,19 +1,30 @@
 {
     "version": 2,
     "framework": null,
-    "functions": {
-        "api/index.php": { "runtime": "vercel-php@0.6.0" }
-    },
+    "builds": [
+        {
+            "src": "public/index.php",
+            "use": "@juicy-g/vercel-php"
+        }
+    ],
     "routes": [
         {
+            "src": "/build/(.*)",
+            "dest": "/public/build/$1"
+        },
+        {
+            "src": "/storage/(.*)",
+            "dest": "/public/storage/$1"
+        },
+        {
             "src": "/(.*)",
-            "dest": "/api/index.php"
+            "dest": "/public/index.php"
         }
     ],
     "env": {
         "APP_ENV": "production",
         "APP_DEBUG": "true",
-        "APP_URL": "lapor-ai-jatim.vercel.app",
+        "APP_URL": "https://lapor-ai-jatim.vercel.app",
         "APP_KEY": "base64:6vfx6EY/pvh7OekwgLCGVtLo4U+Y2cSYychF+q/1ZHc=",
 
         "APP_CONFIG_CACHE": "/tmp/config.php",
