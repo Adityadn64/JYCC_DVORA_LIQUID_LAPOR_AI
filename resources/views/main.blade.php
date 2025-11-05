@@ -1,0 +1,156 @@
+@extends('layouts.app')
+
+@section('title', 'Lapor.ai - Pelaporan Publik Cerdas Jawa Timur')
+
+@section('content')
+    <div class="space-y-20">
+        <section class="text-center">
+            <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight">
+                Layanan Pelaporan Publik Cerdas
+            </h1>
+            <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">
+                Punya keluhan atau melihat masalah di sekitar Anda? Laporkan dengan mudah dan pantau perkembangannya secara transparan. Didukung oleh AI untuk penanganan yang lebih cepat dan tepat.
+            </p>
+            <div class="mt-10 flex justify-center items-center space-x-4">
+                <a href="{{ route('report.create') }}" class="inline-block bg-blue-600 text-white rounded-lg px-8 py-3 text-base font-medium hover:bg-blue-700 transition-all shadow-lg">
+                    Buat Laporan Sekarang
+                </a>
+                <a href="{{ route('report.track.index') }}" class="inline-block bg-white text-gray-700 rounded-lg px-8 py-3 text-base font-medium hover:bg-gray-100 transition-all shadow-lg border">
+                    Lacak Laporan
+                </a>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div class="text-left">
+                <h2 class="text-3xl font-bold text-gray-900">Apa itu Lapor.ai?</h2>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    Lapor.ai adalah platform terintegrasi yang merevolusi cara masyarakat berinteraksi dengan pemerintah. Dengan memanfaatkan kecerdasan buatan (AI), setiap laporan yang masuk akan dianalisis dan diteruskan secara otomatis ke dinas yang berwenang, memastikan setiap masalah ditangani oleh ahlinya tanpa penundaan.
+                </p>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    Visi kami adalah menciptakan ekosistem pelayanan publik yang responsif, transparan, dan berbasis data untuk Jawa Timur yang lebih baik.
+                </p>
+            </div>
+            <div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border">
+                     <svg class="w-full h-auto text-gray-300" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="200" height="100" rx="8" fill="white"/>
+                        <path d="M30 70C35 60 45 55 55 65S75 80 85 70" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M90 60 L110 40 L120 50 L140 30" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="150" y="50" width="10" height="20" fill="currentColor" opacity="0.5"/>
+                        <rect x="165" y="40" width="10" height="30" fill="currentColor"/>
+                        <circle cx="60" cy="35" r="10" fill="currentColor" opacity="0.7"/>
+                        <circle cx="80" cy="30" r="15" fill="currentColor"/>
+                    </svg>
+                    <p class="text-center text-sm text-gray-500 mt-4">Analisis Cerdas untuk Penanganan Tepat</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="text-center">
+            <h2 class="text-3xl font-bold text-gray-900">Manfaat Utama</h2>
+            <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-lg border text-left">
+                    <h3 class="text-xl font-semibold text-gray-900">Cepat & Tepat Sasaran</h3>
+                    <p class="mt-2 text-gray-600">AI kami secara otomatis merutekan laporan Anda ke dinas yang benar, memotong birokrasi dan mempercepat waktu respons awal.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border text-left">
+                    <h3 class="text-xl font-semibold text-gray-900">Transparan & Akuntabel</h3>
+                    <p class="mt-2 text-gray-600">Lacak setiap progres penanganan laporan Anda secara real-time. Tidak ada lagi ketidakpastian.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border text-left">
+                    <h3 class="text-xl font-semibold text-gray-900">Berbasis Data</h3>
+                    <p class="mt-2 text-gray-600">Semua laporan menjadi data berharga bagi pemerintah untuk menganalisis masalah dan membuat kebijakan yang lebih baik.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="text-center">
+            <h2 class="text-3xl font-bold text-gray-900">Analisis Laporan Terkini</h2>
+            <p class="mt-2 max-w-2xl mx-auto text-md text-gray-600">
+                Statistik semua laporan yang telah masuk ke dalam sistem kami secara transparan.
+            </p>
+            <div class="mt-8 bg-white p-6 rounded-lg shadow max-w-3xl mx-auto">
+                <p class="text-4xl font-bold text-indigo-600">{{ $totalReports }}</p>
+                <p class="mt-1 text-sm font-medium text-gray-500">Total Diterima</p>
+            </div>
+            <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <p class="text-4xl font-bold text-yellow-500">{{ $pendingReports }}</p>
+                    <p class="mt-1 text-sm font-medium text-gray-500">Pending</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <p class="text-4xl font-bold text-blue-500">{{ $processReports }}</p>
+                    <p class="mt-1 text-sm font-medium text-gray-500">Diproses</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <p class="text-4xl font-bold text-green-500">{{ $finishedReports }}</p>
+                    <p class="mt-1 text-sm font-medium text-gray-500">Selesai</p>
+                </div>
+                 <div class="bg-white p-6 rounded-lg shadow">
+                    <p class="text-4xl font-bold text-red-500">{{ $rejectedReports }}</p>
+                    <p class="mt-1 text-sm font-medium text-gray-500">Ditolak</p>
+                </div>
+            </div>
+        </section>
+        
+        <section>
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-gray-900">Sebaran Laporan & Kota Teraktif</h2>
+                <p class="mt-2 max-w-2xl mx-auto text-md text-gray-600">
+                    Lihat sebaran laporan dan kota/kabupaten dengan jumlah laporan terbanyak di Jawa Timur.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">   
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg border text-left">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-3">
+                        Kota/Kabupaten Teratas
+                    </h3>
+
+                    @php
+                        $maxReports = $topCities->first()?->total_reports ?? 1;
+                    @endphp
+
+                    <ul class="space-y-5">
+                        @forelse($topCities as $cityData)
+                            <li>
+                                <div class="flex justify-between items-center text-sm mb-1.5">
+                                    <span class="font-medium text-gray-700">
+                                        <span class="font-bold mr-2">{{ $loop->iteration }}.</span>
+                                        {{ $cityData->city }}
+                                    </span>
+                                    <span class="font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                                        {{ $cityData->total_reports }} Laporan
+                                    </span>
+                                </div>
+                                
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    @php
+                                        $percentage = ($cityData->total_reports / $maxReports) * 100;
+                                    @endphp
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $percentage }}%"></div>
+                                </div>
+                            </li>
+                        @empty
+                            <li class="text-center text-gray-500 py-4">
+                                Belum ada data laporan yang masuk.
+                            </li>
+                        @endforelse
+                    </ul>
+                </div>
+
+                <div class="lg:col-span-3 bg-white p-4 rounded-xl shadow-lg border">
+                    <iframe
+                        class="w-full h-96 rounded-lg"
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4056129.9937991137!2d108.55671036673036!3d-6.882883454757672!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2da393f79feeb5c5%3A0x1030bfbca7cb850!2sJawa%20Timur%2C%20Indonesia!5e0!3m2!1sid!2sus!4v1762349460077!5m2!1sid!2sus"
+                        style="border:0;" 
+                        allowfullscreen="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    ></iframe>
+                </div>
+            </div>
+        </section>
+    </div>
+@endsection
