@@ -8,10 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('password_resets', function (Blueprint $table) {
+        Schema::create('email_registrations', function (Blueprint $table) {
             $table->id();
             $table->string('email')->unique();
-            $table->foreign('email')->references('email')->on('administrators')->onDelete('cascade');
             $table->string('token');
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('expires_at');
@@ -20,6 +19,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('password_resets');
+        Schema::dropIfExists('email_registrations');
     }
 };

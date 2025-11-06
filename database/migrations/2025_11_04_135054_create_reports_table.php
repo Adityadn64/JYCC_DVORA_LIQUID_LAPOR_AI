@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('category');
             $table->string('priority');
             $table->timestamps();
+            $table->softDeletes();
 
             $table->json('statuses')->nullable();
             $table->json('review_timestamps')->nullable();

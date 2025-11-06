@@ -31,7 +31,7 @@
                     @guest('administrators')
                         <div class="hidden md:block">
                             <a href="{{ route('login') }}" class="inline-block border border-gray-300 rounded-md px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                                Login
+                                Masuk
                             </a>
                         </div>
                     @endguest

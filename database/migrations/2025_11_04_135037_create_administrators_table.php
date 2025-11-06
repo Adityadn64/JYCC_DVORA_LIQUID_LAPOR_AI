@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('role');
             $table->string('status')->default('pending');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

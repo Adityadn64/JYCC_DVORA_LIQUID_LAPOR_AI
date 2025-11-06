@@ -11,6 +11,7 @@ use App\Enums\ServiceCodeEnum;
 use App\Enums\ReportCategoryEnum;
 use App\Enums\PriorityEnum;
 use App\Enums\ReportStatusEnum;
+use App\Time\Time;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -59,7 +60,7 @@ class ReportController extends Controller
             'service_code' => $aiResult['service_code'],
 
             'statuses' => [ReportStatusEnum::Pending],
-            'review_timestamps' => [now()],
+            'review_timestamps' => [Time::getNow()],
             'reviewing_admin_ids' => [],
             'review_notes' => ['Laporan dibuat oleh sistem.'],
             'agreements_history' => [],

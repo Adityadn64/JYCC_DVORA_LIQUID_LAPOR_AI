@@ -156,8 +156,6 @@
             const labels = @json($chartLabels);
             const data = @json($chartData);
 
-            console.log({data})
-
             new Chart(ctx, {
                 type: 'line',
                 data: {

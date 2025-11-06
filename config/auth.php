@@ -59,7 +59,6 @@ return [
         // Provider 'users' bawaan bisa dihapus atau dibiarkan saja
         'users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\User::class,
         ],
     ],
 
