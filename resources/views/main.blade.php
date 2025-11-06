@@ -32,17 +32,11 @@
                 </p>
             </div>
             <div>
-                <div class="bg-white p-8 rounded-xl shadow-lg border">
-                     <svg class="w-full h-auto text-gray-300" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="200" height="100" rx="8" fill="white"/>
-                        <path d="M30 70C35 60 45 55 55 65S75 80 85 70" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M90 60 L110 40 L120 50 L140 30" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <rect x="150" y="50" width="10" height="20" fill="currentColor" opacity="0.5"/>
-                        <rect x="165" y="40" width="10" height="30" fill="currentColor"/>
-                        <circle cx="60" cy="35" r="10" fill="currentColor" opacity="0.7"/>
-                        <circle cx="80" cy="30" r="15" fill="currentColor"/>
-                    </svg>
-                    <p class="text-center text-sm text-gray-500 mt-4">Analisis Cerdas untuk Penanganan Tepat</p>
+                <div class="bg-white p-6 rounded-xl shadow-lg border">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Riwayat Laporan Harian</h3>
+                    <div class="h-64">
+                        <canvas id="reportHistoryChart"></canvas>
+                    </div>
                 </div>
             </div>
         </section>
@@ -153,4 +147,83 @@
             </div>
         </section>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('reportHistoryChart');
+
+            const labels = @json($chartLabels);
+            const data = @json($chartData);
+
+            console.log({data})
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Pending',
+                            data: data.pending,
+                            borderColor: 'rgb(234, 179, 8)', // yellow-500
+                            backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                        },
+                        {
+                            label: 'Process',
+                            data: data.process,
+                            borderColor: 'rgb(59, 130, 246)', // blue-500
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                        },
+                        {
+                            label: 'Finished',
+                            data: data.finished,
+                            borderColor: 'rgb(34, 197, 94)', // green-500
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                        },
+                        {
+                            label: 'Rejected',
+                            data: data.rejected,
+                            borderColor: 'rgb(239, 68, 68)', // red-500
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                // Hanya tampilkan angka bulat di sumbu Y
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                }
+            });
+        });
+    </script>
 @endsection
