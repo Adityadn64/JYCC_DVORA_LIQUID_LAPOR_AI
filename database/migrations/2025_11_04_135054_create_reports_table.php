@@ -25,12 +25,12 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->json('statuses')->nullable();
-            $table->json('review_timestamps')->nullable();
-            $table->json('reviewing_admin_ids')->nullable();
-            $table->json('review_notes')->nullable();
-            $table->json('agreements_history')->nullable();
-            $table->json('disagreements_history')->nullable();
+            $table->jsonb('statuses')->nullable();
+            $table->jsonb('review_timestamps')->nullable();
+            $table->jsonb('reviewing_admin_ids')->nullable();
+            $table->jsonb('review_notes')->nullable();
+            $table->jsonb('agreements_history')->nullable();
+            $table->jsonb('disagreements_history')->nullable();
         });
     }
 

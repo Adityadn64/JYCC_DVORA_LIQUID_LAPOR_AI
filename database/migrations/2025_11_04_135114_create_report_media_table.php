@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('report_media', function (Blueprint $table) {
             $table->id();
             $table->foreignId('report_id')->constrained('reports')->onDelete('cascade');
-            $table->json('files_path');
-            $table->json('files_type')->nullable();
+            $table->jsonb('files_path');
+            $table->jsonb('files_type')->nullable();
             $table->string('caption')->nullable();
             $table->timestamp('created_at')->useCurrent();
         });
