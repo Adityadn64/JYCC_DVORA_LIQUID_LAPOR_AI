@@ -21,7 +21,6 @@ enum ReportCategoryEnum: string
     case DINDIK = "Pendidikan";
     case DISBUDPAR = "Kebudayaan dan Pariwisata";
     case DISPERINDAG = "Perindustrian dan Perdagangan";
-    case DUKCAPIL = "Kependudukan dan Pencatatan Sipil";
     case DPMPTSP = "Penanaman Modal dan Pelayanan Terpadu Satu Pintu";
     case DISKOPUKM = "Koperasi, Usaha Kecil dan Menengah";
     case DISPORA = "Kepemudaan dan Olahraga";

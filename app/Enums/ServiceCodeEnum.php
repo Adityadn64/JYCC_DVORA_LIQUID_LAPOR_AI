@@ -21,7 +21,6 @@ enum ServiceCodeEnum: string
     case DINDIK = 'DINDIK';
     case DISBUDPAR = 'DISBUDPAR';
     case DISPERINDAG = 'DISPERINDAG';
-    case DUKCAPIL = 'DUKCAPIL';
     case DPMPTSP = 'DPMPTSP';
     case DISKOPUKM = 'DISKOPUKM';
     case DISPORA = 'DISPORA';

@@ -79,10 +79,6 @@ class ServiceProfileSeeder extends Seeder
                 'web' => 'https://disperindag.jatimprov.go.id/', 'email' => 'disperindag@jatimprov.go.id',
                 'phone' => '(031) 8499895'
             ],
-            ['code' => 'DUKCAPIL', 'name' => 'Dinas Kependudukan dan Pencatatan Sipil',
-                'web' => 'https://dukcapil.kemendagri.go.id/', 'email' => 'pusdatin@kemendagri.go.id',
-                'phone' => '(021) 79194075'
-            ],
             ['code' => 'DPMPTSP', 'name' => 'Dinas Penanaman Modal dan Pelayanan Terpadu Satu Pintu',
                 'web' => 'https://dpmptsp.jatimprov.go.id/', 'email' => 'dpmptsp@jatimprov.go.id',
                 'phone' => '(031) 35967047'

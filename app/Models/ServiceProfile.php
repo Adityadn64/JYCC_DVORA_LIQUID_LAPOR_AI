@@ -11,6 +11,8 @@ class ServiceProfile extends Model
 {
     use HasFactory;
 
+    protected $table = 'service_profiles';
+
     protected $fillable = ['full_name', 'code', 'phone', 'email', 'website'];
 
     protected $casts = [

@@ -10,6 +10,8 @@ class ReportMedia extends Model
 {
     use HasFactory;
 
+    protected $table = 'report_media';
+
     public $timestamps = false;
     protected $fillable = ['report_id', 'files_path', 'files_type', 'caption', 'created_at'];
 

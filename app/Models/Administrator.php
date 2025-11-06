@@ -14,6 +14,8 @@ class Administrator extends Authenticatable
 {
     use HasFactory;
 
+    protected $table = 'administrators';
+
     protected $fillable = [
         'service_code', 'nip', 'full_name', 'email', 'phone', 
         'password_hash', 'profile_picture_path', 'kta_scan_path', 

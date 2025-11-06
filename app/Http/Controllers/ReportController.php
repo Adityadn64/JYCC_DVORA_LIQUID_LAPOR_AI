@@ -6,6 +6,7 @@ use App\Models\Report;
 use App\Models\ReportMedia;
 use App\Models\ServiceProfile;
 use App\Models\Administrator;
+use App\Enums\RoleAdministratorEnum;
 use App\Enums\ServiceCodeEnum;
 use App\Enums\ReportCategoryEnum;
 use App\Enums\PriorityEnum;
@@ -143,7 +144,7 @@ class ReportController extends Controller
 
         $reports = $query->with(['assignee', 'serviceProfile'])->paginate(10);
         
-        $admins = Administrator::where('role', 'base_admin')->orderBy('full_name')->get();
+        $admins = Administrator::where('role', RoleAdministratorEnum::BaseAdmin)->orderBy('full_name')->get();
         $priorities = PriorityEnum::cases();
 
         return view('report.track_index', [
