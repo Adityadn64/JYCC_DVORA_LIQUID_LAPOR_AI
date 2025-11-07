@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Admin\DashboardController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -35,5 +36,5 @@ Route::middleware('auth:administrators')->group(function () {
 });
 
 Route::middleware('auth:administrators')->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () { return 'Selamat datang di Dasbor Admin!'; })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });

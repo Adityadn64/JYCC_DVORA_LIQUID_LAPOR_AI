@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
+use App\Models\Administrator;
+use Illuminate\Support\Facades\Hash;
+use App\Enums\AdminStatusEnum;
 
 class LoginController extends Controller
 {
@@ -21,31 +23,36 @@ class LoginController extends Controller
             'password' => 'required|string',
         ]);
 
-        $loginType = filter_var($request->input('login_identifier'), FILTER_VALIDATE_EMAIL) 
-            ? 'email' 
-            : (is_numeric($request->input('login_identifier')) ? 'phone' : 'nip');
+        $loginIdentifier = $request->input('login_identifier');
+        $password = $request->input('password');
 
-        $credentials = [
-            $loginType => $request->input('login_identifier'),
-            'password' => $request->input('password'),
-        ];
-        
-        if ($loginType == 'nip') {
-            $loginType = 'nip';
-            $credentials = [
-                'nip' => $request->input('login_identifier'),
-                'password' => $request->input('password'),
-            ];
+        $admin = Administrator::where('email', $loginIdentifier)
+                                ->orWhere('phone', $loginIdentifier)
+                                ->orWhere('nip', $loginIdentifier)
+                                ->first();
+
+        if (!$admin || !Hash::check($password, $admin->password_hash)) {
+            return back()->withErrors([
+                'login_identifier' => 'Kredensial yang diberikan tidak cocok dengan data kami.',
+            ])->onlyInput('login_identifier');
         }
 
-        if (Auth::guard('administrators')->attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
-            return redirect()->intended(route('admin.dashboard'));
+        if ($admin->status === AdminStatusEnum::Pending) {
+            return back()->withErrors([
+                'login_identifier' => 'Akun Anda sedang dalam proses peninjauan. Silakan coba lagi nanti.',
+            ])->onlyInput('login_identifier');
         }
 
-        return back()->withErrors([
-            'login_identifier' => 'Kredensial yang diberikan tidak cocok dengan data kami.',
-        ])->onlyInput('login_identifier');
+        if ($admin->status === AdminStatusEnum::Suspended) {
+            return back()->withErrors([
+                'login_identifier' => 'Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.',
+            ])->onlyInput('login_identifier');
+        }
+
+        Auth::guard('administrators')->login($admin, $request->boolean('remember'));
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('admin.dashboard'));
     }
 
     public function logout(Request $request)

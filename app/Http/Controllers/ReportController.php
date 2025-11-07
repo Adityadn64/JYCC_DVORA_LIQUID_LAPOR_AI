@@ -14,6 +14,7 @@ use App\Enums\ReportStatusEnum;
 use App\Time\Time;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
@@ -72,7 +73,7 @@ class ReportController extends Controller
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $path = $image->store('reports');
+                $path = Storage::disk(env("FILESYSTEM_DISK"))->put('reports', $image); // $image->store('reports');
                 $allPaths[] = $path;
                 $allTypes[] = $image->getMimeType();
             }
@@ -80,7 +81,7 @@ class ReportController extends Controller
         
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $video) {
-                $path = $video->store('reports');
+                $path = Storage::disk(env("FILESYSTEM_DISK"))->put('reports', $video); // $video->store('reports');
                 $allPaths[] = $path;
                 $allTypes[] = $video->getMimeType();
             }

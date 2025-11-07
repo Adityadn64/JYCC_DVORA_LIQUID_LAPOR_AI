@@ -17,6 +17,7 @@ use App\Mail\OtpMail;
 use App\Time\Time;
 use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class RegisterController extends Controller
 {
@@ -40,7 +41,7 @@ class RegisterController extends Controller
             'kta_scan' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
         
-        $ktaPath = $request->file('kta_scan')->store('kta_scans');
+        $ktaPath = Storage::disk(env("FILESYSTEM_DISK"))->put('kta_scans', $request->file('kta_scan')); // $request->file('kta_scan')->store('kta_scans');
 
         $request->session()->put('registration_data', [
             'full_name' => $request->full_name,
@@ -91,10 +92,24 @@ Peringatan Keamanan
 Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah membagikan kode verifikasi Anda kepada siapa pun.
 `;
 
-        $client = new Client($sid, $token);
-        $client->messages->create($request->phone, [
-            'from' => $twilio_number,
-            'body' => $message,
+        // $client = new Client($sid, $token);
+        // $client->messages->create($request->phone, [
+        //     'from' => $twilio_number,
+        //     'body' => $message,
+        // ]);
+
+        $registrationData = $request->session()->get('registration_data');
+
+        Administrator::create([
+            'full_name' => $registrationData['full_name'],
+            'email' => $registrationData['email'],
+            'phone' => $registrationData['phone'],
+            'password_hash' => $registrationData['password'],
+            'nip' => $registrationData['nip'],
+            'role' => $registrationData['role'],
+            'service_code' => $registrationData['service_code'],
+            'kta_scan_path' => $registrationData['kta_scan_path'],
+            'status' => AdminStatusEnum::Pending,
         ]);
         
         return redirect()->route('register.verify.form');
