@@ -74,8 +74,9 @@ class RegisterController extends Controller
         Mail::to($request->email)->send(new OtpMail($emailOtp));
         // SMSService::send($request->phone, "Kode OTP Anda: $phoneOtp");
 
-        $sid = env("TWILIO_ACCOUNT_SID");
-        $token = env("TWILIO_AUTH_TOKEN");
+        $sid = config('services.twilio.sid');
+        $token = config('services.twilio.token');
+        $twilio_number = config('services.twilio.from');
 
         $message = `
 Lapor.ai Registrasi
@@ -92,6 +93,7 @@ Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah 
 
         $client = new Client($sid, $token);
         $client->messages->create($request->phone, [
+            'from' => $twilio_number,
             'body' => $message,
         ]);
         
