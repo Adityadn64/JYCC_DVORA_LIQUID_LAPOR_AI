@@ -17,6 +17,7 @@ class ServiceProfile extends Model
     protected $fillable = ['full_name', 'code', 'phone', 'email', 'website'];
 
     protected $casts = [
+        'id'   => 'integer',
         'code' => ServiceCodeEnum::class,
     ];
 

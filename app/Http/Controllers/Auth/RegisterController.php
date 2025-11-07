@@ -40,7 +40,7 @@ class RegisterController extends Controller
             'kta_scan' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
         
-        $ktaPath = $request->file('kta_scan')->store('kta_scans', 'public');
+        $ktaPath = $request->file('kta_scan')->store('kta_scans');
 
         $request->session()->put('registration_data', [
             'full_name' => $request->full_name,

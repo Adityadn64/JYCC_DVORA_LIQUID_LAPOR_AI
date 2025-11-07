@@ -72,7 +72,7 @@ class ReportController extends Controller
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $path = $image->store('reports', 'public');
+                $path = $image->store('reports');
                 $allPaths[] = $path;
                 $allTypes[] = $image->getMimeType();
             }
@@ -80,7 +80,7 @@ class ReportController extends Controller
         
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $video) {
-                $path = $video->store('reports', 'public');
+                $path = $video->store('reports');
                 $allPaths[] = $path;
                 $allTypes[] = $video->getMimeType();
             }

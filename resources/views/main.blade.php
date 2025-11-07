@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Lapor.ai - Pelaporan Publik Cerdas Jawa Timur')
-
 @section('content')
     <div class="space-y-20">
         <section class="text-center">
@@ -136,6 +134,7 @@
 
                 <div class="lg:col-span-3 bg-white p-4 rounded-xl shadow-lg border">
                     <iframe
+                        title="Provinsi Jawa Timur"
                         class="w-full h-96 rounded-lg"
                         src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4056129.9937991137!2d108.55671036673036!3d-6.882883454757672!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2da393f79feeb5c5%3A0x1030bfbca7cb850!2sJawa%20Timur%2C%20Indonesia!5e0!3m2!1sid!2sus!4v1762349460077!5m2!1sid!2sus"
                         style="border:0;" 
