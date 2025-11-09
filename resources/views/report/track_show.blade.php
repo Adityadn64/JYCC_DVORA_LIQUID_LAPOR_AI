@@ -115,7 +115,7 @@
                                             Status diubah menjadi: <span class="font-bold text-blue-600">{{ ucfirst($status) }}</span>
                                         </p>
                                         <p class="text-xs text-gray-500 whitespace-nowrap">
-                                            {{ \Carbon\Carbon::parse($report->review_timestamps[$index])->format('d M Y, H:i') }}
+                                            {{ $report->review_timestamps[$index] }}
                                         </p>
                                     </div>
                                     <div class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md border">
