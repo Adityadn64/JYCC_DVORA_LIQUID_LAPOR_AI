@@ -61,7 +61,7 @@ class ReportController extends Controller
             'service_code' => $aiResult['service_code'],
 
             'statuses' => [ReportStatusEnum::Pending],
-            'review_timestamps' => [Time::getNow()->toDateTimeString()],
+            'review_timestamps' => [Time::getNow()],
             'reviewing_admin_ids' => [],
             'review_notes' => ['Laporan dibuat oleh sistem.'],
             'agreements_history' => [],

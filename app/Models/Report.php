@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Casts\TimestampArrayCast;
 
 class Report extends Model
 {
@@ -30,7 +31,7 @@ class Report extends Model
         'category' => ReportCategoryEnum::class,
         'priority' => PriorityEnum::class,
         'statuses' => 'array',
-        'review_timestamps' => 'array',
+        'review_timestamps' => TimestampArrayCast::class,
         'reviewing_admin_ids' => 'array',
         'review_notes' => 'array',
         'agreements_history' => 'array',
