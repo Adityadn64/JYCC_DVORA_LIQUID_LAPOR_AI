@@ -31,7 +31,7 @@ class Report extends Model
         'category' => ReportCategoryEnum::class,
         'priority' => PriorityEnum::class,
         'statuses' => 'array',
-        'review_timestamps' => TimestampArrayCast::class,
+        'review_timestamps' => 'array',
         'reviewing_admin_ids' => 'array',
         'review_notes' => 'array',
         'agreements_history' => 'array',

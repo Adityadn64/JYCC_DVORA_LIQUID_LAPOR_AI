@@ -6,7 +6,8 @@ use Illuminate\Support\Carbon;
 
 class Time
 {
-    public static function getNow() {
-        return Carbon::now('UTC')->timezone('Asia/Jakarta');
+    public static function getNow() 
+    {
+        return Carbon::now();
     }
 }
