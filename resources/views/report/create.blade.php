@@ -23,7 +23,7 @@
             <div>
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Laporan <span class="text-red-500">*</span></label>
                 <textarea id="description" name="description" rows="5"
-                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    class="block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder="Jelaskan masalah yang Anda temukan secara detail. Contoh: Terdapat jalan berlubang yang membahayakan di depan Masjid Al-Ikhlas, sudah terjadi selama 2 minggu."
                     required>{{ old('description') }}</textarea>
                 <p class="mt-2 text-xs text-gray-500">Semakin detail deskripsi Anda, semakin akurat analisis AI.</p>
@@ -32,7 +32,7 @@
             <div>
                 <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Lokasi Kejadian <span class="text-red-500">*</span></label>
                 <input type="text" id="location" name="location" value="{{ old('location') }}"
-                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    class="block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder="Contoh: Jl. Merdeka No. 10, Kelurahan Suka Maju, Kecamatan Jaya Baru" required>
             </div>
 

@@ -24,13 +24,13 @@
             <div>
                 <label for="login_identifier" class="block text-sm font-medium text-gray-700 mb-1">Email / Telepon / NIP</label>
                 <input type="text" id="login_identifier" name="login_identifier" value="{{ old('login_identifier') }}" required autofocus
-                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('login_identifier') border-red-500 @enderror">
+                    class="block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('login_identifier') border-red-500 @enderror">
             </div>
 
             <div>
                 <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <input type="password" id="password" name="password" required
-                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    class="block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
 
             <div class="flex items-center justify-between">

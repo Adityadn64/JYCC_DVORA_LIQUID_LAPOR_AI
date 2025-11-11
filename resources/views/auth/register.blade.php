@@ -19,19 +19,19 @@
     <form action="{{ route('register.start') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
         
-        <div><label for="full_name" class="block text-sm font-medium text-gray-700">Nama Lengkap</label><input type="text" id="full_name" name="full_name" value="{{ old('full_name') }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-        <div><label for="email" class="block text-sm font-medium text-gray-700">Alamat Email</label><input type="email" id="email" name="email" value="{{ old('email') }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-        <div><label for="phone" class="block text-sm font-medium text-gray-700">Nomor Telepon</label><input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-        <div><label for="nip" class="block text-sm font-medium text-gray-700">NIP</label><input type="text" id="nip" name="nip" value="{{ old('nip') }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-        <div><label for="password" class="block text-sm font-medium text-gray-700">Password</label><input type="password" id="password" name="password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-        <div><label for="password_confirmation" class="block text-sm font-medium text-gray-700">Konfirmasi Password</label><input type="password" id="password_confirmation" name="password_confirmation" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-        <div><label for="role" class="block text-sm font-medium text-gray-700">Peran (Role)</label><select name="role" id="role" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+        <div><label for="full_name" class="block text-sm font-medium text-gray-700">Nama Lengkap</label><input type="text" id="full_name" name="full_name" value="{{ old('full_name') }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></div>
+        <div><label for="email" class="block text-sm font-medium text-gray-700">Alamat Email</label><input type="email" id="email" name="email" value="{{ old('email') }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></div>
+        <div><label for="phone" class="block text-sm font-medium text-gray-700">Nomor Telepon</label><input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></div>
+        <div><label for="nip" class="block text-sm font-medium text-gray-700">NIP</label><input type="text" id="nip" name="nip" value="{{ old('nip') }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></div>
+        <div><label for="password" class="block text-sm font-medium text-gray-700">Password</label><input type="password" id="password" name="password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></div>
+        <div><label for="password_confirmation" class="block text-sm font-medium text-gray-700">Konfirmasi Password</label><input type="password" id="password_confirmation" name="password_confirmation" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></div>
+        <div><label for="role" class="block text-sm font-medium text-gray-700">Peran (Role)</label><select name="role" id="role" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             <option value="">Pilih Peran</option>
             @foreach($roles as $role)
                 <option value="{{ $role->value }}" @selected(old('role') == $role->value)>{{ $role->name }}</option>
             @endforeach
         </select></div>
-        <div id="service_code_wrapper" style="display: none;"><label for="service_code" class="block text-sm font-medium text-gray-700">Asal Dinas</label><select name="service_code" id="service_code" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+        <div id="service_code_wrapper"><label for="service_code" class="block text-sm font-medium text-gray-700">Asal Dinas</label><select name="service_code" id="service_code" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             <option value="">Pilih Asal Dinas</option>
             @foreach($serviceProfiles as $profile)
                 <option value="{{ $profile->code->value }}" @selected(old('service_code') == $profile->code->value)>{{ $profile->full_name }}</option>

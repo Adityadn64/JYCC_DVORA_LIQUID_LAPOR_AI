@@ -14,17 +14,17 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div>
                         <label for="search_term" class="block text-sm font-medium text-gray-700">Judul / Deskripsi</label>
-                        <input type="text" name="search_term" id="search_term" value="{{ request('search_term') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Jalan berlubang...">
+                        <input type="text" name="search_term" id="search_term" value="{{ request('search_term') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Jalan berlubang...">
                     </div>
                     
                     <div>
                         <label for="search_location" class="block text-sm font-medium text-gray-700">Lokasi</label>
-                        <input type="text" name="search_location" id="search_location" value="{{ request('search_location') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Nama jalan, kota...">
+                        <input type="text" name="search_location" id="search_location" value="{{ request('search_location') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Nama jalan, kota...">
                     </div>
                     
                     <div>
                         <label for="search_priority" class="block text-sm font-medium text-gray-700">Prioritas</label>
-                        <select name="search_priority" id="search_priority" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <select name="search_priority" id="search_priority" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Semua Prioritas</option>
                             @foreach($priorities as $priority)
                                 <option value="{{ $priority->value }}" @selected(request('search_priority') == $priority->value)>
@@ -36,7 +36,7 @@
                     
                     <div>
                         <label for="search_admin" class="block text-sm font-medium text-gray-700">Ditangani Oleh</label>
-                        <select name="search_admin" id="search_admin" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <select name="search_admin" id="search_admin" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Semua Admin</option>
                             @foreach($admins as $admin)
                                 <option value="{{ $admin->id }}" @selected(request('search_admin') == $admin->id)>
@@ -53,7 +53,7 @@
 
                     <div>
                         <label for="sort" class="block text-sm font-medium text-gray-700">Urutkan Berdasarkan</label>
-                        <select name="sort" id="sort" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <select name="sort" id="sort" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                             <option value="updated_at_desc" @selected(request('sort', 'updated_at_desc') == 'updated_at_desc')>Diperbarui (Terbaru)</option>
                             <option value="updated_at_asc" @selected(request('sort') == 'updated_at_asc')>Diperbarui (Terlama)</option>
                             <option value="created_at_desc" @selected(request('sort') == 'created_at_desc')>Dibuat (Terbaru)</option>
