@@ -10,7 +10,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             ServiceProfileSeeder::class,
-            AdministratorSeeder::class
+            AdministratorSeeder::class,
+            ReportSeeder::class,
         ]);
     }
 }

@@ -31,7 +31,7 @@
             </div>
             <div>
                 <div class="bg-white p-6 rounded-xl shadow-lg border">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Riwayat Laporan Harian</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Riwayat Laporan Bulanan</h3>
                     <div class="h-64">
                         <canvas id="reportHistoryChart"></canvas>
                     </div>

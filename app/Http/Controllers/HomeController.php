@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ReportStatusEnum;
 use App\Models\Report;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,10 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $allReports = Report::select('created_at', 'statuses')->orderBy('created_at')->get();
+        $allReports = Report::select('created_at', 'statuses')
+                            ->where('created_at', '>=', Carbon::now()->subMonth())
+                            ->orderBy('created_at')
+                            ->get();
         $totalReports = $allReports->count();
         $pendingCount = 0;
         $processCount = 0;
@@ -22,16 +26,16 @@ class HomeController extends Controller
             if (empty($statuses)) continue;
             $lastStatus = end($statuses);
             match ($lastStatus) {
-                'pending' => $pendingCount++,
-                'process' => $processCount++,
-                'finished' => $finishedCount++,
-                'rejected' => $rejectedCount++,
+                ReportStatusEnum::Pending->value => $pendingCount++,
+                ReportStatusEnum::Process->value => $processCount++,
+                ReportStatusEnum::Finished->value => $finishedCount++,
+                ReportStatusEnum::Rejected->value => $rejectedCount++,
                 default => 0,
             };
         }
 
         $topCities = Report::query()
-            ->select('city', DB::raw('count(*) as total_reports'))
+            ->select('city', DB::raw(value: 'count(*) as total_reports'))
             ->whereNotNull('city')
             ->groupBy('city')
             ->orderByDesc('total_reports')
@@ -50,7 +54,12 @@ class HomeController extends Controller
 
             if ($lastStatus) {
                 if (!isset($dailyCounts[$date])) {
-                    $dailyCounts[$date] = ['pending' => 0, 'process' => 0, 'finished' => 0, 'rejected' => 0];
+                    $dailyCounts[$date] = [
+                        ReportStatusEnum::Pending->value => 0,
+                        ReportStatusEnum::Process->value => 0,
+                        ReportStatusEnum::Finished->value => 0,
+                        ReportStatusEnum::Rejected->value => 0,
+                    ];
                 }
                 if (isset($dailyCounts[$date][$lastStatus])) {
                     $dailyCounts[$date][$lastStatus]++;
@@ -60,17 +69,17 @@ class HomeController extends Controller
 
         $chartLabels = array_keys($dailyCounts);
         $chartData = [
-            'pending' => [],
-            'process' => [],
-            'finished' => [],
-            'rejected' => [],
+            ReportStatusEnum::Pending->value => [],
+            ReportStatusEnum::Process->value => [],
+            ReportStatusEnum::Finished->value => [],
+            ReportStatusEnum::Rejected->value => [],
         ];
 
         foreach ($chartLabels as $label) {
-            $chartData['pending'][] = $dailyCounts[$label]['pending'];
-            $chartData['process'][] = $dailyCounts[$label]['process'];
-            $chartData['finished'][] = $dailyCounts[$label]['finished'];
-            $chartData['rejected'][] = $dailyCounts[$label]['rejected'];
+            $chartData[ReportStatusEnum::Pending->value][] = $dailyCounts[$label][ReportStatusEnum::Pending->value];
+            $chartData[ReportStatusEnum::Process->value][] = $dailyCounts[$label][ReportStatusEnum::Process->value];
+            $chartData[ReportStatusEnum::Finished->value][] = $dailyCounts[$label][ReportStatusEnum::Finished->value];
+            $chartData[ReportStatusEnum::Rejected->value][] = $dailyCounts[$label][ReportStatusEnum::Rejected->value];
         }
 
         $viewData = [
@@ -83,6 +92,9 @@ class HomeController extends Controller
             'chartLabels' => $chartLabels,
             'chartData' => $chartData,
         ];
+
+        // header('Content-Type: application/json');
+        // echo json_encode($viewData, JSON_PRETTY_PRINT);
             
         return view('main', $viewData);
     }

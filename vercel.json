@@ -21,9 +21,6 @@
             "dest": "/public/index.php"
         }
     ],
-    "scripts": {
-        "vercel-build": "php artisan migrate --force"
-      },
     "env": {
         "APP_ENV": "production",
         "APP_DEBUG": "true",

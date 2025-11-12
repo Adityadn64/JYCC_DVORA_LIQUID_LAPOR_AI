@@ -2,15 +2,15 @@
 
 namespace Database\Seeders;
 
-use App\Models\Administrator;
+use App\Models\Report;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class AdministratorSeeder extends Seeder
+class ReportSeeder extends Seeder
 {
     public function run(): void
     {
-        Administrator::truncate();
-        Administrator::factory()->count(100)->create();
+        Report::truncate();
+        Report::factory()->count(250)->create();
     }
 }
