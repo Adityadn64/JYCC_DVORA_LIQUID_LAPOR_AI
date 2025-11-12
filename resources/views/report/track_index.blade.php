@@ -48,7 +48,7 @@
                     
                      <div>
                         <label for="search_id" class="block text-sm font-medium text-gray-700">ID Laporan</label>
-                        <input type="number" name="search_id" id="search_id" value="{{ request('search_id') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="123">
+                        <input type="number" name="search_id" id="search_id" value="{{ request('search_id') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="123">
                     </div>
 
                     <div>
