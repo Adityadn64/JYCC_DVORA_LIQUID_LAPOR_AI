@@ -42,6 +42,12 @@
                             <a href="{{ route('admin.dashboard') }}" class="inline-block bg-blue-600 text-white rounded-md px-4 py-1.5 text-sm font-medium hover:bg-blue-700 transition-colors">
                                 Dasbor
                             </a>
+                            <a href="{{ route('admin.analytics') }}" class="inline-block bg-blue-600 text-white rounded-md px-4 py-1.5 text-sm font-medium hover:bg-blue-700 transition-colors">
+                                Analisis
+                            </a>
+                            <a href="{{ route('admin.profile.show') }}" class="inline-block bg-blue-600 text-white rounded-md px-4 py-1.5 text-sm font-medium hover:bg-blue-700 transition-colors">
+                                Profil
+                            </a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" class="text-sm font-medium text-gray-500 hover:text-gray-900">Logout</button>

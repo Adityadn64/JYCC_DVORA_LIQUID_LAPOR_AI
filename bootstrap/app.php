@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\CheckAdminStatus;
+use App\Http\Middleware\CheckSystemAdmin;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,8 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->appendToGroup('web', [
-            CheckAdminStatus::class,
+        // $middleware->appendToGroup('web', [
+        //     CheckAdminStatus::class,             
+        // ]); --------versi lama------------
+        $middleware->alias([
+            'auth' => \Illuminate\Auth\Middleware\Authenticate::class, // <-- INI BENAR
+            'admin.status' => CheckAdminStatus::class,
+            'systemadmin' => CheckSystemAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
