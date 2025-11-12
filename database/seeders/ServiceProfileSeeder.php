@@ -111,8 +111,7 @@ class ServiceProfileSeeder extends Seeder
 
         foreach ($services as $service) {
             ServiceProfile::updateOrCreate(
-                ['code' => ServiceCodeEnum::from($service['code'])
-            ],
+                ['code' => $service['code']],
                 [
                     'full_name' => $service['name'],
                     'website' => $service['web'],
