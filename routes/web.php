@@ -47,20 +47,16 @@ Route::middleware('auth:administrators')->prefix('admin')->name('admin.')->group
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [ProfileController::class, 'show'])->name('show');
 
-        // Aksi Update Info Dasar
         Route::put('/update-info', [ProfileController::class, 'updateInfo'])->name('updateInfo');
         Route::post('/update-picture', [ProfileController::class, 'updateProfilePicture'])->name('updatePicture');
         Route::post('/update-kta', [ProfileController::class, 'updateKtaScan'])->name('updateKta');
 
-        // Aksi Keamanan
         Route::post('/update-password', [ProfileController::class, 'updatePassword'])->name('updatePassword');
         Route::post('/deactivate-self', [ProfileController::class, 'deactivateSelf'])->name('deactivateSelf');
 
-        // Aksi Ganti Email (Stepper)
         Route::post('/request-email-change', [ProfileController::class, 'requestEmailChange'])->name('requestEmailChange');
         Route::post('/verify-email-change', [ProfileController::class, 'verifyEmailChange'])->name('verifyEmailChange');
 
-        // --- TAMBAHKAN DUA BARIS INI ---
         Route::post('/request-phone-change', [ProfileController::class, 'requestPhoneChange'])->name('requestPhoneChange');
         Route::post('/verify-phone-change', [ProfileController::class, 'verifyPhoneChange'])->name('verifyPhoneChange');
     });
@@ -73,11 +69,9 @@ Route::middleware('auth:administrators')->prefix('admin')->name('admin.')->group
         Route::post('/', [AdminManagementController::class, 'store'])->name('store');
         Route::put('/{admin}', [AdminManagementController::class, 'update'])->name('update');
         
-        // Aksi
         Route::post('/{admin}/toggle-status', [AdminManagementController::class, 'toggleStatus'])->name('toggleStatus');
         Route::post('/{admin}/send-reset', [AdminManagementController::class, 'sendPasswordReset'])->name('sendReset');
         
-        // Endpoint data untuk Activity Drawer
         Route::get('/{admin}/activity', [AdminManagementController::class, 'showActivity'])->name('activity');
     });
     Route::prefix('performance')->name('performance.')->middleware('systemadmin')->group(function () {
