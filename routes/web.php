@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\AdminManagementController;
+use App\Http\Controllers\Admin\PerformanceController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -80,6 +81,6 @@ Route::middleware('auth:administrators')->prefix('admin')->name('admin.')->group
         Route::get('/{admin}/activity', [AdminManagementController::class, 'showActivity'])->name('activity');
     });
     Route::prefix('performance')->name('performance.')->middleware('systemadmin')->group(function () {
-        Route::get('/', [AdminManagementController::class, 'index'])->name('index');
+        Route::get('/', [PerformanceController::class, 'index'])->name('index');
     });
 });
