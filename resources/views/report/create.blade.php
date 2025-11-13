@@ -3,10 +3,23 @@
 @section('title', 'Buat Laporan Baru')
 
 @section('content')
+    @php
+        $previousUrl = url()->previous();
+        $path = parse_url($previousUrl, PHP_URL_PATH);
+        $lastSegment = basename($path);
+    @endphp
+    
     <div class="bg-white shadow-lg rounded-xl p-8 max-w-2xl mx-auto">
-        <a href="{{ route('home') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor">
-            <- Kembali ke halaman utama
-        </a>
+        @if($lastSegment !== '')
+            <a href="{{ route('report.track.index') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor-pointer">
+                <- Kembali ke halaman pencarian
+            </a>
+        @else
+            <a onClick="history.back();" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor-pointer">
+                <- Kembali ke halaman pencarian
+            </a>
+        @endif
+
         <br><br>
         <hr><br>
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Formulir Pelaporan Publik</h1>

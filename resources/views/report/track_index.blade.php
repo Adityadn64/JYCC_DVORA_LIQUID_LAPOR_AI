@@ -3,6 +3,12 @@
 @section('title', 'Dasbor Transparansi Laporan')
 
 @section('content')
+    @php
+        $previousUrl = url()->previous();
+        $path = parse_url($previousUrl, PHP_URL_PATH);
+        $lastSegment = basename($path);
+    @endphp
+
     <div class="space-y-10">
         <div class="flex flex-row justify-between">
             <div>
@@ -10,9 +16,15 @@
                 <p class="mt-2 text-gray-600">Cari dan lihat semua laporan yang telah masuk ke dalam sistem.</p>
             </div>
             <div>
-                <a href="{{ route('home') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor-pointer">
-                    <- Kembali ke halaman utama
-                </a>
+                @if($lastSegment !== '')
+                    <a href="{{ route('report.track.index') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor-pointer">
+                        <- Kembali ke halaman pencarian
+                    </a>
+                @else
+                    <a onClick="history.back();" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor-pointer">
+                        <- Kembali ke halaman pencarian
+                    </a>
+                @endif
             </div>
         </div>
 
