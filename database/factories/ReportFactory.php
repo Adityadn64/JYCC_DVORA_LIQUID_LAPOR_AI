@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\RoleAdministratorEnum;
 use App\Models\Administrator;
 use App\Models\ServiceProfile;
 use App\Enums\ReportStatusEnum;
@@ -15,7 +16,16 @@ class ReportFactory extends Factory
     public function definition(): array
     {
         $serviceProfile = ServiceProfile::inRandomOrder()->first();
-        $assigneeAdmin = Administrator::inRandomOrder()->first() ?? Administrator::factory()->create();
+        $assigneeAdmin = Administrator::where('role', RoleAdministratorEnum::BaseAdmin)
+                                    ->inRandomOrder()
+                                    ->first();
+
+        if (!$assigneeAdmin) {
+            $assigneeAdmin = Administrator::factory()->create([
+                'role' => RoleAdministratorEnum::BaseAdmin,
+            ]);
+        }
+        
         $allAdminIds = Administrator::pluck('id')->toArray();
 
         $historyCount = $this->faker->numberBetween(1, 5);

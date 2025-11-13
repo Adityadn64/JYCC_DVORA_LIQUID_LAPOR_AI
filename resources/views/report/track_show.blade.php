@@ -10,8 +10,26 @@
         </div>
     @endif
 
+    @php
+        $previousUrl = url()->previous();
+        $path = parse_url($previousUrl, PHP_URL_PATH);
+        $lastSegment = basename($path);
+    @endphp
+
     <div class="bg-white shadow-lg rounded-xl overflow-hidden">
         <div class="p-6 md:p-8">
+            @if($lastSegment !== 'lacak')
+                <a href="{{ route('report.track.index') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor-pointer">
+                    <- Kembali ke halaman pencarian
+                </a>
+            @else
+                <a onClick="history.back();" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor-pointer">
+                    <- Kembali ke halaman pencarian
+                </a>
+            @endif
+            <br><br>
+            <hr><br>
+
             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start">
                 <div>
                     <h2 class="text-sm font-semibold text-blue-600 uppercase">Laporan ID: {{ $report->id }}</h2>

@@ -65,7 +65,10 @@ Route::middleware('auth:administrators')->prefix('admin')->name('admin.')->group
     });
     Route::prefix('manage')->name('manage.')->middleware('systemadmin')->group(function () {
         Route::get('/', [AdminManagementController::class, 'index'])->name('index');
-        // ... rute manage lainnya ...
+        Route::get('/request', [AdminManagementController::class, 'pendingPage'])->name('request');
+        Route::post('/{admin}/accept', [AdminManagementController::class, 'accept'])->name('accept');
+        Route::post('/{admin}/reject', [AdminManagementController::class, 'reject'])->name('reject');
+
         Route::post('/', [AdminManagementController::class, 'store'])->name('store');
         Route::put('/{admin}', [AdminManagementController::class, 'update'])->name('update');
         
@@ -75,5 +78,8 @@ Route::middleware('auth:administrators')->prefix('admin')->name('admin.')->group
         
         // Endpoint data untuk Activity Drawer
         Route::get('/{admin}/activity', [AdminManagementController::class, 'showActivity'])->name('activity');
+    });
+    Route::prefix('performance')->name('performance.')->middleware('systemadmin')->group(function () {
+        Route::get('/', [AdminManagementController::class, 'index'])->name('index');
     });
 });

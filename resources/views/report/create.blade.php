@@ -4,6 +4,11 @@
 
 @section('content')
     <div class="bg-white shadow-lg rounded-xl p-8 max-w-2xl mx-auto">
+        <a href="{{ route('home') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor">
+            <- Kembali ke halaman utama
+        </a>
+        <br><br>
+        <hr><br>
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Formulir Pelaporan Publik</h1>
         <p class="text-gray-600 mb-8">Sampaikan laporan Anda dengan jelas dan akurat. Sistem AI kami akan membantumu.</p>
 

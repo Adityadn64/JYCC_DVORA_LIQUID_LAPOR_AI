@@ -162,55 +162,53 @@
             </button>
 
             @if(Auth::user()->role !== \App\Enums\RoleAdministratorEnum::SystemAdmin)
-            <form action="{{ route('admin.profile.deactivateSelf') }}" method="POST"
-                onsubmit="return confirm('Anda yakin ingin menonaktifkan akun Anda? Tindakan ini tidak dapat dibatalkan tanpa bantuan Super Admin.');">
-                @csrf
-                <button type="submit"
-                    class="w-full sm:w-auto rounded-md bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-sm ring-1 ring-inset ring-red-200 hover:bg-red-100">
-                    Nonaktifkan Akun Saya
-                </button>
-            </form>
+                <form action="{{ route('admin.profile.deactivateSelf') }}" method="POST"
+                    onsubmit="return confirm('Anda yakin ingin menonaktifkan akun Anda? Tindakan ini tidak dapat dibatalkan tanpa bantuan System Admin.');">
+                    @csrf
+                    <button type="submit"
+                        class="w-full sm:w-auto rounded-md bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-sm ring-1 ring-inset ring-red-200 hover:bg-red-100">
+                        Nonaktifkan Akun Saya
+                    </button>
+                </form>
             @endif
         </div>
 
     </div>
 
-    {{-- Kolom Kanan: Aktivitas & Metadata --}}
     <div class="lg:col-span-1 space-y-8">
+        @if(Auth::user()->role === \App\Enums\RoleAdministratorEnum::BaseAdmin)
+            <div class="bg-white shadow-lg rounded-xl p-6 border">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Aktivitas Saya</h3>
+                <div class="flex justify-between p-2 bg-gray-50 rounded-md">
+                    <span class="text-sm font-medium text-gray-600">Total Laporan Ditugaskan</span>
+                    <span class="text-lg font-bold text-gray-900">{{ $activity->total_assigned }}</span>
+                </div>
+                <div class="flex justify-between p-2 bg-gray-50 rounded-md">
+                    <span class="text-sm font-medium text-gray-600">Total Laporan Selesai</span>
+                    <span class="text-lg font-bold text-green-600">{{ $activity->total_finished }}</span>
+                </div>
+                <div class="flex justify-between p-2 bg-gray-50 rounded-md">
+                    <span class="text-sm font-medium text-gray-600">Waktu Penyelesaian Rata-rata</span>
+                    <span class="text-lg font-bold text-blue-600">{{ $activity->avg_resolution_time }}</span>
+                </div>
 
-        {{-- POINT 5: AKTIVITAS ADMIN --}}
-        <div class="bg-white shadow-lg rounded-xl p-6 border">
-            <h3 class="text-xl font-semibold text-gray-900 mb-4">Aktivitas Saya</h3>
-            <div class="flex justify-between p-2 bg-gray-50 rounded-md">
-                <span class="text-sm font-medium text-gray-600">Total Laporan Ditugaskan</span>
-                <span class="text-lg font-bold text-gray-900">{{ $activity->total_assigned }}</span>
+                <h4 class="text-md font-semibold text-gray-800 mt-8 mb-3">5 Laporan Terakhir Ditangani</h4>
+                <ul class="divide-y divide-gray-200">
+                    @forelse($activity->recent_reports as $report)
+                        <li class="py-3">
+                            <a href="{{ route('report.track.show', $report) }}" class="block hover:bg-gray-50 p-2 rounded-md">
+                                <p class="text-sm font-medium text-gray-900 truncate">{{ $report->title }}</p>
+                                <p class="text-xs text-gray-500">ID: #{{$report->id}} - Diperbarui: {{
+                                    $report->updated_at->diffForHumans() }}</p>
+                            </a>
+                        </li>
+                        @empty
+                        <li class="py-3 text-sm text-gray-500 text-center">Belum ada laporan yang ditangani.</li>
+                    @endforelse
+                </ul>
             </div>
-            <div class="flex justify-between p-2 bg-gray-50 rounded-md">
-                <span class="text-sm font-medium text-gray-600">Total Laporan Selesai</span>
-                <span class="text-lg font-bold text-green-600">{{ $activity->total_finished }}</span>
-            </div>
-            <div class="flex justify-between p-2 bg-gray-50 rounded-md">
-                <span class="text-sm font-medium text-gray-600">Waktu Penyelesaian Rata-rata</span>
-                <span class="text-lg font-bold text-blue-600">{{ $activity->avg_resolution_time }}</span>
-            </div>
+        @endif
 
-            <h4 class="text-md font-semibold text-gray-800 mt-8 mb-3">5 Laporan Terakhir Ditangani</h4>
-            <ul class="divide-y divide-gray-200">
-                @forelse($activity->recent_reports as $report)
-                <li class="py-3">
-                    <a href="{{ route('report.track.show', $report) }}" class="block hover:bg-gray-50 p-2 rounded-md">
-                        <p class="text-sm font-medium text-gray-900 truncate">{{ $report->title }}</p>
-                        <p class="text-xs text-gray-500">ID: #{{$report->id}} - Diperbarui: {{
-                            $report->updated_at->diffForHumans() }}</p>
-                    </a>
-                </li>
-                @empty
-                <li class="py-3 text-sm text-gray-500 text-center">Belum ada laporan yang ditangani.</li>
-                @endforelse
-            </ul>
-        </div>
-
-        {{-- POINT 4: METADATA --}}
         <div class="bg-white shadow-lg rounded-xl p-6 border">
             <h3 class="text-xl font-semibold text-gray-900 mb-4">Metadata Akun</h3>
             <dl class="space-y-3">
@@ -234,8 +232,6 @@
     </div>
 </div>
 
-{{-- MODALS --}}
-
 <div id="passwordChangeModal" class="fixed inset-0 z-50 hidden" style="background-color: rgba(0,0,0,0.5);">
     <div class="flex items-center justify-center min-h-screen">
         <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full m-4">
@@ -245,13 +241,13 @@
                     class="text-gray-400 hover:text-gray-600">&times;</button>
             </div>
             @if ($errors->any() && ($errors->has('current_password') || $errors->has('password')))
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
-                <ul class="list-disc list-inside">
-                    @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
+                    <ul class="list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             @endif
             <form action="{{ route('admin.profile.updatePassword') }}" method="POST">
                 @csrf

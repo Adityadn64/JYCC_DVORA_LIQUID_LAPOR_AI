@@ -288,7 +288,7 @@ class ProfileController extends Controller
 
         // SuperAdmin tidak boleh menonaktifkan dirinya sendiri
         if ($admin->role === RoleAdministratorEnum::SystemAdmin) {
-            return back()->with('error_self_deactivate', 'Super Admin tidak dapat menonaktifkan akunnya sendiri.');
+            return back()->with('error_self_deactivate', 'System Admin tidak dapat menonaktifkan akunnya sendiri.');
         }
 
         $admin->update(['status' => AdminStatusEnum::Suspended]); // Asumsi ada status 'Suspended'

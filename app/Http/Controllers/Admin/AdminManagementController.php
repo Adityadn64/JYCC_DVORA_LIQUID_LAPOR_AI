@@ -18,9 +18,6 @@ use Illuminate\Validation\Rules\Password;
 
 class AdminManagementController extends Controller
 {
-    /**
-     * POINT 2 & 3: Menampilkan daftar admin dengan filter.
-     */
     public function index(Request $request)
     {
         $query = Administrator::query()->with('serviceProfile');
@@ -55,9 +52,37 @@ class AdminManagementController extends Controller
         return view('admin.manage', compact('admins', 'filterOptions'));
     }
 
-    /**
-     * POINT 4: Menyimpan admin baru.
-     */
+    public function pendingPage(Request $request)
+    {
+        $query = Administrator::query()->with('serviceProfile');
+
+        // Filter: Keyword
+        $query->when($request->filled('keyword'), function ($q) use ($request) {
+            $keyword = '%' . $request->keyword . '%';
+            $q->where(fn($sub) => $sub->where('full_name', 'like', $keyword)
+                ->orWhere('email', 'like', $keyword)
+                ->orWhere('phone', 'like', $keyword)
+                ->orWhere('nip', 'like', $keyword));
+        });
+
+        $query->when($request->filled('role'), fn($q) => $q->where('role', $request->role));
+
+        $query->when($request->filled('service_code'), fn($q) => $q->where('service_code', $request->service_code));
+
+        $admins = $query->where('status', AdminStatusEnum::Pending)
+                        ->orderBy('full_name', 'asc')
+                        ->paginate(15)
+                        ->withQueryString();
+
+        // Data untuk dropdown filter
+        $filterOptions = [
+            'roles' => RoleAdministratorEnum::cases(),
+            'services' => ServiceProfile::orderBy('full_name')->get(),
+        ];
+
+        return view('admin.manage-request', compact('admins', 'filterOptions'));
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -82,7 +107,7 @@ class AdminManagementController extends Controller
             $validated['kta_scan_path'] = $request->file('kta_scan')->store('kta_scans', 'public');
         }
 
-        // Pastikan super admin tidak punya service code
+        // Pastikan System Admin tidak punya service code
         if ($validated['role'] == RoleAdministratorEnum::SystemAdmin->value) {
             $validated['service_code'] = null;
         }
@@ -118,7 +143,7 @@ class AdminManagementController extends Controller
             $validated['kta_scan_path'] = $request->file('kta_scan')->store('kta_scans', 'public');
         }
 
-        // Pastikan super admin tidak punya service code
+        // Pastikan System Admin tidak punya service code
         if ($validated['role'] == RoleAdministratorEnum::SystemAdmin->value) {
             $validated['service_code'] = null;
         }
@@ -154,7 +179,7 @@ class AdminManagementController extends Controller
         // $token = app('auth.password.broker')->createToken($admin);
         // Mail::to($admin->email)->send(new AdminPasswordResetLink($token));
 
-        Log::info("Super Admin memicu reset password untuk: {$admin->email}");
+        Log::info("System Admin memicu reset password untuk: {$admin->email}");
 
         return redirect()->route('admin.manage.index')->with('success', "Link reset password (placeholder) telah dikirim ke {$admin->email}.");
     }
@@ -174,5 +199,15 @@ class AdminManagementController extends Controller
             'admin' => $admin,
             'recent_reports' => $recentReports,
         ]);
+    }
+
+    public function accept(Administrator $admin) {
+        $admin->update(['status' => AdminStatusEnum::Active->value]);
+        return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil diaktifkan.');
+    }
+
+    public function reject(Administrator $admin) {
+        $admin->delete();
+        return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil dihapus.');
     }
 }

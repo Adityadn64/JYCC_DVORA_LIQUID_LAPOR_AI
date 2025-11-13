@@ -4,9 +4,16 @@
 
 @section('content')
     <div class="space-y-10">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900">Dasbor Transparansi Laporan</h1>
-            <p class="mt-2 text-gray-600">Cari dan lihat semua laporan yang telah masuk ke dalam sistem.</p>
+        <div class="flex flex-row justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Dasbor Transparansi Laporan</h1>
+                <p class="mt-2 text-gray-600">Cari dan lihat semua laporan yang telah masuk ke dalam sistem.</p>
+            </div>
+            <div>
+                <a href="{{ route('home') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 cursor-pointer">
+                    <- Kembali ke halaman utama
+                </a>
+            </div>
         </div>
 
         <div class="bg-white p-6 rounded-xl shadow-lg border">
