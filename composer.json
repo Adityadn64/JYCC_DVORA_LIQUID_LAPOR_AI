@@ -10,6 +10,7 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "league/flysystem-aws-s3-v3": "^3.30",
+        "maatwebsite/excel": "^3.1",
         "twilio/sdk": "^8.8"
     },
     "require-dev": {

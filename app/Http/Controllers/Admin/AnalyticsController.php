@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Export\ExportFile;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +16,8 @@ use App\Enums\ReportCategoryEnum;
 use App\Enums\PriorityEnum;
 use App\Enums\ReportStatusEnum; // Pastikan Anda memiliki Enum ini
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class AnalyticsController extends Controller
 {
@@ -88,9 +92,6 @@ class AnalyticsController extends Controller
         ));
     }
 
-    /**
-     * POINT 1: Membuat Kueri dasar dengan semua filter.
-     */
     private function buildBaseQuery(Request $request)
     {
         $admin = Auth::user();
@@ -142,9 +143,6 @@ class AnalyticsController extends Controller
         return $query;
     }
 
-    /**
-     * Mengambil data untuk semua dropdown filter.
-     */
     private function getFilterOptions()
     {
         $admin = Auth::user();
@@ -165,9 +163,6 @@ class AnalyticsController extends Controller
         ];
     }
 
-    /**
-     * POINT 2: Statistik Umum (KPI Cards).
-     */
     private function getKpiStats($baseQuery, Request $request)
     {
         $stats = [];
@@ -195,9 +190,6 @@ class AnalyticsController extends Controller
         return $stats;
     }
 
-    /**
-     * POINT 3: Analisis Tren & Pola Waktu.
-     */
     private function getTrendData($baseQuery, Request $request)
     {
         // Tentukan format grup berdasarkan rentang tanggal
@@ -238,9 +230,6 @@ class AnalyticsController extends Controller
         ];
     }
 
-    /**
-     * POINT 4: Analisis Distribusi.
-     */
     private function getDistributionData($baseQuery)
     {
         // Distribusi Kategori (Perbaikan: Hapus join, group by kolom 'category')
@@ -267,9 +256,6 @@ class AnalyticsController extends Controller
         ];
     }
 
-    /**
-     * POINT 5: Kinerja Admin.
-     */
     private function getAdminPerformance($baseQuery)
     {
         return Administrator::query()
@@ -286,9 +272,6 @@ class AnalyticsController extends Controller
             ->get();
     }
 
-    /**
-     * POINT 6: Analisis Dinas.
-     */
     private function getDinasPerformance($baseQuery)
     {
         return ServiceProfile::query()
@@ -304,9 +287,6 @@ class AnalyticsController extends Controller
             ->get();
     }
 
-    /**
-     * POINT 7: Analisis Kategori.
-     */
     private function getCategoryAnalysis($baseQuery)
     {
         // Waktu penyelesaian terlama per kategori (Perbaikan: Hapus join, group by kolom 'category')
@@ -321,9 +301,6 @@ class AnalyticsController extends Controller
             ->get();
     }
 
-    /**
-     * POINT 8: Analisis Lokasi.
-     */
     private function getLocationAnalysis($baseQuery)
     {
         // Hot Zone (per Kecamatan)
@@ -336,9 +313,6 @@ class AnalyticsController extends Controller
             ->get();
     }
 
-    /**
-     * POINT 12: Insight Otomatis.
-     */
     private function getAutoInsights($kpiStats)
     {
         $insights = [];
@@ -358,11 +332,58 @@ class AnalyticsController extends Controller
         return $insights;
     }
 
-    // Helper untuk menentukan format grup tanggal
     private function getDateDiff(Request $request)
     {
         $start = $request->filled('date_start') ? Carbon::parse($request->date_start) : now()->subDays(30);
         $end = $request->filled('date_end') ? Carbon::parse($request->date_end) : now();
         return $start->diffInDays($end);
+    }
+
+    public function exportReports(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'exportType' => ['required', 'string', Rule::in(['CSV', 'Excel'])],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Tipe ekspor tidak valid.'], 422);
+        }
+
+        $baseQuery = $this->buildBaseQuery($request);
+
+        $reports = (clone $baseQuery)
+            ->with(['assignee', 'serviceProfile'])
+            ->orderBy('updated_at', 'desc')
+            ->cursor();
+
+        $columns = [
+            'ID' => 'id',
+            'JUDUL' => 'title',
+            'STATUS' => function($report) {
+                $statusesArray = $report->statuses;
+                return !empty($statusesArray) ? end($statusesArray) : 'unknown';
+            },
+            'DINAS' => function($report) {
+                return $report->serviceProfile->full_name ?? 'N/A';
+            },
+            'ADMIN' => function($report) {
+                return $report->assignee->full_name ?? 'Belum Ditugaskan';
+            },
+            'DIPERBARUI' => function($report) {
+                return $report->updated_at->toDateTimeString() . " (" . $report->updated_at->diffForHumans() . ")";
+            },
+            'AKSI' => function($report) {
+                return action([ReportController::class, 'trackShow'], ['report' => $report]);
+            }
+        ];
+
+        $exportType = $request->input('exportType');
+
+        return $exportType === "CSV"
+            ? ExportFile::exportCSV($reports, $columns, 'reports.csv')
+            : (
+                $exportType === "Excel"
+                    ? ExportFile::exportExcel($reports, $columns, 'reports.xlsx')
+                    : null
+            );
     }
 }

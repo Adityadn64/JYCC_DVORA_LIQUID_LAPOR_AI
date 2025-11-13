@@ -41,6 +41,7 @@ Route::middleware('auth:administrators')->group(function () {
 Route::middleware('auth:administrators')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
+    Route::post('/analytics/export-reports', [AnalyticsController::class, 'exportReports'])->name('analytics.export-reports');
 
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [ProfileController::class, 'show'])->name('show');

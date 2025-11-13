@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('../layouts.app')
 @section('title', 'Registrasi Administrator')
 @section('content')
 <div class="max-w-lg mx-auto bg-white shadow-lg rounded-xl p-8">

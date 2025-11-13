@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('../layouts.app')
 
 @section('title', 'Dasbor Analisis BI')
 
@@ -285,19 +285,81 @@
     </div>
 </div>
 
-
-{{-- POINT 10: TABEL DATA LENGKAP --}}
 <div class="bg-white p-6 rounded-xl shadow-lg border">
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold text-gray-900">Data Grid Laporan</h2>
-        {{-- POINT 13: EXPORT --}}
         <div>
             <button type="button"
-                class="border border-gray-300 rounded-md px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Export
-                CSV</button>
+                id="downloadCSVButton"
+                class="border border-gray-300 rounded-md px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Export CSV
+            </button>
             <button type="button"
-                class="border border-gray-300 rounded-md px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Export
-                Excel</button>
+                id="downloadExcelButton"
+                class="border border-gray-300 rounded-md px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Export Excel
+            </button>
+
+            <script>
+                async function exportFile(exportType) {
+                    try {
+                        if (!["CSV", "Excel"].includes(exportType)) throw Error("No valid export type!");
+
+                        const response = await fetch('/admin/analytics/export-reports', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ exportType })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Network response was not ok: ${response.statusText}`);
+                        }
+
+                        const disposition = response.headers.get('Content-Disposition');
+                        let filename = `reports.${
+                            exportType === "CSV"
+                                ? 'csv'
+                                : (
+                                    exportType === "Excel"
+                                        ? 'xlsx'
+                                        : 'data'
+                                )}`;
+
+                        if (disposition && disposition.indexOf('attachment') !== -1) {
+                            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                            const matches = filenameRegex.exec(disposition);
+                            if (matches != null && matches[1]) {
+                                filename = matches[1].replace(/['"]/g, '');
+                            }
+                        }
+
+                        const blob = await response.blob();
+
+                        const url = window.URL.createObjectURL(blob);
+
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = filename;
+
+                        document.body.appendChild(a);
+                        a.click();
+
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+
+                    } catch (error) {
+                        console.error('Download failed:', error);
+                    }
+                }
+
+                document.getElementById("downloadCSVButton").addEventListener("click", async () => { return await exportFile("CSV") });
+                document.getElementById("downloadExcelButton").addEventListener("click", async () => { return await exportFile("Excel") });
+            </script>
         </div>
     </div>
     <div class="overflow-x-auto">
@@ -321,31 +383,25 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         @php
-                        // INI ADALAH PERBAIKANNYA:
-                        $statusesArray = $report->statuses; // 1. Salin ke variabel lokal
-                        $status = !empty($statusesArray) ? end($statusesArray) : 'unknown';
-                        $statusClass = [
-                        'pending' => 'bg-yellow-100 text-yellow-800',
-                        'process' => 'bg-cyan-100 text-cyan-800',
-                        'finished' => 'bg-green-100 text-green-800',
-                        'rejected' => 'bg-red-100 text-red-800',
-                        ][$status] ?? 'bg-gray-100 text-gray-800';
+                            $statusesArray = $report->statuses;
+                            $status = !empty($statusesArray) ? end($statusesArray) : 'unknown';
+                            $statusClass = [
+                                'pending' => 'bg-yellow-100 text-yellow-800',
+                                'process' => 'bg-cyan-100 text-cyan-800',
+                                'finished' => 'bg-green-100 text-green-800',
+                                'rejected' => 'bg-red-100 text-red-800',
+                            ][$status] ?? 'bg-gray-100 text-gray-800';
                         @endphp
                         <span
                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClass }}">
                             {{ ucfirst($status) }}
                         </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $report->serviceProfile->full_name
-                        ?? 'N/A' }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $report->assignee->full_name ??
-                        'Belum Ditugaskan' }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{
-                        $report->updated_at->diffForHumans() }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $report->serviceProfile->full_name ?? 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $report->assignee->full_name ?? 'Belum Ditugaskan' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $report->updated_at->diffForHumans() }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {{-- POINT 11: TRIGGER PANEL DETAIL --}}
-                        <a href="{{ route('report.track.show', $report) }}" target="_blank"
-                            class="text-blue-600 hover:text-blue-900">Lihat Detail</a>
+                        <a href="{{ route('report.track.show', $report) }}" target="_blank" class="text-blue-600 hover:text-blue-900">Lihat Detail</a>
                     </td>
                 </tr>
                 @empty
@@ -429,7 +485,6 @@
         });
     }
     
-    // POINT 4: Category Distribution Chart
     const categoryDistCtx = document.getElementById('categoryDistributionChart');
     if (categoryDistCtx) {
         new Chart(categoryDistCtx, {
@@ -445,7 +500,6 @@
         });
     }
 
-    // POINT 4: Dinas Distribution Chart
     const dinasDistCtx = document.getElementById('dinasDistributionChart');
     if (dinasDistCtx) {
         new Chart(dinasDistCtx, {

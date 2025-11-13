@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Lapor.ai') - Pelaporan Publik Cerdas Jawa Timur</title>
     <meta name="description" content="@yield('description', 'Lapor.ai adalah platform terintegrasi yang merevolusi cara masyarakat berinteraksi dengan pemerintah. Dengan memanfaatkan kecerdasan buatan (AI), setiap laporan yang masuk akan dianalisis dan diteruskan secara otomatis ke dinas yang berwenang, memastikan setiap masalah ditangani oleh ahlinya tanpa penundaan.')"/>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

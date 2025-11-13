@@ -130,7 +130,6 @@ class ProfileController extends Controller
         $admin = Auth::user();
 
         $validated = $request->validate([
-            // Membuat rule kustom 'CurrentPassword' lebih baik
             'current_password' => ['required', 'string', new CurrentPassword('administrators')],
             'password' => ['required', 'confirmed', Password::min(8)],
             'logout_other_devices' => 'nullable|boolean',
@@ -283,11 +282,6 @@ class ProfileController extends Controller
         return redirect()->route('admin.profile.show')->with('success_info', 'Nomor telepon Anda berhasil diperbarui.');
     }
 
-    /**
-     * POINT 6: Menonaktifkan akun (hanya bisa dilakukan SuperAdmin ke user lain).
-     * Ini seharusnya ada di AdminManagementController, TAPI jika user
-     * bisa menonaktifkan dirinya sendiri:
-     */
     public function deactivateSelf(Request $request)
     {
         $admin = Auth::user();

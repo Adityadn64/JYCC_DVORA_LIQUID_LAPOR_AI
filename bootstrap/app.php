@@ -13,15 +13,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // $middleware->appendToGroup('web', [
-        //     CheckAdminStatus::class,             
-        // ]); --------versi lama------------
+        $middleware->group('web', [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, 
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
         $middleware->alias([
-            'auth' => \Illuminate\Auth\Middleware\Authenticate::class, // <-- INI BENAR
+            'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
             'admin.status' => CheckAdminStatus::class,
             'systemadmin' => CheckSystemAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
-    })->create();
+    })
+    ->create();

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('../../layouts.app')
 @section('title', 'Atur Ulang Password')
 @section('content')
 <div class="max-w-md mx-auto bg-white shadow-lg rounded-xl p-8">
