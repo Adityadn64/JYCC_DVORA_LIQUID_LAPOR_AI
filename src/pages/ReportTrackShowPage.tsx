@@ -71,7 +71,6 @@ export default function ReportTrackShowPage() {
         <h1 className="text-3xl font-bold text-gray-900">Detail Laporan #{report.id}</h1>
       </div>
 
-      {/* Status */}
       <div className="bg-white p-6 rounded-lg shadow">
         <div className="flex justify-between items-start">
           <div>
@@ -84,7 +83,6 @@ export default function ReportTrackShowPage() {
         </div>
       </div>
 
-      {/* Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Laporan</h3>
@@ -109,7 +107,6 @@ export default function ReportTrackShowPage() {
         </div>
       </div>
 
-      {/* Timeline */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Status Timeline</h3>
         <div className="space-y-4">
@@ -122,7 +119,6 @@ export default function ReportTrackShowPage() {
         </div>
       </div>
 
-      {/* Media */}
       {report.media && report.media.length > 0 && (
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Media</h3>
