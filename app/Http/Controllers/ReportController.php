@@ -18,11 +18,6 @@ use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
-    public function create()
-    {
-        return view('report.create');
-    }
-
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -33,7 +28,12 @@ class ReportController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
+            // return back()->withErrors($validator)->withInput();
+
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors(),
+            ]);
         }
 
         $aiDeterminedServiceCode = ServiceCodeEnum::DINKES;
@@ -95,8 +95,13 @@ class ReportController extends Controller
             ]);
         }
         
-        return redirect()->route('report.track.show', $report->id)
-                         ->with('success', 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.');
+        // return redirect()->route('report.track.show', $report->id)
+        //                  ->with('success', 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.');
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.',
+        ]);
     }
 
     public function trackIndex(Request $request)
@@ -149,10 +154,19 @@ class ReportController extends Controller
         $admins = Administrator::where('role', RoleAdministratorEnum::BaseAdmin)->orderBy('full_name')->get();
         $priorities = PriorityEnum::cases();
 
-        return view('report.track_index', [
-            'reports' => $reports,
-            'admins' => $admins,
-            'priorities' => $priorities,
+        // return view('report.track_index', [
+        //     'reports' => $reports,
+        //     'admins' => $admins,
+        //     'priorities' => $priorities,
+        // ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'reports' => $reports,
+                'admins' => $admins,
+                'priorities' => $priorities,
+            ],
         ]);
     }
 
@@ -160,8 +174,15 @@ class ReportController extends Controller
     {
         $report->load('media', 'serviceProfile');
 
-        return view('report.track_show', [
-            'report' => $report,
+        // return view('report.track_show', [
+        //     'report' => $report,
+        // ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'report' => $report,
+            ],
         ]);
     }
 }

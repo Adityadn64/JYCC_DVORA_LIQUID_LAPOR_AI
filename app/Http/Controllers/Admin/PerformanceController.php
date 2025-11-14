@@ -58,15 +58,28 @@ class PerformanceController extends Controller
         // Data untuk dropdown filter
         $filterOptions = $this->getFilterOptions();
 
-        return view('admin.performance', compact(
-            'kpiCards',
-            'trendData',
-            'dinasPerformance',
-            'adminPerformance',
-            'topCategories',
-            'slaBreaches',
-            'filterOptions'
-        ));
+        // return view('admin.performance', compact(
+        //     'kpiCards',
+        //     'trendData',
+        //     'dinasPerformance',
+        //     'adminPerformance',
+        //     'topCategories',
+        //     'slaBreaches',
+        //     'filterOptions'
+        // ));
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'kpiCards' => $kpiCards,
+                'trendData' => $trendData,
+                'dinasPerformance' => $dinasPerformance,
+                'adminPerformance' => $kpiCards,
+                'topCategories' => $topCategories,
+                'slaBreaches' => $slaBreaches,
+                'filterOptions' => $filterOptions,
+            ],
+        ]);
     }
 
     /**

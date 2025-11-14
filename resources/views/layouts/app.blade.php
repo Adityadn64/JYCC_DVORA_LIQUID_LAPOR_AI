@@ -167,5 +167,63 @@
             }
         });
     </script>
+
+    <script>
+        async function exportFile(exportType, url) {
+            try {
+                if (!["CSV", "Excel"].includes(exportType)) throw Error("No valid export type!");
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ exportType })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+
+                const disposition = response.headers.get('Content-Disposition');
+                let filename = `reports.${
+                    exportType === "CSV"
+                        ? 'csv'
+                        : (
+                            exportType === "Excel"
+                                ? 'xlsx'
+                                : 'data'
+                        )}`;
+
+                if (disposition && disposition.indexOf('attachment') !== -1) {
+                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    const matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) {
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+
+                const blob = await response.blob();
+
+                const url = window.URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+
+                document.body.appendChild(a);
+                a.click();
+
+                window.URL.revokeObjectURL(url);
+                a.remove();
+
+            } catch (error) {
+                console.error('Download failed:', error);
+            }
+        }
+    </script>
 </body>
 </html>

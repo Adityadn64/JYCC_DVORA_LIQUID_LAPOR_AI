@@ -11,21 +11,34 @@ class CheckAdminStatus
 {
     public function handle(Request $request, Closure $next)
     {
-        $admin = Auth::guard('administrators')->user();
+        // Dapatkan user yang sudah diotentikasi oleh Sanctum
+        $admin = $request->user('administrators'); // Atau Auth::guard('administrators')->user();
 
-        if ($admin && $admin->status !== AdminStatusEnum::Active) {
-            Auth::guard('administrators')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        // Jika middleware auth:sanctum gagal, $admin akan null
+        if (!$admin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.' // Token tidak valid atau tidak ada
+            ], 401);
+        }
 
-            $errorMessage = 'Sesi Anda telah berakhir.';
+        // Cek status user
+        if ($admin->status !== AdminStatusEnum::Active) {
+            // HAPUS TOKEN YANG SEDANG DIGUNAKAN DARI DATABASE
+            // Ini adalah cara yang benar untuk "logout" API token
+            $admin->currentAccessToken()->delete();
+
+            $errorMessage = 'Sesi Anda telah berakhir karena status akun berubah.';
             if ($admin->status === AdminStatusEnum::Pending) {
                 $errorMessage = 'Akun Anda telah dikembalikan ke status peninjauan.';
             } elseif ($admin->status === AdminStatusEnum::Suspended) {
                 $errorMessage = 'Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.';
             }
 
-            return redirect()->route('login')->withErrors(['login_identifier' => $errorMessage]);
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage
+            ], 403); // 403 Forbidden adalah status yang lebih tepat di sini
         }
 
         return $next($request);

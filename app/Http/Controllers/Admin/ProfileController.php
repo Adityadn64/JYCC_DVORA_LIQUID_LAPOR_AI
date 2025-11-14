@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Export\ExportFile;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,21 +21,85 @@ use App\Rules\CurrentPassword; // Kita perlu membuat Rule kustom ini
 
 class ProfileController extends Controller
 {
-    /**
-     * POINT 1-5: Menampilkan halaman profil utama dengan data aktivitas.
-     */
-    public function show()
-    {
+    public function getAdminAndActivity() {
         $admin = Auth::user();
         $admin->load('serviceProfile');
 
-        // POINT 5: Aktivitas Admin
         $activity = $this->getAdminActivity($admin);
 
-        return view('admin.profile', [
-            'admin' => $admin,
-            'activity' => $activity,
+        return [$admin, $activity];
+    }
+
+    public function show()
+    {
+        [$admin, $activity] = $this->getAdminAndActivity();
+
+        // return view('admin.profile', [
+        //     'admin' => $admin,
+        //     'activity' => $activity,
+        // ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'admin' => $admin,
+                'activity' => $activity,
+            ],
         ]);
+    }
+
+    public function exportProfile() {
+        [$admin, $activity] = $this->getAdminAndActivity();
+
+        $admin_columns = [
+            'ID' => 'id',
+            'KODE LAYANAN' => 'service_code',
+            'NIP' => 'nip',
+            'NAMA LENGKAP' => 'full_name',
+            'ALAMAT EMAIL' => 'email',
+            'NOMOR TELEPON' => 'phone',
+            'PERAN' => 'role',
+            'STATUS AKUN' => 'status',
+            'TANGGAL DIBUAT' => 'created_at',
+            'TERAKHIR DIMODIFIKASI' => 'updated_at',
+        ];
+
+        $activity_columns = [
+            'ID' => 'id',
+            'KODE LAYANAN' => 'service_code',
+            'NIP' => 'nip',
+            'NAMA LENGKAP' => 'full_name',
+            'ALAMAT EMAIL' => 'email',
+            'NOMOR TELEPON' => 'phone',
+            'PERAN' => 'role',
+            'STATUS AKUN' => 'status',
+            'TANGGAL DIBUAT' => 'created_at',
+            'TERAKHIR DIMODIFIKASI' => 'updated_at',
+            'TOTAL LAPORAN DITUGASKAN' => 'total_assigned',
+            'TOTAL LAPORAN SELESAI' => 'total_finished',
+            'WAKTU PENYELESAIAN RATA RATA' => 'avg_resolution_time',
+            '5 LAPORAN TERAKHIR DITANGANI' => function($report) {
+                $url = 'URL: ' . route('report.track.show', $report); 
+                $title = `JUDUL: $report->title`;
+                $id = `ID: $report->id`;
+
+                return $url . '\n' . $title . '\n' . $id;
+            },
+        ];
+
+        $data = $admin + (
+            $admin->role === RoleAdministratorEnum::BaseAdmin
+                ? $activity
+                : []
+        );
+
+        $column = $admin_columns + (
+            $admin->role === RoleAdministratorEnum::BaseAdmin
+                ? $activity_columns
+                : []
+        );
+
+        return ExportFile::exportCSV($data + $activity, $column, 'reports.csv');
     }
 
     /**
@@ -75,7 +140,12 @@ class ProfileController extends Controller
 
         $admin->update($validated);
 
-        return back()->with('success_info', 'Informasi akun berhasil diperbarui.');
+        // return back()->with('success_info', 'Informasi akun berhasil diperbarui.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Informasi akun berhasil diperbarui.'
+        ]);
     }
 
     /**
@@ -97,7 +167,12 @@ class ProfileController extends Controller
         $path = $request->file('profile_picture')->store('profile_pictures', 'public');
         $admin->update(['profile_picture_path' => $path]);
 
-        return back()->with('success_header', 'Foto profil berhasil diperbarui.');
+        // return back()->with('success_header', 'Foto profil berhasil diperbarui.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto profil berhasil diperbarui.'
+        ]);
     }
 
     /**
@@ -119,7 +194,12 @@ class ProfileController extends Controller
         $path = $request->file('kta_scan')->store('kta_scans', 'public');
         $admin->update(['kta_scan_path' => $path]);
 
-        return back()->with('success_docs', 'Scan KTA berhasil diunggah.');
+        // return back()->with('success_docs', 'Scan KTA berhasil diunggah.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Scan KTA berhasil diunggah.'
+        ]);
     }
 
     /**
@@ -145,7 +225,12 @@ class ProfileController extends Controller
             Auth::guard('administrators')->logoutOtherDevices($validated['current_password']);
         }
 
-        return back()->with('success_password', 'Password berhasil diubah.');
+        // return back()->with('success_password', 'Password berhasil diubah.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password berhasil diubah.'
+        ]);
     }
 
     /**
@@ -176,7 +261,12 @@ class ProfileController extends Controller
         // Beri tahu email lama bahwa ada permintaan perubahan
         // Mail::to($admin->email)->send(new ChangeEmailRequested());
 
-        return back()->with('success_otp_sent', 'OTP telah dikirim ke alamat email baru Anda.');
+        // return back()->with('success_otp_sent', 'OTP telah dikirim ke alamat email baru Anda.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP telah dikirim ke alamat email baru Anda.'
+        ]);
     }
 
     /**
@@ -195,18 +285,34 @@ class ProfileController extends Controller
         $sessionTime = Session::get('profile_change_timestamp');
 
         if (!$sessionOtp || !$sessionEmail || !$sessionTime) {
-            return back()->withErrors(['otp' => 'Sesi permintaan telah habis. Silakan ulangi.']);
+            // return back()->withErrors(['otp' => 'Sesi permintaan telah habis. Silakan ulangi.']);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Sesi permintaan telah habis. Silakan ulangi.'
+            ]);
         }
 
         // Cek kedaluwarsa OTP (10 menit)
         if ($sessionTime->diffInMinutes(now()) > 10) {
             Session::forget(['profile_change_otp', 'profile_change_new_email', 'profile_change_timestamp']);
-            return back()->withErrors(['otp' => 'OTP telah kedaluwarsa. Silakan minta lagi.']);
+
+            // return back()->withErrors(['otp' => 'OTP telah kedaluwarsa. Silakan minta lagi.']);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'OTP telah kedaluwarsa. Silakan minta lagi.'
+            ]);
         }
 
         // Cek OTP
         if ($validated['otp'] != $sessionOtp) {
-            return back()->withErrors(['otp' => 'Kode OTP tidak valid.']);
+            // return back()->withErrors(['otp' => 'Kode OTP tidak valid.']);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode OTP tidak valid.'
+            ]);
         }
 
         // --- Sukses! Ganti Email ---
@@ -215,7 +321,12 @@ class ProfileController extends Controller
         // Bersihkan session
         Session::forget(['profile_change_otp', 'profile_change_new_email', 'profile_change_timestamp']);
 
-        return redirect()->route('admin.profile.show')->with('success_info', 'Alamat email Anda berhasil diperbarui.');
+        // return redirect()->route('admin.profile.show')->with('success_info', 'Alamat email Anda berhasil diperbarui.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Alamat email Anda berhasil diperbarui.'
+        ]);
     }
 
     /**
@@ -261,16 +372,32 @@ class ProfileController extends Controller
         $sessionTime = Session::get('profile_change_phone_timestamp');
 
         if (!$sessionOtp || !$sessionPhone || !$sessionTime) {
-            return back()->withErrors(['otp_phone' => 'Sesi permintaan telah habis. Silakan ulangi.']);
+            // return back()->withErrors(['otp_phone' => 'Sesi permintaan telah habis. Silakan ulangi.']);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Sesi permintaan telah habis. Silakan ulangi.'
+            ]);
         }
 
         if ($sessionTime->diffInMinutes(now()) > 10) {
             Session::forget(['profile_change_phone_otp', 'profile_change_new_phone', 'profile_change_phone_timestamp']);
-            return back()->withErrors(['otp_phone' => 'OTP telah kedaluwarsa. Silakan minta lagi.']);
+
+            // return back()->withErrors(['otp_phone' => 'OTP telah kedaluwarsa. Silakan minta lagi.']);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'OTP telah kedaluwarsa. Silakan minta lagi.'
+            ]);
         }
 
         if ($validated['otp_phone'] != $sessionOtp) {
-            return back()->withErrors(['otp_phone' => 'Kode OTP tidak valid.']);
+            // return back()->withErrors(['otp_phone' => 'Kode OTP tidak valid.']);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode OTP tidak valid.'
+            ]);
         }
 
         // --- Sukses! Ganti Telepon ---
@@ -279,21 +406,21 @@ class ProfileController extends Controller
         // Bersihkan session telepon
         Session::forget(['profile_change_phone_otp', 'profile_change_new_phone', 'profile_change_phone_timestamp']);
 
-        return redirect()->route('admin.profile.show')->with('success_info', 'Nomor telepon Anda berhasil diperbarui.');
+        // return redirect()->route('admin.profile.show')->with('success_info', 'Nomor telepon Anda berhasil diperbarui.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Nomor telepon Anda berhasil diperbarui.'
+        ]);
     }
 
-    public function deactivateSelf(Request $request)
+    public function deactivateSelf(Request $_request)
     {
-        $admin = Auth::user();
+        // return back()->with('error_self_deactivate', 'System Admin tidak dapat menonaktifkan akunnya sendiri.');
 
-        // SuperAdmin tidak boleh menonaktifkan dirinya sendiri
-        if ($admin->role === RoleAdministratorEnum::SystemAdmin) {
-            return back()->with('error_self_deactivate', 'System Admin tidak dapat menonaktifkan akunnya sendiri.');
-        }
-
-        $admin->update(['status' => AdminStatusEnum::Suspended]); // Asumsi ada status 'Suspended'
-        Auth::guard('administrators')->logout();
-
-        return redirect('/')->with('success', 'Akun Anda telah dinonaktifkan.');
+        return response()->json([
+            'success' => true,
+            'message' => 'System Admin tidak dapat menonaktifkan akunnya sendiri.'
+        ]);
     }
 }

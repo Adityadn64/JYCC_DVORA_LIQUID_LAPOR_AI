@@ -83,11 +83,29 @@ class DashboardController extends Controller
         $admins = $adminsQuery->orderBy('full_name')->get();
         $priorities = PriorityEnum::cases();
 
-        return view('admin.dashboard', compact(
-            'totalReports', 'reportsToday', 'avgResolutionTime',
-            'trendLabels', 'trendData', 'serviceLabels', 'serviceData',
-            'adminLabels', 'adminData',
-            'reports', 'admins', 'priorities'
-        ));
+        // return view('admin.dashboard', compact(
+        //     'totalReports', 'reportsToday', 'avgResolutionTime',
+        //     'trendLabels', 'trendData', 'serviceLabels', 'serviceData',
+        //     'adminLabels', 'adminData',
+        //     'reports', 'admins', 'priorities'
+        // ));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'totalReports' => $totalReports,
+                'reportsToday' => $reportsToday,
+                'avgResolutionTime' => $avgResolutionTime,
+                'trendLabels' => $trendLabels,
+                'trendData' => $trendData,
+                'serviceLabels' => $serviceLabels,
+                'serviceData' => $serviceData,
+                'adminLabels' => $adminLabels,
+                'adminData' => $adminData,
+                'reports' => $reports,
+                'admins' => $admins,
+                'priorities' => $priorities,
+            ],
+        ]);
     }
 }

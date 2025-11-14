@@ -63,24 +63,24 @@
                 Statistik semua laporan yang telah masuk ke dalam sistem kami secara transparan.
             </p>
             <div class="mt-8 bg-white p-6 rounded-lg shadow max-w-3xl mx-auto">
-                <p class="text-4xl font-bold text-indigo-600">{{ $totalReports }}</p>
+                <p id="totalReports" class="text-4xl font-bold text-indigo-600">0</p>
                 <p class="mt-1 text-sm font-medium text-gray-500">Total Diterima</p>
             </div>
             <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
                 <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-4xl font-bold text-yellow-500">{{ $pendingReports }}</p>
+                    <p id="pendingReports" class="text-4xl font-bold text-yellow-500">0</p>
                     <p class="mt-1 text-sm font-medium text-gray-500">Pending</p>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-4xl font-bold text-blue-500">{{ $processReports }}</p>
+                    <p id="processReports" class="text-4xl font-bold text-blue-500">0</p>
                     <p class="mt-1 text-sm font-medium text-gray-500">Diproses</p>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-4xl font-bold text-green-500">{{ $finishedReports }}</p>
+                    <p id="finishedReports" class="text-4xl font-bold text-green-500">0</p>
                     <p class="mt-1 text-sm font-medium text-gray-500">Selesai</p>
                 </div>
                  <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-4xl font-bold text-red-500">{{ $rejectedReports }}</p>
+                    <p id="rejectedReports" class="text-4xl font-bold text-red-500">0</p>
                     <p class="mt-1 text-sm font-medium text-gray-500">Ditolak</p>
                 </div>
             </div>
@@ -100,35 +100,10 @@
                         Kota/Kabupaten Teratas
                     </h3>
 
-                    @php
-                        $maxReports = $topCities->first()?->total_reports ?? 1;
-                    @endphp
-
-                    <ul class="space-y-5">
-                        @forelse($topCities as $cityData)
-                            <li>
-                                <div class="flex justify-between items-center text-sm mb-1.5">
-                                    <span class="font-medium text-gray-700">
-                                        <span class="font-bold mr-2">{{ $loop->iteration }}.</span>
-                                        {{ $cityData->city }}
-                                    </span>
-                                    <span class="font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
-                                        {{ $cityData->total_reports }} Laporan
-                                    </span>
-                                </div>
-                                
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    @php
-                                        $percentage = ($cityData->total_reports / $maxReports) * 100;
-                                    @endphp
-                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $percentage }}%"></div>
-                                </div>
-                            </li>
-                        @empty
-                            <li class="text-center text-gray-500 py-4">
-                                Belum ada data laporan yang masuk.
-                            </li>
-                        @endforelse
+                    <ul id="citiesData">
+                        <li class="text-center text-gray-500 py-4">
+                            Belum ada data laporan yang masuk.
+                        </li>
                     </ul>
                 </div>
 
@@ -149,78 +124,135 @@
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
             const ctx = document.getElementById('reportHistoryChart');
 
-            const labels = @json($chartLabels);
-            const data = @json($chartData);
+            try {
+                const response = await fetch('/get-home-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
 
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Pending',
-                            data: data.pending,
-                            borderColor: 'rgb(234, 179, 8)', // yellow-500
-                            backgroundColor: 'rgba(234, 179, 8, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                        },
-                        {
-                            label: 'Process',
-                            data: data.process,
-                            borderColor: 'rgb(59, 130, 246)', // blue-500
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                        },
-                        {
-                            label: 'Finished',
-                            data: data.finished,
-                            borderColor: 'rgb(34, 197, 94)', // green-500
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                        },
-                        {
-                            label: 'Rejected',
-                            data: data.rejected,
-                            borderColor: 'rgb(239, 68, 68)', // red-500
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                // Hanya tampilkan angka bulat di sumbu Y
-                                precision: 0
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+
+                const data = await response.json()
+
+                document.getElementById("totalReports").textContent = data.totalReports;
+                document.getElementById("pendingReports").textContent = data.pendingReports;
+                document.getElementById("processReports").textContent = data.processReports;
+                document.getElementById("finishedReports").textContent = data.finishedReports;
+                document.getElementById("rejectedReports").textContent = data.rejectedReports;
+
+                const topCities = data.topCities;
+                const maxReports = topCities[0]?.total_reports ?? 1;
+
+                if (topCities.length > 0) {
+                    let citiesHtml = '';
+
+                    for (let i = 0; i < topCities.length; i++) {
+                        const cityData = topCities[i];
+
+                        citiesHtml += `
+                        <li>
+                            <div class="flex justify-between items-center text-sm mb-1.5">
+                                <span class="font-medium text-gray-700">
+                                    <span class="font-bold mr-2">${i}.</span>
+                                    ${cityData.city}
+                                </span>
+                                <span class="font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                                    ${cityData.total_reports} Laporan
+                                </span>
+                            </div>
+                            
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${cityData.total_reports / maxReports * 100}%"></div>
+                            </div>
+                        </li>
+                        `;
+                    }
+
+                    document.getElementById("citiesData").innerHTML = citiesHtml;
+    
+                    console.log({citiesHtml});
+                }
+
+                const chartLabels = data.chartLabels;
+                const chartData = data.chartData;
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [
+                            {
+                                label: 'Pending',
+                                data: chartData.pending,
+                                borderColor: 'rgb(234, 179, 8)', // yellow-500
+                                backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                                tension: 0.3,
+                                fill: true,
+                            },
+                            {
+                                label: 'Process',
+                                data: chartData.process,
+                                borderColor: 'rgb(59, 130, 246)', // blue-500
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.3,
+                                fill: true,
+                            },
+                            {
+                                label: 'Finished',
+                                data: chartData.finished,
+                                borderColor: 'rgb(34, 197, 94)', // green-500
+                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                tension: 0.3,
+                                fill: true,
+                            },
+                            {
+                                label: 'Rejected',
+                                data: chartData.rejected,
+                                borderColor: 'rgb(239, 68, 68)', // red-500
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                tension: 0.3,
+                                fill: true,
                             }
-                        }
+                        ]
                     },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
                         },
-                        tooltip: {
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                            }
+                        },
+                        interaction: {
                             mode: 'index',
                             intersect: false,
                         }
-                    },
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error('Download failed:', error);
+            }
         });
     </script>
 @endsection

@@ -301,64 +301,12 @@
             </button>
 
             <script>
-                async function exportFile(exportType) {
-                    try {
-                        if (!["CSV", "Excel"].includes(exportType)) throw Error("No valid export type!");
-
-                        const response = await fetch('/admin/analytics/export-reports', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            },
-                            body: JSON.stringify({ exportType })
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`Network response was not ok: ${response.statusText}`);
-                        }
-
-                        const disposition = response.headers.get('Content-Disposition');
-                        let filename = `reports.${
-                            exportType === "CSV"
-                                ? 'csv'
-                                : (
-                                    exportType === "Excel"
-                                        ? 'xlsx'
-                                        : 'data'
-                                )}`;
-
-                        if (disposition && disposition.indexOf('attachment') !== -1) {
-                            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                            const matches = filenameRegex.exec(disposition);
-                            if (matches != null && matches[1]) {
-                                filename = matches[1].replace(/['"]/g, '');
-                            }
-                        }
-
-                        const blob = await response.blob();
-
-                        const url = window.URL.createObjectURL(blob);
-
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = filename;
-
-                        document.body.appendChild(a);
-                        a.click();
-
-                        window.URL.revokeObjectURL(url);
-                        a.remove();
-
-                    } catch (error) {
-                        console.error('Download failed:', error);
-                    }
-                }
-
-                document.getElementById("downloadCSVButton").addEventListener("click", async () => { return await exportFile("CSV") });
-                document.getElementById("downloadExcelButton").addEventListener("click", async () => { return await exportFile("Excel") });
+                document.getElementById("downloadCSVButton").addEventListener("click", async () => {
+                    return await exportFile("CSV", '/admin/analytics/export-reports')
+                });
+                document.getElementById("downloadExcelButton").addEventListener("click", async () => {
+                    return await exportFile("Excel", '/admin/analytics/export-reports')
+                });
             </script>
         </div>
     </div>

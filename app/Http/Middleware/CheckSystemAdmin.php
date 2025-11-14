@@ -15,6 +15,15 @@ class CheckSystemAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $token = $request->bearerToken();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token tidak ditemukan'
+            ], 401);
+        }
+
         // Gunakan guard 'administrators' yang benar
         if (
             Auth::guard('administrators')->guest() ||

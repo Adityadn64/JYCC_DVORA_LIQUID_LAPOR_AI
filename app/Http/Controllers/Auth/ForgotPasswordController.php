@@ -9,11 +9,6 @@ use App\Models\Administrator;
 
 class ForgotPasswordController extends Controller
 {
-    public function showLinkRequestForm()
-    {
-        return view('auth.passwords.email');
-    }
-
     public function sendResetLinkEmail(Request $request)
     {
         $request->validate([
@@ -33,16 +28,31 @@ class ForgotPasswordController extends Controller
             $request->only('email')
         );
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withErrors(['email' => __($status)]);
+        // return $status == Password::RESET_LINK_SENT
+        //             ? back()->with('status', __($status))
+        //             : back()->withErrors(['email' => __($status)]);
+
+        return response()->json([
+            'success' => Password::RESET_LINK_SENT,
+            'data' => [
+                'status' => __($status),
+            ]
+        ]);
     }
 
     public function showResetForm(Request $request, $token = null)
     {
-        return view('auth.passwords.reset')->with(
-            ['token' => $token, 'email' => $request->email]
-        );
+        // return view('auth.passwords.reset')->with(
+        //     ['token' => $token, 'email' => $request->email]
+        // );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'token' => $token,
+                'email' => $request->email,
+            ],
+        ]);
     }
 
     public function reset(Request $request)
@@ -62,9 +72,16 @@ class ForgotPasswordController extends Controller
             }
         );
 
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                           ->withErrors(['email' => __($status)]);
+        // return $status == Password::PASSWORD_RESET
+        //             ? redirect()->route('login')->with('status', __($status))
+        //             : back()->withInput($request->only('email'))
+        //                    ->withErrors(['email' => __($status)]);
+
+        return response()->json([
+            'success' => Password::PASSWORD_RESET,
+            'data' => [
+                'status' => __($status),
+            ],
+        ]);
     }
 }

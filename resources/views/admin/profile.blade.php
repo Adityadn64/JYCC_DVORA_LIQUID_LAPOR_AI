@@ -156,10 +156,17 @@
                 Aktifkan Autentikasi 2 Langkah (TBD)
             </button>
             <button
+                id="downloadProfileButton"
                 class="w-full sm:w-auto rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                disabled>
-                Download Data Pribadi (TBD)
+            >
+                Download Data Pribadi
             </button>
+
+            <script>
+                document.getElementById("downloadProfileButton").addEventListener("click", async () => {
+                    return await exportFile("CSV", '/admin/profile/export-profile')
+                });
+            </script>
 
             @if(Auth::user()->role !== \App\Enums\RoleAdministratorEnum::SystemAdmin)
                 <form action="{{ route('admin.profile.deactivateSelf') }}" method="POST"
@@ -198,7 +205,7 @@
                         <li class="py-3">
                             <a href="{{ route('report.track.show', $report) }}" class="block hover:bg-gray-50 p-2 rounded-md">
                                 <p class="text-sm font-medium text-gray-900 truncate">{{ $report->title }}</p>
-                                <p class="text-xs text-gray-500">ID: #{{$report->id}} - Diperbarui: {{
+                                <p class="text-xs text-gray-500">ID: #{{ $report->id }} - Diperbarui: {{
                                     $report->updated_at->diffForHumans() }}</p>
                             </a>
                         </li>

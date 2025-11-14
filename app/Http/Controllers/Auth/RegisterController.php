@@ -21,11 +21,19 @@ use Illuminate\Support\Facades\Storage;
 
 class RegisterController extends Controller
 {
-    public function showRegistrationForm()
+    public function showRegistrationForm(Request $_request)
     {
         $serviceProfiles = ServiceProfile::orderBy('full_name')->get();
         $roles = RoleAdministratorEnum::cases();
-        return view('auth.register', compact('serviceProfiles', 'roles'));
+        // return view('auth.register', compact('serviceProfiles', 'roles'));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'serviceProfiles' => $serviceProfiles,
+                'roles' => $roles,
+            ],
+        ]);
     }
 
     public function startRegistration(Request $request)
@@ -112,10 +120,14 @@ Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah 
             'status' => AdminStatusEnum::Pending,
         ]);
         
-        return redirect()->route('register.verify.form');
+        // return redirect()->route('register.verify.form');
+
+        return response()->json([
+            'success' => true,
+        ]);
     }
 
-    public function showVerificationForm()
+    public function showVerificationForm(Request $_request)
     {
         if (!Session::has('registration_data')) {
             return redirect()->route('register');
@@ -124,7 +136,15 @@ Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah 
         $email = Session::get('registration_data')['email'];
         $phone = Session::get('registration_data')['phone'];
 
-        return view('auth.verify', compact('email', 'phone'));
+        // return view('auth.verify', compact('email', 'phone'));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'email' => $email,
+                'phone' => $phone,
+            ],
+        ]);
     }
 
     public function completeRegistration(Request $request)
@@ -169,6 +189,11 @@ Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah 
 
         $request->session()->forget('registration_data');
 
-        return redirect()->route('login')->with('success', 'Verifikasi berhasil! Akun Anda akan segera ditinjau oleh System Admin.');
+        // return redirect()->route('login')->with('success', 'Verifikasi berhasil! Akun Anda akan segera ditinjau oleh System Admin.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Verifikasi berhasil! Akun Anda akan segera ditinjau oleh System Admin.',
+        ]);
     }
 }

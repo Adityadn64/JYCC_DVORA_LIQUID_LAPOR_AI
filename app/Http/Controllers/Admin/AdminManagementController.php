@@ -18,8 +18,7 @@ use Illuminate\Validation\Rules\Password;
 
 class AdminManagementController extends Controller
 {
-    public function index(Request $request)
-    {
+    public function getIndexQuery(Request $request) {
         $query = Administrator::query()->with('serviceProfile');
 
         // Filter: Keyword
@@ -40,6 +39,13 @@ class AdminManagementController extends Controller
         // Filter: Service (Dinas)
         $query->when($request->filled('service_code'), fn($q) => $q->where('service_code', $request->service_code));
 
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->getIndexQuery($request);
+
         $admins = $query->orderBy('full_name', 'asc')->paginate(15)->withQueryString();
 
         // Data untuk dropdown filter
@@ -49,25 +55,20 @@ class AdminManagementController extends Controller
             'services' => ServiceProfile::orderBy('full_name')->get(),
         ];
 
-        return view('admin.manage', compact('admins', 'filterOptions'));
+        // return view('admin.manage', compact('admins', 'filterOptions'));
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'admins' => $admins,
+                'filterOptions' => $filterOptions,
+            ],
+        ]);
     }
 
     public function pendingPage(Request $request)
     {
-        $query = Administrator::query()->with('serviceProfile');
-
-        // Filter: Keyword
-        $query->when($request->filled('keyword'), function ($q) use ($request) {
-            $keyword = '%' . $request->keyword . '%';
-            $q->where(fn($sub) => $sub->where('full_name', 'like', $keyword)
-                ->orWhere('email', 'like', $keyword)
-                ->orWhere('phone', 'like', $keyword)
-                ->orWhere('nip', 'like', $keyword));
-        });
-
-        $query->when($request->filled('role'), fn($q) => $q->where('role', $request->role));
-
-        $query->when($request->filled('service_code'), fn($q) => $q->where('service_code', $request->service_code));
+        $query = $this->getIndexQuery($request);
 
         $admins = $query->where('status', AdminStatusEnum::Pending)
                         ->orderBy('full_name', 'asc')
@@ -80,7 +81,15 @@ class AdminManagementController extends Controller
             'services' => ServiceProfile::orderBy('full_name')->get(),
         ];
 
-        return view('admin.manage-request', compact('admins', 'filterOptions'));
+        // return view('admin.manage-request', compact('admins', 'filterOptions'));
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'admins' => $admins,
+                'filterOptions' => $filterOptions,
+            ],
+        ]);
     }
 
     public function store(Request $request)
@@ -114,7 +123,12 @@ class AdminManagementController extends Controller
 
         Administrator::create($validated);
 
-        return redirect()->route('admin.manage.index')->with('success', 'Admin baru berhasil dibuat.');
+        // return redirect()->route('admin.manage.index')->with('success', 'Admin baru berhasil dibuat.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin baru berhasil dibuat.'
+        ]);
     }
 
     /**
@@ -150,7 +164,12 @@ class AdminManagementController extends Controller
 
         $admin->update($validated);
 
-        return redirect()->route('admin.manage.index')->with('success', 'Data admin berhasil diperbarui.');
+        // return redirect()->route('admin.manage.index')->with('success', 'Data admin berhasil diperbarui.');
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Data admin berhasil diperbarui.'
+        ]);
     }
 
     /**
@@ -159,13 +178,23 @@ class AdminManagementController extends Controller
     public function toggleStatus(Administrator $admin)
     {
         if ($admin->id === Auth::id()) {
-            return back()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
+            // return back()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
+        
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak dapat menonaktifkan akun Anda sendiri.'
+            ]);
         }
 
         $newStatus = ($admin->status === AdminStatusEnum::Active) ? AdminStatusEnum::Suspended : AdminStatusEnum::Active;
         $admin->update(['status' => $newStatus]);
 
-        return redirect()->route('admin.manage.index')->with('success', 'Status admin berhasil diubah.');
+        // return redirect()->route('admin.manage.index')->with('success', 'Status admin berhasil diubah.');
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Status admin berhasil diubah.'
+        ]);
     }
 
     /**
@@ -181,7 +210,12 @@ class AdminManagementController extends Controller
 
         Log::info("System Admin memicu reset password untuk: {$admin->email}");
 
-        return redirect()->route('admin.manage.index')->with('success', "Link reset password (placeholder) telah dikirim ke {$admin->email}.");
+        // return redirect()->route('admin.manage.index')->with('success', "Link reset password (placeholder) telah dikirim ke {$admin->email}.");
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Link reset password (placeholder) telah dikirim ke {$admin->email}.'
+        ]);
     }
 
     /**
@@ -196,18 +230,33 @@ class AdminManagementController extends Controller
             ->get(['id', 'title', 'updated_at', 'statuses']);
 
         return response()->json([
-            'admin' => $admin,
-            'recent_reports' => $recentReports,
+            'success' => true,
+            'data' => [
+                'admin' => $admin,
+                'recent_reports' => $recentReports,
+            ],
         ]);
     }
 
     public function accept(Administrator $admin) {
         $admin->update(['status' => AdminStatusEnum::Active->value]);
-        return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil diaktifkan.');
+
+        // return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil diaktifkan.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin berhasil diaktifkan.'
+        ]);
     }
 
     public function reject(Administrator $admin) {
         $admin->delete();
-        return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil dihapus.');
+
+        // return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil dihapus.');
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin berhasil dihapus.'
+        ]);
     }
 }

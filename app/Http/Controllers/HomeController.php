@@ -10,12 +10,13 @@ use Carbon\Carbon;
 
 class HomeController extends Controller
 {
-    public function index()
+    public function index(Request $_request)
     {
         $allReports = Report::select('created_at', 'statuses')
                             ->where('created_at', '>=', Carbon::now()->subMonth())
                             ->orderBy('created_at')
                             ->get();
+                            
         $totalReports = $allReports->count();
         $pendingCount = 0;
         $processCount = 0;
@@ -93,9 +94,13 @@ class HomeController extends Controller
             'chartData' => $chartData,
         ];
 
-        // header('Content-Type: application/json');
-        // echo json_encode($viewData, JSON_PRETTY_PRINT);
-            
-        return view('main', $viewData);
+        // return view('main');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'viewData' => $viewData,
+            ],
+        ]);
     }
 }

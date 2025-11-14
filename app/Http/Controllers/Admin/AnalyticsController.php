@@ -78,18 +78,34 @@ class AnalyticsController extends Controller
         // Data untuk dropdown filter
         $filterOptions = $this->getFilterOptions();
 
-        return view('admin.analytics', compact(
-            'reports',
-            'kpiStats',
-            'trendData',
-            'distributionData',
-            'adminPerformance',
-            'dinasPerformance',
-            'categoryAnalysis',
-            'locationAnalysis',
-            'insights',
-            'filterOptions'
-        ));
+        // return view('admin.analytics', compact(
+        //     'reports',
+        //     'kpiStats',
+        //     'trendData',
+        //     'distributionData',
+        //     'adminPerformance',
+        //     'dinasPerformance',
+        //     'categoryAnalysis',
+        //     'locationAnalysis',
+        //     'insights',
+        //     'filterOptions'
+        // ));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'reports' => $reports,
+                'kpiStats' => $kpiStats,
+                'trendData' => $trendData,
+                'distributionData' => $distributionData,
+                'adminPerformance' => $adminPerformance,
+                'dinasPerformance' => $dinasPerformance,
+                'categoryAnalysis' => $categoryAnalysis,
+                'locationAnalysis' => $locationAnalysis,
+                'insights' => $insights,
+                'filterOptions' => $filterOptions,
+            ],
+        ]);
     }
 
     private function buildBaseQuery(Request $request)
