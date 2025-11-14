@@ -9,30 +9,30 @@ use App\Models\EmailRegistration;
 use App\Models\PhoneRegistration; 
 use App\Enums\RoleAdministratorEnum;
 use App\Enums\AdminStatusEnum;
+use App\Mail\OtpMail;
+use App\Time\Time;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rules\Enum;
-use App\Mail\OtpMail;
-use App\Time\Time;
 use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class RegisterController extends Controller
 {
+    use ApiResponseTrait;
+
     public function showRegistrationForm(Request $_request)
     {
         $serviceProfiles = ServiceProfile::orderBy('full_name')->get();
         $roles = RoleAdministratorEnum::cases();
         // return view('auth.register', compact('serviceProfiles', 'roles'));
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'serviceProfiles' => $serviceProfiles,
-                'roles' => $roles,
-            ],
+        return $this->successResponse([
+            'serviceProfiles' => $serviceProfiles,
+            'roles' => $roles,
         ]);
     }
 
@@ -122,9 +122,7 @@ Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah 
         
         // return redirect()->route('register.verify.form');
 
-        return response()->json([
-            'success' => true,
-        ]);
+        return $this->successResponse([]);
     }
 
     public function showVerificationForm(Request $_request)
@@ -138,12 +136,9 @@ Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah 
 
         // return view('auth.verify', compact('email', 'phone'));
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'email' => $email,
-                'phone' => $phone,
-            ],
+        return $this->successResponse([
+            'email' => $email,
+            'phone' => $phone,
         ]);
     }
 
@@ -191,9 +186,6 @@ Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah 
 
         // return redirect()->route('login')->with('success', 'Verifikasi berhasil! Akun Anda akan segera ditinjau oleh System Admin.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Verifikasi berhasil! Akun Anda akan segera ditinjau oleh System Admin.',
-        ]);
+        return $this->successResponse([], 'Verifikasi berhasil! Akun Anda akan segera ditinjau oleh System Admin.');
     }
 }

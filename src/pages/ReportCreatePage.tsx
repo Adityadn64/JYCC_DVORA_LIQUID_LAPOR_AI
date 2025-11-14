@@ -91,7 +91,6 @@ export default function ReportCreatePage() {
       )}
 
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow space-y-6">
-        {/* Contact Info */}
         <div className="border-b pb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Kontak</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -126,7 +125,6 @@ export default function ReportCreatePage() {
           </div>
         </div>
 
-        {/* Report Info */}
         <div className="border-b pb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Detail Laporan</h2>
           <div className="space-y-4">
@@ -221,7 +219,6 @@ export default function ReportCreatePage() {
           </div>
         </div>
 
-        {/* Media */}
         <div className="border-b pb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Media (Foto/Video)</h2>
           <div>
@@ -259,7 +256,6 @@ export default function ReportCreatePage() {
           )}
         </div>
 
-        {/* Submit */}
         <div className="flex gap-4">
           <button
             type="submit"

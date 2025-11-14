@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Administrator;
+use App\Enums\AdminStatusEnum;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Administrator;
 use Illuminate\Support\Facades\Hash;
-use App\Enums\AdminStatusEnum;
 
 class LoginController extends Controller
 {
+    use ApiResponseTrait;
+
     public function login(Request $request)
     {
         $request->validate([
@@ -31,11 +34,7 @@ class LoginController extends Controller
             //     'login_identifier' => 'Kredensial yang diberikan tidak cocok dengan data kami.',
             // ])->onlyInput('login_identifier');
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Kredensial yang diberikan tidak cocok dengan data kami.',
-                'data' => null,
-            ]);
+            return $this->errorResponse('Kredensial yang diberikan tidak cocok dengan data kami.', 400);
         }
 
         if ($admin->status === AdminStatusEnum::Pending) {
@@ -43,11 +42,7 @@ class LoginController extends Controller
             //     'login_identifier' => 'Akun Anda sedang dalam proses peninjauan. Silakan coba lagi nanti.',
             // ])->onlyInput('login_identifier');
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Akun Anda sedang dalam proses peninjauan. Silakan coba lagi nanti.',
-                'data' => null,
-            ]);
+            return $this->errorResponse('Akun Anda sedang dalam proses peninjauan. Silakan coba lagi nanti.', 403);
         }
 
         if ($admin->status === AdminStatusEnum::Suspended) {
@@ -55,11 +50,7 @@ class LoginController extends Controller
             //     'login_identifier' => 'Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.',
             // ])->onlyInput('login_identifier');
             
-            return response()->json([
-                'success' => false,
-                'message' => 'Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.',
-                'data' => null,
-            ]);
+            return $this->errorResponse('Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.', 403);
         }
 
         Auth::guard('administrators')->login($admin, $request->boolean('remember'));
@@ -70,12 +61,8 @@ class LoginController extends Controller
 
         // return redirect()->intended(route('admin.dashboard'));
 
-        return response()->json([
-            'success' => true,
-            'message' => null,
-            'data' => [
-                'token' => $token,
-            ],
+        return $this->successResponse([
+            'token' => $token,
         ]);
     }
 
@@ -87,9 +74,6 @@ class LoginController extends Controller
             $admin->currentAccessToken()->delete();
         }
         
-        return response()->json([
-            'success' => true,
-            'message' => 'Logout berhasil.'
-        ]);
+        return $this->successResponse([], 'Logout berhasil.');
     }
 }

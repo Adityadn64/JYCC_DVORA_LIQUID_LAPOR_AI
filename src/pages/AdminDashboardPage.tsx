@@ -125,7 +125,6 @@ export default function AdminDashboardPage() {
         <p className="mt-2 text-gray-600">Ringkasan, tren, dan manajemen laporan Lapor.ai.</p>
       </div>
 
-      {/* KPI Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow border">
           <p className="text-sm font-medium text-gray-500">Total Laporan</p>
@@ -153,7 +152,6 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      {/* Charts */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Tren Laporan Masuk (30 Hari Terakhir)</h3>
@@ -169,7 +167,6 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      {/* Management Section */}
       <section className="space-y-8">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Manajemen Laporan</h2>
@@ -292,7 +289,6 @@ export default function AdminDashboardPage() {
           </form>
         </div>
 
-        {/* Reports List */}
         <div className="space-y-4">
           {loading ? (
             Array.from({ length: 5 }).map((_, i) => (

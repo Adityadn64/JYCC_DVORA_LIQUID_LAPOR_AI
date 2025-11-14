@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Enums\ReportStatusEnum;
 use App\Models\Report;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class HomeController extends Controller
 {
+    use ApiResponseTrait;
+
     public function index(Request $_request)
     {
         $allReports = Report::select('created_at', 'statuses')
@@ -96,11 +99,8 @@ class HomeController extends Controller
 
         // return view('main');
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'viewData' => $viewData,
-            ],
+        return $this->successResponse([
+            'viewData' => $viewData,
         ]);
     }
 }

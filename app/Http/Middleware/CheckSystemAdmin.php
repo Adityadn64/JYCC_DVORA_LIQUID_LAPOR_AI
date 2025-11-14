@@ -2,14 +2,17 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
+use App\Enums\RoleAdministratorEnum;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Enums\RoleAdministratorEnum; // <--- PASTIKAN 'USE' INI BENAR
 use Symfony\Component\HttpFoundation\Response;
+use Closure;
 
 class CheckSystemAdmin
 {
+    use ApiResponseTrait;
+
     /**
      * Handle an incoming request.
      */
@@ -18,10 +21,7 @@ class CheckSystemAdmin
         $token = $request->bearerToken();
 
         if (!$token) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak ditemukan'
-            ], 401);
+            return $this->errorResponse('Token tidak ditemukan', 401);
         }
 
         // Gunakan guard 'administrators' yang benar

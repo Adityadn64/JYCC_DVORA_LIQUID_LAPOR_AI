@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Administrator;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
-use App\Models\Administrator;
 
 class ForgotPasswordController extends Controller
 {
+    use ApiResponseTrait;
+
     public function sendResetLinkEmail(Request $request)
     {
         $request->validate([
@@ -32,11 +35,8 @@ class ForgotPasswordController extends Controller
         //             ? back()->with('status', __($status))
         //             : back()->withErrors(['email' => __($status)]);
 
-        return response()->json([
-            'success' => Password::RESET_LINK_SENT,
-            'data' => [
-                'status' => __($status),
-            ]
+        return $this->successResponse([
+            'status' => __($status),
         ]);
     }
 
@@ -46,12 +46,9 @@ class ForgotPasswordController extends Controller
         //     ['token' => $token, 'email' => $request->email]
         // );
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'token' => $token,
-                'email' => $request->email,
-            ],
+        return $this->successResponse([
+            'token' => $token,
+            'email' => $request->email,
         ]);
     }
 
@@ -77,11 +74,8 @@ class ForgotPasswordController extends Controller
         //             : back()->withInput($request->only('email'))
         //                    ->withErrors(['email' => __($status)]);
 
-        return response()->json([
-            'success' => Password::PASSWORD_RESET,
-            'data' => [
-                'status' => __($status),
-            ],
+        return $this->successResponse([
+            'status' => __($status),
         ]);
     }
 }

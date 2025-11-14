@@ -36,15 +36,11 @@ function App() {
         // Initialize CSRF token from Express/Laravel
         await csrfService.getCsrfToken();
 
-        // Check if there's a token in session/storage
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-          // Could verify token here if needed
-          setIsAuthenticated(true);
-          const userData = localStorage.getItem('user_data');
-          if (userData) {
-            setUser(JSON.parse(userData));
-          }
+        // Could verify token here if needed
+        setIsAuthenticated(true);
+        const userData = localStorage.getItem('user_data');
+        if (userData) {
+          setUser(JSON.parse(userData));
         }
       } catch (error) {
         console.error('App initialization failed:', error);
@@ -78,18 +74,15 @@ function App() {
         <main className="flex-grow py-12 sm:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<HomePage appLoading={loading} />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/password-reset" element={<PasswordResetPage />} />
               
-              {/* Report Routes - Public */}
               <Route path="/report/create" element={<ReportCreatePage />} />
               <Route path="/report/track" element={<ReportTrackPage />} />
               <Route path="/report/:id/track" element={<ReportTrackShowPage />} />
 
-              {/* Admin Routes - Protected */}
               <Route 
                 path="/admin/dashboard" 
                 element={isAuthenticated ? <AdminDashboardPage /> : <Navigate to="/login" />}
@@ -111,7 +104,6 @@ function App() {
                 element={isAuthenticated ? <AdminPerformancePage /> : <Navigate to="/login" />}
               />
 
-              {/* Catch all - redirect to home */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </div>

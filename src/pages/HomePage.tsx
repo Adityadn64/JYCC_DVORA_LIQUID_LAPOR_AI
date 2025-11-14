@@ -3,6 +3,10 @@ import { homeService, reportService } from '../services/api';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Skeleton, SkeletonChart } from '../components/SkeletonLoading';
 
+interface HomePageProps {
+  appLoading: boolean;
+}
+
 interface ReportStats {
   pending: number;
   process: number;
@@ -24,7 +28,7 @@ interface ReportHistoryItem {
   rejected: number;
 }
 
-export default function HomePage() {
+const HomePage: React.FC<HomePageProps> = ({ appLoading }) => {
   const [stats, setStats] = useState<ReportStats>({
     pending: 0,
     process: 0,
@@ -40,6 +44,8 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (appLoading) return;
+      
       try {
         const response = await homeService.getHome();
         const viewData = response.data.data.viewData;
@@ -79,7 +85,7 @@ export default function HomePage() {
     };
 
     fetchData();
-  }, []);
+  }, [appLoading]);
 
   if (error) {
     return (
@@ -98,7 +104,6 @@ export default function HomePage() {
 
   return (
     <div className="space-y-20">
-      {/* Hero Section */}
       <section className="text-center">
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight">
           Layanan Pelaporan Publik Cerdas
@@ -122,7 +127,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* About Section */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         <div className="text-left">
           <h2 className="text-3xl font-bold text-gray-900">Apa itu Lapor.ai?</h2>
@@ -159,7 +163,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Benefits Section */}
       <section className="text-center">
         <h2 className="text-3xl font-bold text-gray-900">Manfaat Utama</h2>
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -184,14 +187,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Statistics Section */}
       <section className="text-center">
         <h2 className="text-3xl font-bold text-gray-900">Analisis Laporan Terkini</h2>
         <p className="mt-2 max-w-2xl mx-auto text-md text-gray-600">
           Statistik semua laporan yang telah masuk ke dalam sistem kami secara transparan.
         </p>
         
-        {/* Total Card with Skeleton */}
         <div className="mt-8 bg-white p-6 rounded-lg shadow max-w-3xl mx-auto">
           {loading ? (
             <div className="space-y-3">
@@ -206,7 +207,6 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Status Grid - Always visible */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
           <div className="bg-white p-6 rounded-lg shadow">
             {loading ? (
@@ -251,7 +251,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* City Distribution Section */}
       <section>
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold text-gray-900">Sebaran Laporan & Kota Teraktif</h2>
@@ -261,7 +260,6 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-          {/* City List - Always visible */}
           <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg border">
             <h3 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-3">
               Kota/Kabupaten Teratas
@@ -286,7 +284,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Map - Always visible (static iframe) */}
           <div className="lg:col-span-3 bg-white p-4 rounded-xl shadow-lg border">
             <iframe
               title="Provinsi Jawa Timur"
@@ -303,3 +300,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+export default HomePage;

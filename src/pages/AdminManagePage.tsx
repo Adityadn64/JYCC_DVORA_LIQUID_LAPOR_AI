@@ -233,7 +233,6 @@ export default function AdminManagePage() {
         </div>
       )}
 
-      {/* TABS */}
       <div className="flex gap-4 border-b border-gray-200">
         <button
           onClick={() => setTab('manage')}
@@ -257,7 +256,6 @@ export default function AdminManagePage() {
         </button>
       </div>
 
-      {/* SEARCH BAR */}
       <div className="bg-white p-4 rounded-lg shadow">
         <input
           type="text"
@@ -268,7 +266,6 @@ export default function AdminManagePage() {
         />
       </div>
 
-      {/* TAB: MANAGE ADMINS */}
       {tab === 'manage' && (
         <div className="bg-white rounded-xl shadow overflow-x-auto">
           <table className="w-full">
@@ -344,7 +341,6 @@ export default function AdminManagePage() {
         </div>
       )}
 
-      {/* TAB: PENDING REQUESTS */}
       {tab === 'requests' && (
         <div className="bg-white rounded-xl shadow overflow-x-auto">
           <table className="w-full">
@@ -403,7 +399,6 @@ export default function AdminManagePage() {
         </div>
       )}
 
-      {/* MODAL: ADD/EDIT ADMIN */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">

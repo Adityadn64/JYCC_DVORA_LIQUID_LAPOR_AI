@@ -2,13 +2,15 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Enums\AdminStatusEnum;
+use App\Traits\ApiResponseTrait;
+use Illuminate\Http\Request;
+use Closure;
 
 class CheckAdminStatus
 {
+    use ApiResponseTrait;
+
     public function handle(Request $request, Closure $next)
     {
         // Dapatkan user yang sudah diotentikasi oleh Sanctum
@@ -16,10 +18,7 @@ class CheckAdminStatus
 
         // Jika middleware auth:sanctum gagal, $admin akan null
         if (!$admin) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated.' // Token tidak valid atau tidak ada
-            ], 401);
+            return $this->errorResponse('Unauthenticated.', 401);
         }
 
         // Cek status user
@@ -35,10 +34,7 @@ class CheckAdminStatus
                 $errorMessage = 'Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.';
             }
 
-            return response()->json([
-                'success' => false,
-                'message' => $errorMessage
-            ], 403); // 403 Forbidden adalah status yang lebih tepat di sini
+            return $this->errorResponse($errorMessage, 403); // 403 Forbidden adalah status yang lebih tepat di sini
         }
 
         return $next($request);

@@ -151,7 +151,6 @@ export default function AdminAnalyticsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Header Skeleton */}
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-4 py-6 space-y-4 animate-pulse">
             <div className="h-8 bg-gray-200 w-48 rounded"></div>
@@ -160,13 +159,10 @@ export default function AdminAnalyticsPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-          {/* KPI Stats Skeleton */}
           <SkeletonStatsGrid count={5} />
           
-          {/* Filters Skeleton */}
           <SkeletonFilterSection />
 
-          {/* Charts Skeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <SkeletonChart />
             <SkeletonChart />
@@ -174,13 +170,10 @@ export default function AdminAnalyticsPage() {
             <SkeletonChart />
           </div>
 
-          {/* Insights Skeleton */}
           <SkeletonInsightsGrid count={4} />
 
-          {/* Export Skeleton */}
           <SkeletonExportSection />
 
-          {/* Table Skeleton */}
           <SkeletonTable rows={6} />
         </div>
       </div>
@@ -211,7 +204,6 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
@@ -230,7 +222,6 @@ export default function AdminAnalyticsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        {/* KPI Stats - Always visible with skeleton on load */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="bg-white p-6 rounded-lg shadow">
             <p className="text-gray-600 text-sm font-medium">Total Reports</p>
@@ -274,7 +265,6 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
 
-        {/* Filters - Always visible */}
         <div className="bg-white p-6 rounded-lg shadow space-y-4">
           <h2 className="text-lg font-bold text-gray-900">Filters</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -361,9 +351,7 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
 
-        {/* Charts - Always visible with skeleton on load */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Trend Chart */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Report Trend</h3>
             {loading ? (
@@ -383,7 +371,6 @@ export default function AdminAnalyticsPage() {
             )}
           </div>
 
-          {/* Distribution Chart */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Service Distribution</h3>
             {loading ? (
@@ -411,7 +398,6 @@ export default function AdminAnalyticsPage() {
             )}
           </div>
 
-          {/* Admin Performance */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Admin Performance</h3>
             {loading ? (
@@ -429,7 +415,6 @@ export default function AdminAnalyticsPage() {
             )}
           </div>
 
-          {/* Category Analysis */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Category Analysis</h3>
             {loading ? (
@@ -458,7 +443,6 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
 
-        {/* Insights - Always visible with skeleton on load */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow">
             <p className="text-sm font-medium opacity-90">Top Category</p>
@@ -494,7 +478,6 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
 
-        {/* Export - Always visible */}
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Export Report</h3>
           <div className="flex gap-2 items-end">
@@ -518,7 +501,6 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
 
-        {/* Reports Table */}
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Reports</h3>
           <div className="overflow-x-auto">

@@ -3,21 +3,23 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Report;
 use App\Models\Administrator;
 use App\Models\ServiceProfile;
 use App\Enums\RoleAdministratorEnum;
-use App\Enums\PriorityEnum;
 use App\Enums\ReportStatusEnum;
+use App\Traits\ApiResponseTrait;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 class PerformanceController extends Controller
 {
+    use ApiResponseTrait;
+
     // Definisikan SLA (dalam jam)
     private const SLA_HOURS = [
         'critical' => 12,
@@ -68,17 +70,14 @@ class PerformanceController extends Controller
         //     'filterOptions'
         // ));
         
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'kpiCards' => $kpiCards,
-                'trendData' => $trendData,
-                'dinasPerformance' => $dinasPerformance,
-                'adminPerformance' => $kpiCards,
-                'topCategories' => $topCategories,
-                'slaBreaches' => $slaBreaches,
-                'filterOptions' => $filterOptions,
-            ],
+        return $this->successResponse([
+            'kpiCards' => $kpiCards,
+            'trendData' => $trendData,
+            'dinasPerformance' => $dinasPerformance,
+            'adminPerformance' => $kpiCards,
+            'topCategories' => $topCategories,
+            'slaBreaches' => $slaBreaches,
+            'filterOptions' => $filterOptions,
         ]);
     }
 

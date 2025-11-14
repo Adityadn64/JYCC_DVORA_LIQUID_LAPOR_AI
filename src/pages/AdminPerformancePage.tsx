@@ -85,7 +85,6 @@ export default function AdminPerformancePage() {
         <p className="mt-2 text-gray-600">Pantau metrik performa sistem dan kinerja admin.</p>
       </div>
 
-      {/* SCOPE SELECTOR - Always visible */}
       <div className="bg-white p-6 rounded-xl shadow border">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Filter Cakupan</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -130,7 +129,6 @@ export default function AdminPerformancePage() {
         </div>
       </div>
 
-      {/* KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow border">
           <p className="text-sm font-medium text-gray-500">Total Laporan</p>
@@ -158,9 +156,7 @@ export default function AdminPerformancePage() {
         </div>
       </div>
 
-      {/* CHARTS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* TREND CHART */}
         <div className="bg-white p-6 rounded-xl shadow border">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Tren Penyelesaian Laporan</h3>
           {loading ? (
@@ -180,7 +176,6 @@ export default function AdminPerformancePage() {
           )}
         </div>
 
-        {/* SERVICE BREAKDOWN */}
         <div className="bg-white p-6 rounded-xl shadow border">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Distribusi Layanan</h3>
           {loading ? (
@@ -209,7 +204,6 @@ export default function AdminPerformancePage() {
         </div>
       </div>
 
-      {/* ADMIN PERFORMANCE */}
       <div className="bg-white p-6 rounded-xl shadow border">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Kinerja Admin</h3>
         {loading ? (
@@ -229,9 +223,7 @@ export default function AdminPerformancePage() {
         )}
       </div>
 
-      {/* TOP ISSUES & SLA STATUS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* TOP ISSUES */}
         <div className="bg-white p-6 rounded-xl shadow border">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Masalah Teratas</h3>
           <div className="space-y-3">
@@ -246,7 +238,6 @@ export default function AdminPerformancePage() {
           </div>
         </div>
 
-        {/* SLA STATUS */}
         <div className="bg-white p-6 rounded-xl shadow border">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Status SLA</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -273,7 +264,6 @@ export default function AdminPerformancePage() {
         </div>
       </div>
 
-      {/* EXPORT */}
       <div className="bg-white p-6 rounded-xl shadow border">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Ekspor Data</h3>
         <div className="flex gap-4">

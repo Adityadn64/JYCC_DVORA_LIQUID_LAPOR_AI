@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Administrator;
 use App\Models\ServiceProfile;
-use App\Models\Report;
 use App\Enums\RoleAdministratorEnum;
 use App\Enums\AdminStatusEnum;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +18,8 @@ use Illuminate\Validation\Rules\Password;
 
 class AdminManagementController extends Controller
 {
+    use ApiResponseTrait;
+
     public function getIndexQuery(Request $request) {
         $query = Administrator::query()->with('serviceProfile');
 
@@ -57,12 +59,9 @@ class AdminManagementController extends Controller
 
         // return view('admin.manage', compact('admins', 'filterOptions'));
         
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'admins' => $admins,
-                'filterOptions' => $filterOptions,
-            ],
+        return $this->successResponse([
+            'admins' => $admins,
+            'filterOptions' => $filterOptions,
         ]);
     }
 
@@ -83,12 +82,9 @@ class AdminManagementController extends Controller
 
         // return view('admin.manage-request', compact('admins', 'filterOptions'));
         
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'admins' => $admins,
-                'filterOptions' => $filterOptions,
-            ],
+        return $this->successResponse([
+            'admins' => $admins,
+            'filterOptions' => $filterOptions,
         ]);
     }
 
@@ -125,10 +121,7 @@ class AdminManagementController extends Controller
 
         // return redirect()->route('admin.manage.index')->with('success', 'Admin baru berhasil dibuat.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Admin baru berhasil dibuat.'
-        ]);
+        return $this->successResponse([], 'Admin baru berhasil dibuat.');
     }
 
     /**
@@ -166,10 +159,7 @@ class AdminManagementController extends Controller
 
         // return redirect()->route('admin.manage.index')->with('success', 'Data admin berhasil diperbarui.');
         
-        return response()->json([
-            'success' => true,
-            'message' => 'Data admin berhasil diperbarui.'
-        ]);
+        return $this->successResponse([], 'Data admin berhasil diperbarui.');
     }
 
     /**
@@ -180,10 +170,7 @@ class AdminManagementController extends Controller
         if ($admin->id === Auth::id()) {
             // return back()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
         
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak dapat menonaktifkan akun Anda sendiri.'
-            ]);
+            return $this->errorResponse('Anda tidak dapat menonaktifkan akun Anda sendiri.', 400);
         }
 
         $newStatus = ($admin->status === AdminStatusEnum::Active) ? AdminStatusEnum::Suspended : AdminStatusEnum::Active;
@@ -191,10 +178,7 @@ class AdminManagementController extends Controller
 
         // return redirect()->route('admin.manage.index')->with('success', 'Status admin berhasil diubah.');
         
-        return response()->json([
-            'success' => true,
-            'message' => 'Status admin berhasil diubah.'
-        ]);
+        return $this->successResponse([], 'Status admin berhasil diubah.');
     }
 
     /**
@@ -212,10 +196,7 @@ class AdminManagementController extends Controller
 
         // return redirect()->route('admin.manage.index')->with('success', "Link reset password (placeholder) telah dikirim ke {$admin->email}.");
         
-        return response()->json([
-            'success' => true,
-            'message' => 'Link reset password (placeholder) telah dikirim ke {$admin->email}.'
-        ]);
+        return $this->successResponse([], 'Link reset password (placeholder) telah dikirim ke {$admin->email}.');
     }
 
     /**
@@ -229,12 +210,9 @@ class AdminManagementController extends Controller
             ->take(10)
             ->get(['id', 'title', 'updated_at', 'statuses']);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'admin' => $admin,
-                'recent_reports' => $recentReports,
-            ],
+        return $this->successResponse([
+            'admin' => $admin,
+            'recent_reports' => $recentReports,
         ]);
     }
 
@@ -243,10 +221,7 @@ class AdminManagementController extends Controller
 
         // return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil diaktifkan.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Admin berhasil diaktifkan.'
-        ]);
+        return $this->successResponse([], 'Admin berhasil diaktifkan.');
     }
 
     public function reject(Administrator $admin) {
@@ -254,9 +229,6 @@ class AdminManagementController extends Controller
 
         // return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil dihapus.');
         
-        return response()->json([
-            'success' => true,
-            'message' => 'Admin berhasil dihapus.'
-        ]);
+        return $this->successResponse([], 'Admin berhasil dihapus.');
     }
 }

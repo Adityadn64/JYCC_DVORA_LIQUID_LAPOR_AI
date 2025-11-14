@@ -28,14 +28,12 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
           <div className="flex-shrink-0">
             <Link to="/" className="text-2xl font-bold text-blue-600">
               Lapor<span className="text-gray-900">.ai</span>
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <nav className="flex space-x-8">
               <Link to="/" className="font-medium text-gray-600 hover:text-blue-600 transition-colors">
@@ -108,7 +106,6 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -129,7 +126,6 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">

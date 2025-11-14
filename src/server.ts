@@ -46,8 +46,18 @@ app.use(session({
 // AXIOS INSTANCE FOR LARAVEL
 // ================================
 
-const laravelAPI: AxiosInstance = axios.create({
+const laravelAPICSRF: AxiosInstance = axios.create({
   baseURL: LARAVEL_API,
+  withCredentials: true,
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'
+  }
+});
+
+const laravelAPI: AxiosInstance = axios.create({
+  baseURL: `${LARAVEL_API}/api`,
   withCredentials: true,
   headers: {
     'Accept': 'application/json',
@@ -108,32 +118,23 @@ laravelAPI.interceptors.response.use(
 // CSRF TOKEN ENDPOINT
 // ================================
 
-app.get('/api/csrf-token', async (req: Request, res: Response) => {
+app.get('/api/csrf-cookie', async (req: Request, res: Response) => {
   try {
-    // Fetch CSRF token from Laravel sanctum
-    const response = await axios.get(`${LARAVEL_API}/sanctum/csrf-cookie`, {
-      withCredentials: true
-    });
+    // Panggil endpoint Sanctum yang benar
+    const laravelResponse = await laravelAPICSRF.get('/sanctum/csrf-cookie');
     
-    // Get token from response or headers
-    const token = response.data?.token || response.headers['x-csrf-token'] || 'csrf-token-value';
+    // Teruskan header 'set-cookie' dari Laravel ke klien (React)
+    const cookies = laravelResponse.headers['set-cookie'];
+    if (cookies) {
+      res.setHeader('Set-Cookie', cookies);
+    }
     
-    // Store in session
-    (req.session as any).csrf_token = token;
-    
-    res.json({
-      success: true,
-      message: 'CSRF token fetched',
-      data: {
-        csrf_token: token
-      }
-    });
-  } catch (error) {
-    console.error('CSRF token error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch CSRF token'
-    });
+    // 204 No Content adalah respons yang benar
+    res.status(204).send();
+
+  } catch (error: any) {
+    console.error('Error fetching Sanctum CSRF cookie:', error.message);
+    res.status(500).json({ message: 'Gagal melakukan handshake otentikasi.' });
   }
 });
 
@@ -142,9 +143,9 @@ app.get('/api/csrf-token', async (req: Request, res: Response) => {
 // ================================
 
 // HOME - Get home page data
-app.get('/api/', async (_req: Request, res: Response) => {
+app.post('/api/home', async (_req: Request, res: Response) => {
   try {
-    const response = await laravelAPI.get('/');
+    const response = await laravelAPI.post('/home');
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data);

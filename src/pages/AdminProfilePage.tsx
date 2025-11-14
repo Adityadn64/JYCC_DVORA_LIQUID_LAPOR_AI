@@ -158,7 +158,6 @@ export default function AdminProfilePage() {
       <div className="max-w-4xl mx-auto space-y-8">
         <h1 className="text-3xl font-bold text-gray-900">Profil Saya</h1>
 
-        {/* PROFILE HEADER - Skeleton only on data */}
         <div className="bg-white rounded-xl shadow p-6">
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             <div className="flex-shrink-0">
@@ -176,7 +175,6 @@ export default function AdminProfilePage() {
           </div>
         </div>
 
-        {/* SECURITY SETTINGS - Buttons always visible */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Keamanan</h3>
@@ -228,7 +226,6 @@ export default function AdminProfilePage() {
         </div>
       )}
 
-      {/* PROFILE HEADER */}
       <div className="bg-white rounded-xl shadow p-6">
         <div className="flex flex-col sm:flex-row gap-6 items-start">
           <div className="flex-shrink-0">
@@ -263,9 +260,7 @@ export default function AdminProfilePage() {
         </div>
       </div>
 
-      {/* SECURITY SETTINGS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* CHANGE PASSWORD */}
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Keamanan</h3>
           <p className="text-sm text-gray-600 mb-4">Ubah password Anda secara berkala untuk menjaga keamanan akun.</p>
@@ -277,7 +272,6 @@ export default function AdminProfilePage() {
           </button>
         </div>
 
-        {/* CHANGE CONTACT */}
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Kontak</h3>
           <p className="text-sm text-gray-600 mb-4">Perbarui email dan nomor telepon Anda.</p>
@@ -290,9 +284,6 @@ export default function AdminProfilePage() {
         </div>
       </div>
 
-      {/* ===== MODALS ===== */}
-
-      {/* MODAL: EDIT PROFILE */}
       {activeModal === 'edit' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
@@ -340,7 +331,6 @@ export default function AdminProfilePage() {
         </div>
       )}
 
-      {/* MODAL: CHANGE PASSWORD */}
       {activeModal === 'password' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
@@ -402,7 +392,6 @@ export default function AdminProfilePage() {
         </div>
       )}
 
-      {/* MODAL: CHANGE CONTACT */}
       {activeModal === 'contact' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">

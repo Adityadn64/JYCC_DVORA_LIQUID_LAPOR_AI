@@ -96,7 +96,6 @@ export default function RegisterPage() {
         </div>
       )}
 
-      {/* Step 1: Contact Information */}
       {step === 1 && (
         <form onSubmit={handleSubmitStart} className="space-y-6">
           <div>
@@ -139,7 +138,6 @@ export default function RegisterPage() {
         </form>
       )}
 
-      {/* Step 2: OTP Verification */}
       {step === 2 && (
         <form onSubmit={handleSubmitVerify} className="space-y-6">
           <div>
@@ -169,7 +167,6 @@ export default function RegisterPage() {
         </form>
       )}
 
-      {/* Step 3: Password Setup */}
       {step === 3 && (
         <form onSubmit={handleSubmitComplete} className="space-y-6">
           <div>

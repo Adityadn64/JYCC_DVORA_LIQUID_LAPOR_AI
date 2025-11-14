@@ -7,13 +7,16 @@ use App\Models\Report;
 use App\Models\Administrator;
 use App\Enums\PriorityEnum;
 use App\Enums\RoleAdministratorEnum;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    use ApiResponseTrait;
+    
     public function index(Request $request)
     {
         $admin = Auth::user();
@@ -90,22 +93,19 @@ class DashboardController extends Controller
         //     'reports', 'admins', 'priorities'
         // ));
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'totalReports' => $totalReports,
-                'reportsToday' => $reportsToday,
-                'avgResolutionTime' => $avgResolutionTime,
-                'trendLabels' => $trendLabels,
-                'trendData' => $trendData,
-                'serviceLabels' => $serviceLabels,
-                'serviceData' => $serviceData,
-                'adminLabels' => $adminLabels,
-                'adminData' => $adminData,
-                'reports' => $reports,
-                'admins' => $admins,
-                'priorities' => $priorities,
-            ],
+        return $this->successResponse([
+            'totalReports' => $totalReports,
+            'reportsToday' => $reportsToday,
+            'avgResolutionTime' => $avgResolutionTime,
+            'trendLabels' => $trendLabels,
+            'trendData' => $trendData,
+            'serviceLabels' => $serviceLabels,
+            'serviceData' => $serviceData,
+            'adminLabels' => $adminLabels,
+            'adminData' => $adminData,
+            'reports' => $reports,
+            'admins' => $admins,
+            'priorities' => $priorities,
         ]);
     }
 }

@@ -12,12 +12,15 @@ use App\Enums\ReportCategoryEnum;
 use App\Enums\PriorityEnum;
 use App\Enums\ReportStatusEnum;
 use App\Time\Time;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
+    use ApiResponseTrait;
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -30,10 +33,7 @@ class ReportController extends Controller
         if ($validator->fails()) {
             // return back()->withErrors($validator)->withInput();
 
-            return response()->json([
-                'success' => false,
-                'message' => $validator->errors(),
-            ]);
+            return $this->errorResponse('Validation failed', 422, $validator->errors()->toArray());
         }
 
         $aiDeterminedServiceCode = ServiceCodeEnum::DINKES;
@@ -98,10 +98,7 @@ class ReportController extends Controller
         // return redirect()->route('report.track.show', $report->id)
         //                  ->with('success', 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.');
     
-        return response()->json([
-            'success' => true,
-            'message' => 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.',
-        ]);
+        return $this->successResponse([], 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.', 400);
     }
 
     public function trackIndex(Request $request)
@@ -160,13 +157,10 @@ class ReportController extends Controller
         //     'priorities' => $priorities,
         // ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'reports' => $reports,
-                'admins' => $admins,
-                'priorities' => $priorities,
-            ],
+        return $this->successResponse([
+            'reports' => $reports,
+            'admins' => $admins,
+            'priorities' => $priorities,
         ]);
     }
 
@@ -178,11 +172,8 @@ class ReportController extends Controller
         //     'report' => $report,
         // ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'report' => $report,
-            ],
+        return $this->successResponse([
+            'report' => $report,
         ]);
     }
 }

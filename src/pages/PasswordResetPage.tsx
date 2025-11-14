@@ -134,7 +134,6 @@ export default function PasswordResetPage() {
         </div>
       )}
 
-      {/* STEP INDICATOR */}
       <div className="flex justify-between mb-8">
         <div className={`flex-1 text-center pb-2 border-b-2 ${step === 'email' ? 'border-blue-600 text-blue-600' : 'border-gray-200 text-gray-500'}`}>
           <p className="text-sm font-medium">1. Email</p>
@@ -147,7 +146,6 @@ export default function PasswordResetPage() {
         </div>
       </div>
 
-      {/* STEP 1: EMAIL & NIP */}
       {step === 'email' && (
         <form onSubmit={handleSubmitEmail} className="space-y-6">
           <div>
@@ -197,7 +195,6 @@ export default function PasswordResetPage() {
         </form>
       )}
 
-      {/* STEP 2: OTP VERIFICATION */}
       {step === 'verify' && (
         <form onSubmit={handleSubmitVerify} className="space-y-6">
           <div className="bg-blue-50 p-4 rounded-lg">
@@ -257,7 +254,6 @@ export default function PasswordResetPage() {
         </form>
       )}
 
-      {/* STEP 3: NEW PASSWORD */}
       {step === 'password' && (
         <form onSubmit={handleSubmitPassword} className="space-y-6">
           <div className="bg-green-50 p-4 rounded-lg">

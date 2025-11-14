@@ -128,22 +128,18 @@ export const SkeletonList: React.FC<{ items?: number }> = ({ items = 3 }) => (
 // Skeleton for Admin Dashboard
 export const SkeletonAdminDashboard: React.FC = () => (
   <div className="space-y-12">
-    {/* Header */}
     <div className="animate-pulse">
       <Skeleton className="h-8 w-48 mb-2" />
       <Skeleton className="h-4 w-64" />
     </div>
 
-    {/* KPI Cards */}
     <SkeletonStatsGrid count={3} />
 
-    {/* Charts */}
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <SkeletonChart />
       <SkeletonChart />
     </div>
 
-    {/* Table */}
     <SkeletonTable rows={5} />
   </div>
 );

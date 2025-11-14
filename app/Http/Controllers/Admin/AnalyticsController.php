@@ -5,22 +5,25 @@ namespace App\Http\Controllers\Admin;
 use App\Export\ExportFile;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ReportController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use App\Models\Report;
 use App\Models\Administrator;
 use App\Models\ServiceProfile;
 use App\Enums\RoleAdministratorEnum;
 use App\Enums\ReportCategoryEnum;
 use App\Enums\PriorityEnum;
-use App\Enums\ReportStatusEnum; // Pastikan Anda memiliki Enum ini
+use App\Enums\ReportStatusEnum;
+use App\Traits\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
+    use ApiResponseTrait;
+
     // Variabel enum status untuk kueri
     private $statusPending;
     private $statusProcess;
@@ -91,20 +94,17 @@ class AnalyticsController extends Controller
         //     'filterOptions'
         // ));
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'reports' => $reports,
-                'kpiStats' => $kpiStats,
-                'trendData' => $trendData,
-                'distributionData' => $distributionData,
-                'adminPerformance' => $adminPerformance,
-                'dinasPerformance' => $dinasPerformance,
-                'categoryAnalysis' => $categoryAnalysis,
-                'locationAnalysis' => $locationAnalysis,
-                'insights' => $insights,
-                'filterOptions' => $filterOptions,
-            ],
+        return $this->successResponse([
+            'reports' => $reports,
+            'kpiStats' => $kpiStats,
+            'trendData' => $trendData,
+            'distributionData' => $distributionData,
+            'adminPerformance' => $adminPerformance,
+            'dinasPerformance' => $dinasPerformance,
+            'categoryAnalysis' => $categoryAnalysis,
+            'locationAnalysis' => $locationAnalysis,
+            'insights' => $insights,
+            'filterOptions' => $filterOptions,
         ]);
     }
 
@@ -361,7 +361,7 @@ class AnalyticsController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => 'Tipe ekspor tidak valid.'], 422);
+            return $this->errorResponse('Tipe ekspor tidak valid.', 422);
         }
 
         $baseQuery = $this->buildBaseQuery($request);

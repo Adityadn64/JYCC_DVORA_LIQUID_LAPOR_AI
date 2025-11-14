@@ -4,23 +4,23 @@ namespace App\Http\Controllers\Admin;
 
 use App\Export\ExportFile;
 use App\Http\Controllers\Controller;
+use App\Enums\ReportStatusEnum;
+use App\Enums\RoleAdministratorEnum;
+use App\Rules\CurrentPassword;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Log; // Untuk placeholder OTP
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
-use Illuminate\Validation\ValidationException;
-use App\Models\Report;
-use App\Enums\ReportStatusEnum;
-use App\Enums\AdminStatusEnum;
-use App\Enums\RoleAdministratorEnum;
-use App\Rules\CurrentPassword; // Kita perlu membuat Rule kustom ini
 
 class ProfileController extends Controller
 {
+    use ApiResponseTrait;
+
     public function getAdminAndActivity() {
         $admin = Auth::user();
         $admin->load('serviceProfile');
@@ -39,12 +39,9 @@ class ProfileController extends Controller
         //     'activity' => $activity,
         // ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'admin' => $admin,
-                'activity' => $activity,
-            ],
+        return $this->successResponse([
+            'admin' => $admin,
+            'activity' => $activity,
         ]);
     }
 
@@ -142,10 +139,7 @@ class ProfileController extends Controller
 
         // return back()->with('success_info', 'Informasi akun berhasil diperbarui.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Informasi akun berhasil diperbarui.'
-        ]);
+        return $this->successResponse([], 'Informasi akun berhasil diperbarui.');
     }
 
     /**
@@ -169,10 +163,7 @@ class ProfileController extends Controller
 
         // return back()->with('success_header', 'Foto profil berhasil diperbarui.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Foto profil berhasil diperbarui.'
-        ]);
+        return $this->successResponse([], 'Foto profil berhasil diperbarui.');
     }
 
     /**
@@ -196,10 +187,7 @@ class ProfileController extends Controller
 
         // return back()->with('success_docs', 'Scan KTA berhasil diunggah.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Scan KTA berhasil diunggah.'
-        ]);
+        return $this->successResponse([], 'Scan KTA berhasil diunggah.');
     }
 
     /**
@@ -227,10 +215,7 @@ class ProfileController extends Controller
 
         // return back()->with('success_password', 'Password berhasil diubah.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Password berhasil diubah.'
-        ]);
+        return $this->successResponse([], 'Password berhasil diubah.');
     }
 
     /**
@@ -263,10 +248,7 @@ class ProfileController extends Controller
 
         // return back()->with('success_otp_sent', 'OTP telah dikirim ke alamat email baru Anda.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'OTP telah dikirim ke alamat email baru Anda.'
-        ]);
+        return $this->successResponse([], 'OTP telah dikirim ke alamat email baru Anda.');
     }
 
     /**
@@ -287,10 +269,7 @@ class ProfileController extends Controller
         if (!$sessionOtp || !$sessionEmail || !$sessionTime) {
             // return back()->withErrors(['otp' => 'Sesi permintaan telah habis. Silakan ulangi.']);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Sesi permintaan telah habis. Silakan ulangi.'
-            ]);
+            return $this->errorResponse('Sesi permintaan telah habis. Silakan ulangi.', 400);
         }
 
         // Cek kedaluwarsa OTP (10 menit)
@@ -299,20 +278,14 @@ class ProfileController extends Controller
 
             // return back()->withErrors(['otp' => 'OTP telah kedaluwarsa. Silakan minta lagi.']);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'OTP telah kedaluwarsa. Silakan minta lagi.'
-            ]);
+            return $this->errorResponse('OTP telah kedaluwarsa. Silakan minta lagi.', 400);
         }
 
         // Cek OTP
         if ($validated['otp'] != $sessionOtp) {
             // return back()->withErrors(['otp' => 'Kode OTP tidak valid.']);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Kode OTP tidak valid.'
-            ]);
+            return $this->errorResponse('Kode OTP tidak valid.', 400);
         }
 
         // --- Sukses! Ganti Email ---
@@ -323,10 +296,7 @@ class ProfileController extends Controller
 
         // return redirect()->route('admin.profile.show')->with('success_info', 'Alamat email Anda berhasil diperbarui.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Alamat email Anda berhasil diperbarui.'
-        ]);
+        return $this->successResponse([], 'Alamat email Anda berhasil diperbarui.');
     }
 
     /**
@@ -374,10 +344,7 @@ class ProfileController extends Controller
         if (!$sessionOtp || !$sessionPhone || !$sessionTime) {
             // return back()->withErrors(['otp_phone' => 'Sesi permintaan telah habis. Silakan ulangi.']);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Sesi permintaan telah habis. Silakan ulangi.'
-            ]);
+            return $this->errorResponse('Sesi permintaan telah habis. Silakan ulangi.', 400);
         }
 
         if ($sessionTime->diffInMinutes(now()) > 10) {
@@ -385,19 +352,13 @@ class ProfileController extends Controller
 
             // return back()->withErrors(['otp_phone' => 'OTP telah kedaluwarsa. Silakan minta lagi.']);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'OTP telah kedaluwarsa. Silakan minta lagi.'
-            ]);
+            return $this->errorResponse('OTP telah kedaluwarsa. Silakan minta lagi.', 400);
         }
 
         if ($validated['otp_phone'] != $sessionOtp) {
             // return back()->withErrors(['otp_phone' => 'Kode OTP tidak valid.']);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Kode OTP tidak valid.'
-            ]);
+            return $this->errorResponse('Kode OTP tidak valid.', 400);
         }
 
         // --- Sukses! Ganti Telepon ---
@@ -408,19 +369,13 @@ class ProfileController extends Controller
 
         // return redirect()->route('admin.profile.show')->with('success_info', 'Nomor telepon Anda berhasil diperbarui.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Nomor telepon Anda berhasil diperbarui.'
-        ]);
+        return $this->successResponse([], 'Nomor telepon Anda berhasil diperbarui.');
     }
 
     public function deactivateSelf(Request $_request)
     {
         // return back()->with('error_self_deactivate', 'System Admin tidak dapat menonaktifkan akunnya sendiri.');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'System Admin tidak dapat menonaktifkan akunnya sendiri.'
-        ]);
+        return $this->successResponse([], 'System Admin tidak dapat menonaktifkan akunnya sendiri.');
     }
 }
