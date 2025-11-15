@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Enums;
+
+enum RegencyEnum: string
+{
+    case KABUPATEN_BANGKALAN = '35.26';
+    case KABUPATEN_BANYUWANGI = '35.10';
+    case KABUPATEN_BLITAR = '35.05';
+    case KABUPATEN_BOJONEGORO = '35.22';
+    case KABUPATEN_BONDOWOSO = '35.11';
+    case KABUPATEN_GRESIK = '35.25';
+    case KABUPATEN_JEMBER = '35.09';
+    case KABUPATEN_JOMBANG = '35.17';
+    case KABUPATEN_KEDIRI = '35.06';
+    case KABUPATEN_LAMONGAN = '35.24';
+    case KABUPATEN_LUMAJANG = '35.08';
+    case KABUPATEN_MADIUN = '35.19';
+    case KABUPATEN_MAGETAN = '35.20';
+    case KABUPATEN_MALANG = '35.07';
+    case KABUPATEN_MOJOKERTO = '35.16';
+    case KABUPATEN_NGANJUK = '35.18';
+    case KABUPATEN_NGAWI = '35.21';
+    case KABUPATEN_PACITAN = '35.01';
+    case KABUPATEN_PAMEKASAN = '35.28';
+    case KABUPATEN_PASURUAN = '35.14';
+    case KABUPATEN_PONOROGO = '35.02';
+    case KABUPATEN_PROBOLINGGO = '35.13';
+    case KABUPATEN_SAMPANG = '35.27';
+    case KABUPATEN_SIDOARJO = '35.15';
+    case KABUPATEN_SITUBONDO = '35.12';
+    case KABUPATEN_SUMENEP = '35.29';
+    case KABUPATEN_TRENGGALEK = '35.03';
+    case KABUPATEN_TUBAN = '35.23';
+    case KABUPATEN_TULUNGAGUNG = '35.04';
+    case KOTA_BATU = '35.79';
+    case KOTA_BLITAR = '35.72';
+    case KOTA_KEDIRI = '35.71';
+    case KOTA_MADIUN = '35.77';
+    case KOTA_MALANG = '35.73';
+    case KOTA_MOJOKERTO = '35.76';
+    case KOTA_PASURUAN = '35.75';
+    case KOTA_PROBOLINGGO = '35.74';
+    case KOTA_SURABAYA = '35.78';
+}

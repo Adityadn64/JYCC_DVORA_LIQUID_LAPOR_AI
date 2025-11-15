@@ -33,17 +33,20 @@ class DashboardController extends Controller
             ->select(DB::raw('AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) / 3600 as avg_hours'))->value('avg_hours');
         $avgResolutionTime = $avgResolutionHours ? round($avgResolutionHours, 1) . ' Jam' : 'N/A';
         
-        $reportTrend = (clone $baseReportQuery)->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as count'))->where('created_at', '>=', now()->subDays(30))->groupBy('date')->orderBy('date', 'asc')->get();
-        $trendLabels = $reportTrend->pluck('date')->map(fn($date) => Carbon::parse($date)->format('d M'));
-        $trendData = $reportTrend->pluck('count');
+        $reportTrend = (clone $baseReportQuery)
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as count'))
+            ->where('created_at', '>=', now()->subDays(30))
+            ->groupBy('date')->orderBy('date', 'asc')->get()
+            ->map(fn($item) => ['label' => Carbon::parse($item->date)->format('d M'), 'value' => $item->count]);
 
         $reportsByServiceQuery = Report::query();
         if ($admin->role === RoleAdministratorEnum::BaseAdmin) {
             $reportsByServiceQuery->where('service_code', $admin->service_code);
         }
-        $reportsByService = $reportsByServiceQuery->join('service_profiles', 'reports.service_id', '=', 'service_profiles.id')->select('service_profiles.full_name', DB::raw('count(reports.id) as count'))->groupBy('service_profiles.full_name')->orderByDesc('count')->take(7)->get();
-        $serviceLabels = $reportsByService->pluck('full_name');
-        $serviceData = $reportsByService->pluck('count');
+        $serviceDistribution = $reportsByServiceQuery
+            ->join('service_profiles', 'reports.service_id', '=', 'service_profiles.id')
+            ->select('service_profiles.full_name as label', DB::raw('count(reports.id) as value'))
+            ->groupBy('service_profiles.full_name')->orderByDesc('value')->take(7)->get();
 
         $topAdminsQuery = Report::query();
         if ($admin->role === RoleAdministratorEnum::BaseAdmin) {
@@ -51,9 +54,11 @@ class DashboardController extends Controller
                 $query->select('id')->from('administrators')->where('service_code', $admin->service_code);
             });
         }
-        $topAdmins = $topAdminsQuery->join('administrators', 'reports.assignee_admin_id', '=', 'administrators.id')->whereJsonContains('statuses', 'finished')->select('administrators.full_name', DB::raw('count(reports.id) as count'))->groupBy('administrators.full_name')->orderByDesc('count')->take(5)->get();
-        $adminLabels = $topAdmins->pluck('full_name');
-        $adminData = $topAdmins->pluck('count');
+        $topAdmins = $topAdminsQuery::query()
+            ->join('administrators', 'reports.assignee_admin_id', '=', 'administrators.id')
+            ->whereJsonContains('statuses', 'finished')
+            ->select('administrators.full_name as label', DB::raw('count(reports.id) as value'))
+            ->groupBy('administrators.full_name')->orderByDesc('value')->take(5)->get();
 
         $reportQuery = $baseReportQuery;
 
@@ -77,7 +82,10 @@ class DashboardController extends Controller
             default => $reportQuery->orderBy('updated_at', 'desc'),
         };
         
-        $reports = $reportQuery->with(['assignee', 'serviceProfile'])->paginate(10);
+        $reports = $reportQuery->with(['assignee:id,full_name', 'serviceProfile:id,full_name'])
+                                ->latest('updated_at')
+                                ->paginate(10)
+                                ->withQueryString();
         
         $adminsQuery = Administrator::where('role', RoleAdministratorEnum::BaseAdmin);
         if ($admin->role === RoleAdministratorEnum::BaseAdmin) {
@@ -94,18 +102,21 @@ class DashboardController extends Controller
         // ));
 
         return $this->successResponse([
-            'totalReports' => $totalReports,
-            'reportsToday' => $reportsToday,
-            'avgResolutionTime' => $avgResolutionTime,
-            'trendLabels' => $trendLabels,
-            'trendData' => $trendData,
-            'serviceLabels' => $serviceLabels,
-            'serviceData' => $serviceData,
-            'adminLabels' => $adminLabels,
-            'adminData' => $adminData,
+            'stats' => [
+                'totalReports' => $totalReports,
+                'reportsToday' => $reportsToday,
+                'avgResolutionTime' => $avgResolutionTime,
+            ],
+            'charts' => [
+                'reportTrend' => $reportTrend,
+                'serviceDistribution' => $serviceDistribution,
+                'topAdmins' => $topAdmins,
+            ],
             'reports' => $reports,
-            'admins' => $admins,
-            'priorities' => $priorities,
+            'filters' => [
+                'admins' => $admins,
+                'priorities' => $priorities,
+            ]
         ]);
     }
 }

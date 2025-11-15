@@ -6,6 +6,7 @@ use App\Enums\AdminStatusEnum;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Closure;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class CheckAdminStatus
 {
@@ -13,19 +14,29 @@ class CheckAdminStatus
 
     public function handle(Request $request, Closure $next)
     {
-        // Dapatkan user yang sudah diotentikasi oleh Sanctum
-        $admin = $request->user('administrators'); // Atau Auth::guard('administrators')->user();
+        $authorizationHeader = $request->header('Authorization');
 
-        // Jika middleware auth:sanctum gagal, $admin akan null
-        if (!$admin) {
-            return $this->errorResponse('Unauthenticated.', 401);
+        if (!$authorizationHeader || !str_starts_with(strtolower($authorizationHeader), 'bearer ')) {
+            // Jika header tidak ada atau formatnya salah
+            return $this->errorResponse('Unauthenticated. Token format is invalid.', 401);
         }
+
+        $token = substr($authorizationHeader, 7);
+
+        $accessToken = PersonalAccessToken::findToken($token);
+
+        if (
+            !$accessToken ||
+            $accessToken->expires_at && $accessToken->expires_at->isPast()
+        ) {
+            return $this->errorResponse('Unauthenticated. Token is invalid or expired.', 401);
+        }
+
+        $admin = $accessToken->tokenable;
 
         // Cek status user
         if ($admin->status !== AdminStatusEnum::Active) {
-            // HAPUS TOKEN YANG SEDANG DIGUNAKAN DARI DATABASE
-            // Ini adalah cara yang benar untuk "logout" API token
-            $admin->currentAccessToken()->delete();
+            $accessToken->delete();
 
             $errorMessage = 'Sesi Anda telah berakhir karena status akun berubah.';
             if ($admin->status === AdminStatusEnum::Pending) {

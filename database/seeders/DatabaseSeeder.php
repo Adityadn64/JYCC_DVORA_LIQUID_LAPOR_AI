@@ -2,11 +2,14 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Schema;
 use App\Models\Report;
 use App\Models\Administrator;
 use App\Models\ServiceProfile;
+use App\Models\District;
+use App\Models\Regency;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,6 +23,9 @@ class DatabaseSeeder extends Seeder
         Report::truncate();
         Administrator::truncate();
         ServiceProfile::truncate();
+        
+        District::truncate();
+        Regency::truncate();
 
         // 3. Nyalakan kembali pengecekan foreign key
         Schema::enableForeignKeyConstraints();
@@ -30,6 +36,7 @@ class DatabaseSeeder extends Seeder
             ServiceProfileSeeder::class,
             AdministratorSeeder::class,
             ReportSeeder::class,
+            RegionSeeder::class,
         ]);
     }
 }

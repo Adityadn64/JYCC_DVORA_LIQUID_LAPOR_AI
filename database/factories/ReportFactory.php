@@ -2,6 +2,12 @@
 
 namespace Database\Factories;
 
+// Import yang ditambahkan
+use App\Enums\DistrictEnum;
+use App\Enums\RegencyEnum;
+use Illuminate\Support\Str;
+
+// Import yang sudah ada
 use App\Enums\RoleAdministratorEnum;
 use App\Models\Administrator;
 use App\Models\ServiceProfile;
@@ -28,19 +34,46 @@ class ReportFactory extends Factory
         
         $allAdminIds = Administrator::pluck('id')->toArray();
 
-        $historyCount = $this->faker->numberBetween(1, 5);
+        // ===================================================================
+        // LOGIKA BARU UNTUK MEMILIH KOTA DAN KECAMATAN YANG VALID
+        // ===================================================================
+        
+        $matchingDistricts = [];
+        $randomRegency = null;
+        $allRegencies = RegencyEnum::cases();
+        $allDistricts = DistrictEnum::cases();
 
+        // Loop ini untuk memastikan kita mendapatkan kabupaten/kota yang memiliki data kecamatan,
+        // mencegah error jika ada data yang tidak konsisten.
+        while (empty($matchingDistricts)) {
+            // Pilih satu kabupaten/kota secara acak
+            $randomRegency = $this->faker->randomElement($allRegencies);
+            
+            // Filter kecamatan yang nama 'case' Enum-nya diawali dengan nama 'case' kabupaten/kota terpilih
+            // Contoh: 'KABUPATEN_BANGKALAN_AROSBAYA' diawali dengan 'KABUPATEN_BANGKALAN_'
+            $matchingDistricts = array_filter(
+                $allDistricts,
+                fn($district) => Str::startsWith($district->name, $randomRegency->name . '_')
+            );
+        }
+
+        // Setelah ditemukan, pilih satu kecamatan secara acak dari daftar yang cocok
+        // array_values() digunakan untuk mereset index array setelah di-filter
+        $randomDistrict = $this->faker->randomElement(array_values($matchingDistricts));
+
+        // ===================================================================
+        // LOGIKA UNTUK STATUS HISTORY (TIDAK DIUBAH)
+        // ===================================================================
+        $historyCount = $this->faker->numberBetween(1, 5);
         $statuses = [];
 
         if ($historyCount === 1) {
             $statuses[] = ReportStatusEnum::Pending->value;
         } else {
             $statuses[] = ReportStatusEnum::Pending->value;
-
             for ($i = 0; $i < $historyCount - 2; $i++) {
                 $statuses[] = ReportStatusEnum::Process->value;
             }
-
             $finalStatus = $this->faker->numberBetween(0, 100) % 3 !== 0
                 ? (
                     $historyCount > 2 && $this->faker->numberBetween(0, 100) % 7 !== 0
@@ -55,15 +88,12 @@ class ReportFactory extends Factory
         $reviewNotes = [];
         $agreementsHistory = [];
         $disagreementsHistory = [];
-
         $lastTimestamp = Carbon::instance($this->faker->dateTimeBetween('-1 month', '-2 weeks'));
         
         for ($i = 0; $i < $historyCount; $i++) {
             $currentTimestamp = Carbon::instance($this->faker->dateTimeBetween($lastTimestamp, Carbon::now()->subSecond()));
             $reviewTimestamps[] = $currentTimestamp->toDateTimeString();
-            
             $lastTimestamp = $currentTimestamp;
-            
             $reviewingAdminIds[] = $this->faker->randomElement($allAdminIds);
             $reviewNotes[] = $this->faker->sentence();
             $agreementsHistory[] = $this->faker->numberBetween(0, 9);
@@ -79,14 +109,16 @@ class ReportFactory extends Factory
             'title' => $this->faker->sentence(6),
             'description' => $this->faker->paragraph(3),
             'address' => $this->faker->streetAddress(),
-            'city' => $this->faker->city(),
-            'district' => $this->faker->state(),
+            
+            // --- PERUBAHAN UTAMA DI SINI ---
+            // Menggunakan value (kode wilayah) dari Enum yang sudah dipilih secara acak
+            'city' => $randomRegency->value,
+            'district' => $randomDistrict->value,
+            
             'category' => $this->faker->randomElement(ReportCategoryEnum::cases()),
             'priority' => $this->faker->randomElement(PriorityEnum::cases()),
-
             'created_at' => Carbon::parse($reviewTimestamps[0]),
             'updated_at' => Carbon::parse(end($reviewTimestamps)),
-            
             'statuses' => $statuses,
             'review_timestamps' => $reviewTimestamps,
             'reviewing_admin_ids' => $reviewingAdminIds,

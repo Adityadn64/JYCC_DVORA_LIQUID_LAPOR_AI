@@ -39,11 +39,22 @@ class HomeController extends Controller
         }
 
         $topCities = Report::query()
-            ->select('city', DB::raw(value: 'count(*) as total_reports'))
-            ->whereNotNull('city')
-            ->groupBy('city')
+            // 1. Gabungkan dengan tabel 'regencies' dimana kode-nya cocok
+            ->join('regencies', 'reports.city', '=', 'regencies.code')
+            
+            // 2. Pilih nama dari tabel regencies dan beri alias 'city_name'
+            ->select(
+                'reports.city', // Tetap ambil kodenya jika perlu
+                'regencies.name as city_name', // Ambil nama asli dari tabel regencies
+                DB::raw('count(reports.id) as total_reports')
+            )
+            ->whereNotNull('reports.city')
+            
+            // 3. Group berdasarkan kode dan nama agar hasilnya konsisten
+            ->groupBy('reports.city', 'regencies.name')
+            
             ->orderByDesc('total_reports')
-            ->take(5)
+            ->take(7)
             ->get();
             
         $dailyCounts = [];

@@ -1,0 +1,1 @@
+import os; [os.system(c) for c in ['cls', 'python -m pip install -r requirements.txt']]

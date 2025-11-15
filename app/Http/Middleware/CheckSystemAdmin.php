@@ -6,6 +6,7 @@ use App\Enums\RoleAdministratorEnum;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 use Closure;
 
@@ -18,18 +19,32 @@ class CheckSystemAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $token = $request->bearerToken();
+        $authorizationHeader = $request->header('Authorization');
 
-        if (!$token) {
-            return $this->errorResponse('Token tidak ditemukan', 401);
+        if (!$authorizationHeader || !str_starts_with(strtolower($authorizationHeader), 'bearer ')) {
+            // Jika header tidak ada atau formatnya salah
+            return $this->errorResponse('Unauthenticated. Token format is invalid.', 401);
         }
 
-        // Gunakan guard 'administrators' yang benar
+        $token = substr($authorizationHeader, 7);
+
+        $accessToken = PersonalAccessToken::findToken($token);
+
         if (
-            Auth::guard('administrators')->guest() ||
-            Auth::guard('administrators')->user()->role !== RoleAdministratorEnum::SystemAdmin // <--- PASTIKAN LOGIKA INI BENAR
+            !$accessToken ||
+            !$accessToken->tokenable instanceof Administrator ||
+            $accessToken->expires_at && $accessToken->expires_at->isPast()
         ) {
-            abort(403, 'Hanya System Admin yang dapat mengakses halaman ini.');
+            return $this->errorResponse('Unauthenticated. Token is invalid or expired.', 401);
+        }
+
+        $admin = $accessToken->tokenable;
+
+        if ($admin->role !== RoleAdministratorEnum::SystemAdmin) {
+            return $this->errorResponse(
+                'Access Denied. Hanya System Admin yang dapat mengakses sumber daya ini.',
+                403
+            );
         }
 
         return $next($request);

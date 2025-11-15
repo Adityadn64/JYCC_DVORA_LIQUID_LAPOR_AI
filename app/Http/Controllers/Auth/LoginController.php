@@ -53,17 +53,22 @@ class LoginController extends Controller
             return $this->errorResponse('Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.', 403);
         }
 
-        Auth::guard('administrators')->login($admin, $request->boolean('remember'));
-        $request->session()->regenerate();
-
         $admin->tokens()->delete();
-        $token = $admin->createToken('admin-token')->plainTextToken;
+        $token = $admin->createToken('admin-token', ['role:' . $admin->role->value])->plainTextToken;
 
         // return redirect()->intended(route('admin.dashboard'));
 
         return $this->successResponse([
             'token' => $token,
-        ]);
+            'user' => [
+                'id' => $admin->id,
+                'full_name' => $admin->full_name,
+                'email' => $admin->email,
+                'phone' => $admin->phone,
+                'role' => $admin->role->value,
+                'profile_picture_path' => $admin->profile_picture_path,
+            ]
+        ], 'Login berhasil.');
     }
 
     public function logout(Request $request)

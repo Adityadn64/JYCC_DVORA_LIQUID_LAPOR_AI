@@ -28,15 +28,20 @@ return [
     */
 
     'guards' => [
-        'administrators' => [ // DITAMBAHKAN
+        'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        // PERBARUI GUARD INI
+        'administrators' => [
             'driver' => 'session',
             'provider' => 'administrators',
         ],
 
-        // Guard 'web' bawaan bisa dihapus atau dibiarkan saja
-        'web' => [
-            'driver' => 'session',
-            'provider' => 'users',
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => null,
         ],
     ],
 
@@ -51,15 +56,10 @@ return [
     */
 
     'providers' => [
-        'administrators' => [ // DITAMBAHKAN
+        'administrators' => [
             'driver' => 'eloquent',
             'model' => App\Models\Administrator::class,
-        ],
-
-        // Provider 'users' bawaan bisa dihapus atau dibiarkan saja
-        'users' => [
-            'driver' => 'eloquent',
-        ],
+        ]
     ],
 
     /*

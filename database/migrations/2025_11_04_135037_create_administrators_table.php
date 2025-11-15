@@ -21,7 +21,6 @@ return new class extends Migration
             $table->string('kta_scan_path')->nullable();
             $table->string('role');
             $table->string('status')->default('pending');
-            $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
         });

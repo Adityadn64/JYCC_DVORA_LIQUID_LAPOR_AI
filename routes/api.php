@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Data\RegionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\HomeController;
@@ -14,7 +15,7 @@ use App\Http\Controllers\Admin\PerformanceController;
 
 Route::post('/home', [HomeController::class, 'index'])->name('home');
 Route::post('/report/create', [ReportController::class, 'store'])->name('report.store');
-Route::post('/report/track', [ReportController::class, 'trackIndex'])->name('report.track.index');
+Route::post('/reports/track', [ReportController::class, 'trackIndex'])->name('report.track.index');
 Route::post('/report/{report}/track', [ReportController::class, 'trackShow'])->name('report.track.show');
 
 Route::prefix('auth')->name('auth.')->group(function () {
@@ -36,7 +37,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
     });
 });
 
-Route::middleware(['auth:sanctum', 'auth:administrators'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth:sanctum', 'admin.status'])->prefix('admin')->name('admin.')->group(function () {
     Route::post('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
     Route::prefix('analytics')->name('profile.')->group(function () {
@@ -61,21 +62,25 @@ Route::middleware(['auth:sanctum', 'auth:administrators'])->prefix('admin')->nam
         Route::post('/request-phone-change', [ProfileController::class, 'requestPhoneChange'])->name('requestPhoneChange');
         Route::post('/verify-phone-change', [ProfileController::class, 'verifyPhoneChange'])->name('verifyPhoneChange');
     });
-    Route::prefix('manage')->name('manage.')->middleware('systemadmin')->group(function () {
-        Route::post('/', [AdminManagementController::class, 'index'])->name('index');
-        Route::post('/request', [AdminManagementController::class, 'pendingPage'])->name('request');
-        Route::post('/{admin}/accept', [AdminManagementController::class, 'accept'])->name('accept');
-        Route::post('/{admin}/reject', [AdminManagementController::class, 'reject'])->name('reject');
-
-        Route::post('/', [AdminManagementController::class, 'store'])->name('store');
-        Route::put('/{admin}', [AdminManagementController::class, 'update'])->name('update');
-        
-        Route::post('/{admin}/toggle-status', [AdminManagementController::class, 'toggleStatus'])->name('toggleStatus');
-        Route::post('/{admin}/send-reset', [AdminManagementController::class, 'sendPasswordReset'])->name('sendReset');
-        
-        Route::post('/{admin}/activity', [AdminManagementController::class, 'showActivity'])->name('activity');
-    });
-    Route::prefix('performance')->name('performance.')->middleware('systemadmin')->group(function () {
-        Route::get('/', [PerformanceController::class, 'index'])->name('index');
+    Route::middleware('systemadmin')->group(function () {
+        Route::prefix('manage')->name('manage.')->group(function () {
+            Route::post('/', [AdminManagementController::class, 'index'])->name('index');
+            Route::post('/request', [AdminManagementController::class, 'pendingPage'])->name('request');
+            Route::post('/{admin}/accept', [AdminManagementController::class, 'accept'])->name('accept');
+            Route::post('/{admin}/reject', [AdminManagementController::class, 'reject'])->name('reject');
+    
+            Route::post('/', [AdminManagementController::class, 'store'])->name('store');
+            Route::put('/{admin}', [AdminManagementController::class, 'update'])->name('update');
+            
+            Route::post('/{admin}/toggle-status', [AdminManagementController::class, 'toggleStatus'])->name('toggleStatus');
+            Route::post('/{admin}/send-reset', [AdminManagementController::class, 'sendPasswordReset'])->name('sendReset');
+            
+            Route::post('/{admin}/activity', [AdminManagementController::class, 'showActivity'])->name('activity');
+        });
+        Route::prefix('performance')->name('performance.')->middleware('systemadmin')->group(function () {
+            Route::get('/', [PerformanceController::class, 'index'])->name('index');
+        });
     });
 });
+
+Route::post('/regencies', [RegionController::class, 'getFormattedRegions'])->name('regions.formatted');

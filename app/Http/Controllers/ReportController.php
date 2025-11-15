@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\District;
+use App\Models\Regency;
 use App\Models\Report;
 use App\Models\ReportMedia;
 use App\Models\ServiceProfile;
@@ -24,18 +26,36 @@ class ReportController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|min:20',
-            'phone' => 'required|string|min:20',
+            'name' => 'required|string|min:4',
+            'phone' => 'required|string|min:4',
             'description' => 'required|string|min:20',
+            'city' => 'required|string',
+            'district' => 'required|string',
             'location' => 'required|string',
             'images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'videos.*' => 'nullable|mimes:mp4|max:10240',
         ]);
 
         if ($validator->fails()) {
-            // return back()->withErrors($validator)->withInput();
-
             return $this->errorResponse('Validation failed', 422, $validator->errors()->toArray());
+        }
+
+        $regency = Regency::where('code', $request->input('city'))->first();
+
+        if (!$regency) {
+            return $this->errorResponse('Validation failed', 422, [
+                'city' => ['Kota/Kabupaten yang dipilih tidak valid atau tidak ditemukan.']
+            ]);
+        }
+
+        $district = District::where('code', $request->input('district'))
+                            ->where('regency_id', $regency->id)
+                            ->first();
+
+        if (!$district) {
+            return $this->errorResponse('Validation failed', 422, [
+                'district' => ['Kecamatan yang dipilih tidak valid untuk kota/kabupaten yang bersangkutan.']
+            ]);
         }
 
         $aiDeterminedServiceCode = ServiceCodeEnum::DINKES;
@@ -53,9 +73,11 @@ class ReportController extends Controller
         $report = Report::create([
             'description' => $request->description,
             'address' => $request->location,
-            'city' => 'Kota Contoh',
-            'district' => 'Kecamatan Contoh',
+            'city' => $regency->code,
+            'district' => $district->code,
             
+            'reporter_name' => $request->name,
+            'reporter_contact' => $request->phone,
             'title' => $aiResult['title'],
             'category' => $aiResult['category'],
             'priority' => $aiResult['priority'],
@@ -100,7 +122,9 @@ class ReportController extends Controller
         // return redirect()->route('report.track.show', $report->id)
         //                  ->with('success', 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.');
     
-        return $this->successResponse([], 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.', 400);
+        return $this->successResponse([
+            'id' => $report->id,
+        ], 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.');
     }
 
     public function trackIndex(Request $request)
