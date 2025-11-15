@@ -24,6 +24,8 @@ class ReportController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'name' => 'required|string|min:20',
+            'phone' => 'required|string|min:20',
             'description' => 'required|string|min:20',
             'location' => 'required|string',
             'images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048',

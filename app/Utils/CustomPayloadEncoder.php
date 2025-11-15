@@ -32,9 +32,11 @@ class CustomPayloadEncoder
             $inputAscii = ord($input[$i]);
 
             if ($mode === 'encode') {
-                $newAscii = $inputAscii + $keyOffset;
-            } else {
-                $newAscii = $inputAscii - $keyOffset;
+                // Secara eksplisit lakukan modulo 256
+                $newAscii = ($inputAscii + $keyOffset) % 256;
+            } else { // decode
+                // Tambahkan 256 untuk menghindari hasil negatif sebelum modulo
+                $newAscii = ($inputAscii - $keyOffset + 256) % 256;
             }
 
             $output .= chr($newAscii);

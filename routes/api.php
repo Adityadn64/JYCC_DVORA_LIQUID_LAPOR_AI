@@ -12,30 +12,28 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\Admin\PerformanceController;
 
-Route::get('/', function () {
-    return '';
-});
-
 Route::post('/home', [HomeController::class, 'index'])->name('home');
-Route::post('/lapor', [ReportController::class, 'store'])->name('report.store');
-Route::post('/lacak', [ReportController::class, 'trackIndex'])->name('report.track.index');
-Route::post('/lacak/{report}', [ReportController::class, 'trackShow'])->name('report.track.show');
+Route::post('/report/create', [ReportController::class, 'store'])->name('report.store');
+Route::post('/report/track', [ReportController::class, 'trackIndex'])->name('report.track.index');
+Route::post('/report/{report}/track', [ReportController::class, 'trackShow'])->name('report.track.show');
 
-Route::middleware('guest:administrators')->group(function () {
-    Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
-
-    Route::post('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register/send', [RegisterController::class, 'startRegistration'])->name('register.start');
-    Route::post('/register/verify', [RegisterController::class, 'showVerificationForm'])->name('register.verify.form');
-    Route::post('/register/verify/send', [RegisterController::class, 'completeRegistration'])->name('register.complete');
-
-    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
-    Route::post('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
-    Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('password.update');
-});
-
-Route::middleware(['auth:sanctum', 'auth:administrators'])->group(function () {
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::prefix('auth')->name('auth.')->group(function () {
+    Route::middleware('guest:administrators')->group(function () {
+        Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
+    
+        Route::post('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+        Route::post('/register/send', [RegisterController::class, 'startRegistration'])->name('register.start');
+        Route::post('/register/verify', [RegisterController::class, 'showVerificationForm'])->name('register.verify.form');
+        Route::post('/register/verify/send', [RegisterController::class, 'completeRegistration'])->name('register.complete');
+    
+        Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+        Route::post('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+        Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('password.update');
+    });
+    
+    Route::middleware(['auth:sanctum', 'auth:administrators'])->group(function () {
+        Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    });
 });
 
 Route::middleware(['auth:sanctum', 'auth:administrators'])->prefix('admin')->name('admin.')->group(function () {
