@@ -80,7 +80,7 @@ declare module 'express-session' {
 // ================================
 
 const laravelAPICSRF: AxiosInstance = axios.create({
-  baseURL: await searchBaseURL(),
+  baseURL: DEFAULT_SERVER_API_URL,
   withCredentials: true,
   headers: {
     'Accept': 'application/json',
@@ -90,7 +90,7 @@ const laravelAPICSRF: AxiosInstance = axios.create({
 });
 
 const laravelAPI: AxiosInstance = axios.create({
-  baseURL: `${await searchBaseURL()}/api`,
+  baseURL: `${DEFAULT_SERVER_API_URL}/api`,
   withCredentials: true,
   headers: {
     'Accept': 'application/json',
