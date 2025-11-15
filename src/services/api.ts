@@ -25,7 +25,7 @@ const searchBaseURL = async () => {
 }
 
 const apiClient: AxiosInstance = axios.create({
-  baseURL: `${await searchBaseURL()}/api`,
+  baseURL: `${DEFAULT_SERVER_API_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
