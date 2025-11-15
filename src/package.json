@@ -1,34 +1,25 @@
 {
-  "name": "pencatat-soal",
+  "name": "lapor-ai",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"node server.ts\"",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "node server.ts"
   },
   "dependencies": {
     "@octokit/core": "^7.0.5",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express-session": "^1.18.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-icons": "^5.5.0",
-    "react-router-dom": "^6.20.0",
-    "recharts": "^2.10.3",
-    "tailwindcss": "^4.0.0"
+    "express-session": "^1.18.2"
   },
   "devDependencies": {
+    "@types/body-parser": "^1.19.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/express-session": "^1.18.2",
     "@types/node": "^22.14.0",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
-    "@vitejs/plugin-react": "^5.0.0",
-    "concurrently": "^9.2.1",
     "express": "^5.1.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "typescript": "~5.8.2"
   }
 }

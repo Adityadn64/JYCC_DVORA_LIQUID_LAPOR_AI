@@ -11,7 +11,26 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.EXPRESS_PORT || 3001;
-const LARAVEL_API = process.env.APP_URL || 'http://localhost:8000';
+
+const IS_PRODUCTION: boolean = process.env.IS_PRODUCTION === 'true' || false;
+
+const DEFAULT_SERVER_API_URL: string = process.env.DEFAULT_SERVER_API_URL || "http://localhost:3001";
+const SERVER_API_URLS: string[] = JSON.parse(process.env.SERVER_API_URLS || `[${DEFAULT_SERVER_API_URL}]`);
+
+const searchBaseURL = async () => {
+  for (const url of SERVER_API_URLS) {
+    try {
+      const response = await axios.get(url);
+      if (response.status === 200) {
+        return url;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  return DEFAULT_SERVER_API_URL;
+}
 
 // ================================
 // MIDDLEWARE CONFIGURATION
@@ -31,7 +50,7 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // Session Configuration
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
+  secret: process.env.SESSION_SECRET || 'LA98qwr10_1egakoaw12UIYnghppo0_-1948',
   resave: false,
   saveUninitialized: true,
   cookie: {
@@ -42,12 +61,18 @@ app.use(session({
   }
 }));
 
+declare module 'express-session' {
+  interface SessionData {
+    auth_token: string; // Or the appropriate type for your token
+  }
+}
+
 // ================================
 // AXIOS INSTANCE FOR LARAVEL
 // ================================
 
 const laravelAPICSRF: AxiosInstance = axios.create({
-  baseURL: LARAVEL_API,
+  baseURL: await searchBaseURL(),
   withCredentials: true,
   headers: {
     'Accept': 'application/json',
@@ -57,7 +82,7 @@ const laravelAPICSRF: AxiosInstance = axios.create({
 });
 
 const laravelAPI: AxiosInstance = axios.create({
-  baseURL: `${LARAVEL_API}/api`,
+  baseURL: `${await searchBaseURL()}api`,
   withCredentials: true,
   headers: {
     'Accept': 'application/json',
@@ -114,6 +139,10 @@ laravelAPI.interceptors.response.use(
   }
 );
 
+app.get('/', async (req: Request, res: Response) => {
+  return res.json('Express Backend is running')
+});
+
 // ================================
 // CSRF TOKEN ENDPOINT
 // ================================
@@ -153,9 +182,9 @@ app.post('/api/home', async (_req: Request, res: Response) => {
 });
 
 // REPORT - Create new report
-app.post('/api/lapor', async (req: Request, res: Response) => {
+app.post('/api/report/create', async (req: Request, res: Response) => {
   try {
-    const response = await laravelAPI.post('/lapor', req.body);
+    const response = await laravelAPI.post('/report/create', req.body);
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data);
@@ -163,9 +192,10 @@ app.post('/api/lapor', async (req: Request, res: Response) => {
 });
 
 // REPORT - Search/Track reports
-app.post('/api/lacak', async (req: Request, res: Response) => {
+app.post('/api/report/track', async (req: Request, res: Response) => {
   try {
-    const response = await laravelAPI.post('/lacak', req.body);
+    const params = req.params;
+    const response = await laravelAPI.post('/report/track', { params: req.query });
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data);
@@ -173,9 +203,9 @@ app.post('/api/lacak', async (req: Request, res: Response) => {
 });
 
 // REPORT - Get report detail
-app.post('/api/lacak/:id', async (req: Request, res: Response) => {
+app.post('/api/report/:id/track', async (req: Request, res: Response) => {
   try {
-    const response = await laravelAPI.post(`/lacak/${req.params.id}`, req.body);
+    const response = await laravelAPI.post(`/report/${req.params.id}/track`, req.body);
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data);
@@ -521,7 +551,9 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // START SERVER
 // ================================
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  const baseURL = await searchBaseURL();
+
   console.log(`
 ╔════════════════════════════════════════╗
 ║     EXPRESS API GATEWAY RUNNING        ║
@@ -529,12 +561,11 @@ app.listen(PORT, () => {
 
 🚀 Server running on: http://localhost:${PORT}
 🔗 React Frontend: http://localhost:3000
-📡 Laravel Backend: ${LARAVEL_API}
+📡 Laravel Backend: ${baseURL}
 ✅ CORS enabled for localhost:3000
 
 Endpoints:
-  - GET  /api/health
-  - POST /api/csrf-token
+  - POST /sanctum/csrf-token
   - POST /api/auth/login
   - POST /api/auth/logout
   - POST /api/auth/register
@@ -542,11 +573,11 @@ Endpoints:
   - And more...
 
 Architecture:
-  React (localhost:3000)
+  React (${!IS_PRODUCTION ? 'localhost:3000' : 'https://lapor-ai-jatim.vercel.app/'})
     ↓
-  Express Gateway (localhost:3001) ← Hidden Implementation
+  Express Gateway (${!IS_PRODUCTION ? 'localhost:3001' : 'https://lalex.vercel.app/'}) ← Hidden Implementation
     ↓
-  Laravel Backend (${LARAVEL_API}) ← Hidden from Client
+  Laravel Backend (${baseURL}) ← Hidden from Client
   `);
 });
 
