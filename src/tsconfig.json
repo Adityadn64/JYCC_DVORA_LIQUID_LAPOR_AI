@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020", // Gunakan target yang lebih modern
+    "module": "NodeNext", // PENTING: Gunakan module system modern Node.js
+    "moduleResolution": "NodeNext", // PENTING: Cara modern untuk resolve modul
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist", // Praktik terbaik: pisahkan output ke folder 'dist'
+    "rootDir": "./"     // Folder source code Anda
+  },
+  "include": [
+    "./**/*.ts" // Pastikan mencakup semua file TypeScript di proyek
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
