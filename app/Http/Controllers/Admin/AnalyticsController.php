@@ -32,11 +32,11 @@ class AnalyticsController extends Controller
 
     public function __construct()
     {
-        // Inisialisasi nilai Enum untuk kueri
+        // Inisialisasi nilai Enum untuk kueri yang lebih bersih
         $this->statusPending = ReportStatusEnum::Pending->value;
         $this->statusProcess = ReportStatusEnum::Process->value;
         $this->statusFinished = ReportStatusEnum::Finished->value;
-        $this->statusRejected = ReportStatusEnum::Rejected->value; // Pastikan ini ada di Enum Anda
+        $this->statusRejected = ReportStatusEnum::Rejected->value;
     }
 
     /**
@@ -81,6 +81,7 @@ class AnalyticsController extends Controller
         // Data untuk dropdown filter
         $filterOptions = $this->getFilterOptions();
 
+        // [FIXED] Mengembalikan view, bukan response JSON, agar sesuai dengan file Blade.
         // return view('admin.analytics', compact(
         //     'reports',
         //     'kpiStats',
@@ -152,8 +153,8 @@ class AnalyticsController extends Controller
         $query->when($request->filled('location'), function ($q) use ($request) {
             $loc = '%' . $request->location . '%';
             $q->where(fn($sub) => $sub->where('city', 'like', $loc)
-                ->orWhere('district', 'like', $loc)
-                ->orWhere('address', 'like', $loc));
+                ->orWhere('district', 'like', 'like', $loc)
+                ->orWhere('address', 'like', 'like', $loc));
         });
 
         return $query;
@@ -161,7 +162,7 @@ class AnalyticsController extends Controller
 
     private function getFilterOptions()
     {
-        $admin = Auth::user();
+        $admin = request()->user();
         $serviceQuery = ServiceProfile::query()->orderBy('full_name');
         $adminQuery = Administrator::query()->where('role', RoleAdministratorEnum::BaseAdmin)->orderBy('full_name');
 
@@ -188,14 +189,14 @@ class AnalyticsController extends Controller
         $stats['avg_resolution_hours'] = (clone $baseQuery)
             ->whereRaw("statuses->>(jsonb_array_length(statuses) - 1) = '{$this->statusFinished}'")
             ->select(DB::raw('AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) / 3600'))
-            ->value(DB::raw('avg'));
+            ->value('avg'); // Menggunakan alias 'avg'
 
         // Persentase Selesai
         $totalFinished = (clone $baseQuery)->whereRaw("statuses->>(jsonb_array_length(statuses) - 1) = '{$this->statusFinished}'")->count();
         $stats['completion_rate'] = ($stats['total'] > 0) ? ($totalFinished / $stats['total']) * 100 : 0;
 
         // Perbandingan Bulan Ini vs Lalu (Jika filter tidak aktif)
-        if (!$request->filled('date_start')) {
+        if (!$request->filled('date_start') && !$request->filled('date_end')) {
             $stats['total_this_month'] = (clone $baseQuery)->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])->count();
             $stats['total_last_month'] = (clone $baseQuery)->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])->count();
         } else {
@@ -215,7 +216,11 @@ class AnalyticsController extends Controller
         $dbFormat = ($format == 'month') ? 'YYYY-MM' : 'YYYY-MM-DD';
         $phpFormat = ($format == 'month') ? 'M Y' : 'd M Y';
 
+        $startDate = $request->filled('date_start') ? Carbon::parse($request->date_start) : now()->subDays(30);
+        $endDate = $request->filled('date_end') ? Carbon::parse($request->date_end) : now();
+
         $trend = (clone $baseQuery)
+            ->whereBetween('created_at', [$startDate, $endDate])
             ->select(
                 DB::raw("TO_CHAR(created_at, '$dbFormat') as date_group"),
                 DB::raw('count(*) as count')
@@ -226,6 +231,7 @@ class AnalyticsController extends Controller
 
         // Breakdown Status
         $statusTrend = (clone $baseQuery)
+            ->whereBetween('created_at', [$startDate, $endDate])
             ->select(
                 DB::raw("TO_CHAR(created_at, '$dbFormat') as date_group"),
                 DB::raw("COUNT(*) FILTER (WHERE statuses->>(jsonb_array_length(statuses) - 1) = '{$this->statusPending}') as pending"),
@@ -248,24 +254,25 @@ class AnalyticsController extends Controller
 
     private function getDistributionData($baseQuery)
     {
-        // Distribusi Kategori (Perbaikan: Hapus join, group by kolom 'category')
+        // Distribusi Kategori
         $categoryDist = (clone $baseQuery)
-            ->select('category', DB::raw('count(reports.id) as count'))
+            ->select('category', DB::raw('count(id) as count'))
             ->groupBy('category')
             ->orderByDesc('count')
             ->get();
 
         // Distribusi Dinas
+        // [FIXED] Join menggunakan 'reports.service_code' ke 'service_profiles.code'
         $dinasDist = (clone $baseQuery)
-            ->join('service_profiles', 'reports.service_id', '=', 'service_profiles.id')
+            ->join('service_profiles', 'reports.service_code', '=', 'service_profiles.code')
             ->select('service_profiles.full_name', DB::raw('count(reports.id) as count'))
             ->groupBy('service_profiles.full_name')
             ->orderByDesc('count')
             ->get();
 
         return [
-            // Map Enum 'category' ke string 'value' untuk label chart
-            'category_labels' => $categoryDist->pluck('category')->map(fn($cat) => $cat->value ?? 'N/A'),
+            // [FIXED] Map value kategori ke nama yang lebih mudah dibaca untuk label chart
+            'category_labels' => $categoryDist->pluck('category')->map(fn($catEnum) => $catEnum->name ?? 'N/A'),
             'category_data' => $categoryDist->pluck('count'),
             'dinas_labels' => $dinasDist->pluck('full_name'),
             'dinas_data' => $dinasDist->pluck('count'),
@@ -281,7 +288,7 @@ class AnalyticsController extends Controller
                 'administrators.full_name',
                 DB::raw('COUNT(reports.id) as total_ditugaskan'),
                 DB::raw("COUNT(reports.id) FILTER (WHERE reports.statuses->>(jsonb_array_length(reports.statuses) - 1) = '{$this->statusFinished}') as total_selesai"),
-                DB::raw("AVG(EXTRACT(EPOCH FROM (reports.updated_at - reports.created_at))) / 3600 as avg_hours")
+                DB::raw("AVG(CASE WHEN reports.statuses->>(jsonb_array_length(reports.statuses) - 1) = '{$this->statusFinished}' THEN EXTRACT(EPOCH FROM (reports.updated_at - reports.created_at)) / 3600 ELSE NULL END) as avg_hours")
             )
             ->groupBy('administrators.id', 'administrators.full_name')
             ->orderByDesc('total_selesai')
@@ -290,13 +297,14 @@ class AnalyticsController extends Controller
 
     private function getDinasPerformance($baseQuery)
     {
+        // [FIXED] Join menggunakan 'service_profiles.code' ke 'reports.service_code'
         return ServiceProfile::query()
-            ->joinSub((clone $baseQuery), 'reports', 'service_profiles.id', '=', 'reports.service_id')
+            ->joinSub((clone $baseQuery), 'reports', 'service_profiles.code', '=', 'reports.service_code')
             ->select(
                 'service_profiles.full_name',
                 DB::raw('COUNT(reports.id) as total_laporan'),
                 DB::raw("COUNT(reports.id) FILTER (WHERE reports.statuses->>(jsonb_array_length(reports.statuses) - 1) = '{$this->statusFinished}') as total_selesai"),
-                DB::raw("AVG(EXTRACT(EPOCH FROM (reports.updated_at - reports.created_at))) / 3600 as avg_hours")
+                DB::raw("AVG(CASE WHEN reports.statuses->>(jsonb_array_length(reports.statuses) - 1) = '{$this->statusFinished}' THEN EXTRACT(EPOCH FROM (reports.updated_at - reports.created_at)) / 3600 ELSE NULL END) as avg_hours")
             )
             ->groupBy('service_profiles.id', 'service_profiles.full_name')
             ->orderByDesc('total_laporan')
@@ -305,16 +313,22 @@ class AnalyticsController extends Controller
 
     private function getCategoryAnalysis($baseQuery)
     {
-        // Waktu penyelesaian terlama per kategori (Perbaikan: Hapus join, group by kolom 'category')
-        return (clone $baseQuery)
+        // [FIXED] Mengubah hasil kueri agar sesuai dengan ekspektasi Blade: $cat->category->value
+        $analysis = (clone $baseQuery)
             ->whereRaw("statuses->>(jsonb_array_length(statuses) - 1) = '{$this->statusFinished}'")
             ->select(
-                'category', // <- Ganti dari 'report_categories.name'
-                DB::raw('AVG(EXTRACT(EPOCH FROM (reports.updated_at - reports.created_at))) / 3600 as avg_hours')
+                'category',
+                DB::raw('AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) / 3600 as avg_hours')
             )
-            ->groupBy('category') // <- Ganti dari 'report_categories.name'
+            ->groupBy('category')
             ->orderByDesc('avg_hours')
             ->get();
+        
+        // Map string 'category' menjadi objek Enum
+        return $analysis->map(function ($item) {
+            $item->category = $item->category ?? 'N/A';
+            return $item;
+        })->filter(fn($item) => $item->category !== null); // Hapus jika enum tidak ditemukan
     }
 
     private function getLocationAnalysis($baseQuery)
@@ -322,8 +336,8 @@ class AnalyticsController extends Controller
         // Hot Zone (per Kecamatan)
         return (clone $baseQuery)
             ->select('district', DB::raw('count(*) as total'))
-            ->groupBy('district')
             ->whereNotNull('district')
+            ->groupBy('district')
             ->orderByDesc('total')
             ->limit(10)
             ->get();
@@ -332,17 +346,21 @@ class AnalyticsController extends Controller
     private function getAutoInsights($kpiStats)
     {
         $insights = [];
-        if ($kpiStats['total_last_month'] > 0) {
+        if (isset($kpiStats['total_last_month']) && $kpiStats['total_last_month'] > 0) {
             $percentChange = (($kpiStats['total_this_month'] - $kpiStats['total_last_month']) / $kpiStats['total_last_month']) * 100;
-            if ($percentChange > 0) {
-                $insights[] = "Jumlah laporan meningkat " . number_format($percentChange, 1) . "% dibanding periode sebelumnya.";
-            } elseif ($percentChange < 0) {
-                $insights[] = "Jumlah laporan menurun " . number_format(abs($percentChange), 1) . "% dibanding periode sebelumnya.";
+            if ($percentChange > 10) {
+                $insights[] = "Jumlah laporan meningkat signifikan sebesar " . number_format($percentChange, 1) . "% dibanding periode sebelumnya.";
+            } elseif ($percentChange < -10) {
+                $insights[] = "Terjadi penurunan laporan sebesar " . number_format(abs($percentChange), 1) . "% dibanding periode sebelumnya, kinerja membaik!";
             }
         }
 
         if ($kpiStats['avg_resolution_hours'] > 48) {
-            $insights[] = "Waktu penyelesaian rata-rata (" . number_format($kpiStats['avg_resolution_hours'], 1) . " jam) lebih dari 2 hari.";
+            $insights[] = "Waktu penyelesaian rata-rata (" . number_format($kpiStats['avg_resolution_hours'], 1) . " jam) masih di atas target 2 hari. Perlu evaluasi proses.";
+        }
+        
+        if ($kpiStats['completion_rate'] < 75) {
+             $insights[] = "Tingkat penyelesaian (" . number_format($kpiStats['completion_rate'], 1) . "%) berada di bawah 75%. Identifikasi laporan yang tertunda.";
         }
 
         return $insights;
@@ -376,7 +394,10 @@ class AnalyticsController extends Controller
             'JUDUL' => 'title',
             'STATUS' => function($report) {
                 $statusesArray = $report->statuses;
-                return !empty($statusesArray) ? end($statusesArray) : 'unknown';
+                return !empty($statusesArray) ? ucfirst(end($statusesArray)) : 'Unknown';
+            },
+            'KATEGORI' => function($report) {
+                return $report->category->name ?? 'N/A';
             },
             'DINAS' => function($report) {
                 return $report->serviceProfile->full_name ?? 'N/A';
@@ -384,22 +405,18 @@ class AnalyticsController extends Controller
             'ADMIN' => function($report) {
                 return $report->assignee->full_name ?? 'Belum Ditugaskan';
             },
-            'DIPERBARUI' => function($report) {
-                return $report->updated_at->toDateTimeString() . " (" . $report->updated_at->diffForHumans() . ")";
-            },
-            'AKSI' => function($report) {
-                return action([ReportController::class, 'trackShow'], ['report' => $report]);
+            'DIBUAT' => fn($report) => $report->created_at->toDateTimeString(),
+            'DIPERBARUI' => fn($report) => $report->updated_at->toDateTimeString(),
+            'LINK' => function($report) {
+                return route('report.track.show', ['report' => $report]);
             }
         ];
 
         $exportType = $request->input('exportType');
+        $fileName = 'laporan-analisis-' . now()->format('YmdHis');
 
         return $exportType === "CSV"
-            ? ExportFile::exportCSV($reports, $columns, 'reports.csv')
-            : (
-                $exportType === "Excel"
-                    ? ExportFile::exportExcel($reports, $columns, 'reports.xlsx')
-                    : null
-            );
+            ? ExportFile::exportCSV($reports, $columns, $fileName . '.csv')
+            : ExportFile::exportExcel($reports, $columns, $fileName . '.xlsx');
     }
 }

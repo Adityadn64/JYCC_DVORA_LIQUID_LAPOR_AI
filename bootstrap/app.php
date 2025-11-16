@@ -20,14 +20,20 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, 
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
+        
         $middleware->group('api', [
             \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
+
         $middleware->alias([
-            'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
             'admin.status' => \App\Http\Middleware\CheckAdminStatus::class,
             'systemadmin' => \App\Http\Middleware\CheckSystemAdmin::class,
+        ]);
+
+        // Enable CORS for API routes
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

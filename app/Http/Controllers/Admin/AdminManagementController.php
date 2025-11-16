@@ -167,9 +167,9 @@ class AdminManagementController extends Controller
      */
     public function toggleStatus(Administrator $admin)
     {
-        if ($admin->id === Auth::id()) {
+        if ($admin->id === request()->user()->id) {
             // return back()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
-        
+
             return $this->errorResponse('Anda tidak dapat menonaktifkan akun Anda sendiri.', 400);
         }
 

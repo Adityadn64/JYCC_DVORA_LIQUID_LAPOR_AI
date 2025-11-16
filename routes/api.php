@@ -32,15 +32,17 @@ Route::prefix('auth')->name('auth.')->group(function () {
         Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('password.update');
     });
     
-    Route::middleware(['auth:sanctum', 'auth:administrators'])->group(function () {
+    Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     });
 });
 
 Route::middleware(['auth:sanctum', 'admin.status'])->prefix('admin')->name('admin.')->group(function () {
-    Route::post('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    Route::prefix('analytics')->name('profile.')->group(function () {
+    Route::prefix('dashboard')->name('dashboard.')->group(function () {
+        Route::post('/', [DashboardController::class, 'index'])->name('dashboard');
+    });
+
+    Route::prefix('analytics')->name('analytics.')->group(function () {
         Route::post('/', [AnalyticsController::class, 'index'])->name('analytics');
         Route::post('/export-reports', [AnalyticsController::class, 'exportReports'])->name('analytics.export-reports');
     });
@@ -62,6 +64,7 @@ Route::middleware(['auth:sanctum', 'admin.status'])->prefix('admin')->name('admi
         Route::post('/request-phone-change', [ProfileController::class, 'requestPhoneChange'])->name('requestPhoneChange');
         Route::post('/verify-phone-change', [ProfileController::class, 'verifyPhoneChange'])->name('verifyPhoneChange');
     });
+    
     Route::middleware('systemadmin')->group(function () {
         Route::prefix('manage')->name('manage.')->group(function () {
             Route::post('/', [AdminManagementController::class, 'index'])->name('index');

@@ -131,8 +131,8 @@ class PerformanceController extends Controller
      */
     private function getFilterOptions()
     {
-        $admin = Auth::user();
-        
+        $admin = request()->user();
+
         $serviceQuery = ServiceProfile::query()->orderBy('full_name');
         $adminQuery = Administrator::query()->where('role', RoleAdministratorEnum::BaseAdmin)->orderBy('full_name');
         

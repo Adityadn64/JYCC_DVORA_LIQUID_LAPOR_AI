@@ -6,6 +6,7 @@ use App\Enums\RoleAdministratorEnum;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Administrator;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 use Closure;
@@ -23,7 +24,7 @@ class CheckSystemAdmin
 
         if (!$authorizationHeader || !str_starts_with(strtolower($authorizationHeader), 'bearer ')) {
             // Jika header tidak ada atau formatnya salah
-            return $this->errorResponse('Unauthenticated. Token format is invalid.', 401);
+            return $this->errorResponse('Token format is invalid.', 401);
         }
 
         $token = substr($authorizationHeader, 7);
@@ -35,7 +36,7 @@ class CheckSystemAdmin
             !$accessToken->tokenable instanceof Administrator ||
             $accessToken->expires_at && $accessToken->expires_at->isPast()
         ) {
-            return $this->errorResponse('Unauthenticated. Token is invalid or expired.', 401);
+            return $this->errorResponse('Token is invalid or expired.', 401);
         }
 
         $admin = $accessToken->tokenable;

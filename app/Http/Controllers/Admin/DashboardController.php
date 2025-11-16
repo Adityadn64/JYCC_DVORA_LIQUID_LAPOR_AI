@@ -54,12 +54,12 @@ class DashboardController extends Controller
                 $query->select('id')->from('administrators')->where('service_code', $admin->service_code);
             });
         }
-        $topAdmins = $topAdminsQuery::query()
+        $topAdmins = $topAdminsQuery
             ->join('administrators', 'reports.assignee_admin_id', '=', 'administrators.id')
             ->whereJsonContains('statuses', 'finished')
             ->select('administrators.full_name as label', DB::raw('count(reports.id) as value'))
             ->groupBy('administrators.full_name')->orderByDesc('value')->take(5)->get();
-
+            
         $reportQuery = $baseReportQuery;
 
         $reportQuery->when($request->filled('search_id'), fn($q) => $q->where('id', $request->search_id));

@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\AdminStatusEnum;
 use App\Traits\ApiResponseTrait;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Closure;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -18,7 +19,7 @@ class CheckAdminStatus
 
         if (!$authorizationHeader || !str_starts_with(strtolower($authorizationHeader), 'bearer ')) {
             // Jika header tidak ada atau formatnya salah
-            return $this->errorResponse('Unauthenticated. Token format is invalid.', 401);
+            return $this->errorResponse('Token format is invalid.', 401);
         }
 
         $token = substr($authorizationHeader, 7);
@@ -29,7 +30,7 @@ class CheckAdminStatus
             !$accessToken ||
             $accessToken->expires_at && $accessToken->expires_at->isPast()
         ) {
-            return $this->errorResponse('Unauthenticated. Token is invalid or expired.', 401);
+            return $this->errorResponse('Token is invalid or expired.', 401);
         }
 
         $admin = $accessToken->tokenable;
@@ -47,6 +48,9 @@ class CheckAdminStatus
 
             return $this->errorResponse($errorMessage, 403); // 403 Forbidden adalah status yang lebih tepat di sini
         }
+
+        // Set the authenticated user in the Sanctum guard
+        Auth::guard('sanctum')->setUser($admin);
 
         return $next($request);
     }

@@ -22,7 +22,7 @@ class ProfileController extends Controller
     use ApiResponseTrait;
 
     public function getAdminAndActivity() {
-        $admin = Auth::user();
+        $admin = request()->user();
         $admin->load('serviceProfile');
 
         $activity = $this->getAdminActivity($admin);

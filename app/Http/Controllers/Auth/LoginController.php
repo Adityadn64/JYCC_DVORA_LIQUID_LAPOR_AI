@@ -73,12 +73,12 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
-        $admin = $request->user('administrators');
+        $admin = Auth::user();
 
         if ($admin) {
             $admin->currentAccessToken()->delete();
         }
-        
+
         return $this->successResponse([], 'Logout berhasil.');
     }
 }
