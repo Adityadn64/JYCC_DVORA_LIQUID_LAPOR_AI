@@ -8,6 +8,7 @@ import session from 'express-session';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import FormData from 'form-data';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -20,7 +21,7 @@ const IS_PRODUCTION: boolean = process.env.IS_PRODUCTION === 'true' || false;
 
 const CLIENT_URLS: string[] = JSON.parse(process.env.CLIENT_URLS || `['http://localhost:3000']`);
 
-const DEFAULT_SERVER_API_URL: string = process.env.DEFAULT_SERVER_API_URL || "http://localhost:3001";
+const DEFAULT_SERVER_API_URL: string = process.env.DEFAULT_SERVER_API_URL || "http://localhost:8000";
 const SERVER_API_URLS: string[] = JSON.parse(process.env.SERVER_API_URLS || `[${DEFAULT_SERVER_API_URL}]`);
 
 const searchBaseURL = async () => {
@@ -52,11 +53,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Body Parser
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
-// Session Configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'LA98qwr10_1egakoaw12UIYnghppo0_-1948',
   resave: false,
@@ -71,7 +70,7 @@ app.use(session({
 
 declare module 'express-session' {
   interface SessionData {
-    auth_token: string; // Or the appropriate type for your token
+    auth_token: string;
   }
 }
 
@@ -86,7 +85,7 @@ const laravelAPICSRF: AxiosInstance = axios.create({
     'Accept': 'application/json',
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest'
-  }
+  },
 });
 
 const laravelAPI: AxiosInstance = axios.create({
@@ -99,156 +98,198 @@ const laravelAPI: AxiosInstance = axios.create({
   }
 });
 
-const vigenereCipher = (input: string, key: string, mode: 'encode' | 'decode'): string => {
-    const keyLength = key.length;
-    let output = '';
+// ================================
+// ENCRYPTION/DECRYPTION UTILITIES
+// ================================
 
-    for (let i = 0; i < input.length; i++) {
-        const keyChar = key[i % keyLength];
-        const keyOffset = parseInt(keyChar, 10);
+const K1 = process.env.K1 || '^UAFU!Tce1$P^jX$2xdfF6s6t0x7Wtlv'; // K1: React->Express (decrypt)
+const K2 = process.env.K2 || 'hqhIYnZ$^puyLDd!73^EdubsLkdS02AJ'; // K2: Express->Laravel (encrypt)
+const K3 = process.env.K3 || 'cZ2ZwEycENUWhO!i2e#6IWQEnj^l42Vn'; // K3: Laravel->Express (decrypt)
+const K4 = process.env.K4 || 'Kg6$F5ptNZ2%qcRGav!QhZr*LXLpO6Zr'; // K4: Express->React (encrypt)
 
-        const inputAscii = input.charCodeAt(i);
-
-        let newAscii: number;
-        if (mode === 'encode') {
-            newAscii = (inputAscii + keyOffset) % 256;
-        } else {
-            newAscii = (inputAscii - keyOffset + 256) % 256;
-        }
-
-        output += String.fromCharCode(newAscii);
-    }
-
-    return output;
+// Ensure keys are exactly 32 bytes for AES-256
+const normalizeKey = (key: string): Buffer => {
+    const normalized = key.padEnd(32, ' ').slice(0, 32);
+    return Buffer.from(normalized, 'utf8');
 };
 
-const decodePayload = <T>(encodedPayload: string, key: string): T | null => {
+const aesEncrypt = (text: string, key: string): string => {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-cbc', normalizeKey(key), iv);
+    let encrypted = cipher.update(text, 'utf8');
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    
+    // Combine IV and encrypted data, then base64 encode
+    const combined = Buffer.concat([iv, encrypted]);
+    return combined.toString('base64');
+};
+
+const aesDecrypt = (encrypted: string, key: string): string => {
+    const combined = Buffer.from(encrypted, 'base64');
+    const iv = combined.subarray(0, 16);
+    const encryptedText = combined.subarray(16);
+    
+    const decipher = crypto.createDecipheriv('aes-256-cbc', normalizeKey(key), iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    
+    return decrypted.toString('utf8');
+};
+
+const decodePayloadFromLaravel = <T>(encodedPayload: string): T | null => {
     try {
-        // 1. Dekode dari Base64 untuk mendapatkan string yang diacak
-        const scrambledString = atob(encodedPayload);
-
-        // 2. Terapkan Vigenère Cipher untuk membalikkan acakan
-        const jsonString = vigenereCipher(scrambledString, key, 'decode');
-
-        // 3. Parse string JSON kembali menjadi objek
-        return JSON.parse(jsonString) as T;
-
+        const decrypted = aesDecrypt(encodedPayload, K3);
+        return JSON.parse(decrypted) as T;
     } catch (error) {
-        console.error("Gagal men-decode payload:", error);
-        return null; // Gagal decode
+        console.error("Gagal men-decode payload dari Laravel:", error);
+        return null;
+    }
+};
+
+const encodePayloadToLaravel = (data: any): string => {
+    try {
+        const jsonString = JSON.stringify(data);
+        return aesEncrypt(jsonString, K2);
+    } catch (error) {
+        console.error("Gagal men-encode payload ke Laravel:", error);
+        return '';
+    }
+};
+
+const encodePayloadToReact = (data: any): string => {
+    try {
+        const jsonString = JSON.stringify(data);
+        return aesEncrypt(jsonString, K4);
+    } catch (error) {
+        console.error("Gagal men-encode payload ke React:", error);
+        return '';
+    }
+};
+
+const decodePayloadFromReact = <T>(encodedPayload: string): T | null => {
+    try {
+        const decrypted = aesDecrypt(encodedPayload, K1);
+        return JSON.parse(decrypted) as T;
+    } catch (error) {
+        console.error("Gagal men-decode payload dari React:", error);
+        return null;
     }
 };
 
 interface ResponseData {
   d: string;
-  k: string;
 }
 
-const proccessResponseData = <T>(response: AxiosResponse<ResponseData>): T | null => {
+const processResponseData = <T>(response: AxiosResponse<ResponseData>): T | null => {
     try {
-        console.dir({data: response.data}, { depth: null, colors: true })
-        // Gunakan destructuring agar lebih ringkas
-        const { d, k } = response.data;
+        // Check if response has encrypted data
+        if (!response.data || typeof response.data !== 'object') {
+            console.error('Invalid response data format');
+            return null;
+        }
 
-        // Sekarang kita teruskan tipe generic <T> ke decodePayload
-        return decodePayload<T>(d, k);
+        const { d } = response.data;
+        
+        if (!d) {
+            console.error('Missing encrypted data in response');
+            return null;
+        }
+
+        return decodePayloadFromLaravel<T>(d);
     } catch (error) {
         console.error("Gagal memproses respons:", error);
-        // Lempar kembali error agar bisa ditangkap oleh pemanggil
         throw error;
     }
 }
+
+// ================================
+// GENERIC ENCRYPTED ROUTE HANDLER
+// ================================
+const handleEncryptedRequest = async (
+  req: Request, 
+  res: Response,
+  laravelRequest: (data: any) => Promise<AxiosResponse<any>>,
+  handleRequest?: () => void,
+  debug: boolean = false,
+) => {
+  try {
+    if (debug) {
+      console.log('=== Encrypted Request Debug ===');
+      console.log('Request body:', req.body);
+    }
+
+    const decodedData = req.body && req.body.d ? decodePayloadFromReact<any>(req.body.d) : null;
+    const encryptedData = decodedData ? { d: encodePayloadToLaravel(decodedData) } : {};
+
+    if (debug) {
+      console.log('Decoded data from React:', decodedData);
+      console.log('Encrypted data to Laravel:', encryptedData);
+    }
+
+    const laravelResponse = await laravelRequest(encryptedData);
+
+    if (debug) {
+      console.log('Laravel response status:', laravelResponse.status);
+      console.log('Laravel response data:', laravelResponse.data);
+    }
+
+    const decodedResponse = processResponseData<any>(laravelResponse);
+    const encryptedResponse = encodePayloadToReact(decodedResponse);
+
+    if (debug) {
+      console.log('Decoded response from Laravel:', decodedResponse);
+      console.log('Encrypted response to React:', { d: encryptedResponse });
+    }
+
+    if (handleRequest) handleRequest();
+
+    return res.status(laravelResponse.status).json({ d: encryptedResponse });
+  } catch (error: any) {
+    if (handleRequest) handleRequest();
+
+    if (debug) {
+      console.error('Error in encrypted request handler:', error);
+    }
+    
+    if (error.response) {
+      const encryptedError = encodePayloadToReact(error.response.data);
+      return res.status(error.response.status).json({ d: encryptedError });
+    } else {
+      console.error('Non-Axios Error:', error.message);
+      const encryptedError = encodePayloadToReact({ success: false, message: 'Internal Server Error' });
+      return res.status(500).json({ d: encryptedError });
+    }
+  }
+};
 
 // ================================
 // AUTH MIDDLEWARE
 // ================================
 
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  // Extract token from Authorization header (Bearer token from React)
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-
-  console.dir({token: token ? token.substring(0, 20) + '...' : null}, {depth: null, colors: true});
 
   if (!token) {
     return res.status(401).json({ message: 'Unauthorized: No token provided.' });
   }
 
-  // Store token in session for Laravel requests
-  (req.session as any).auth_token = token;
-
+  req.session.auth_token = token;
   next();
 };
 
 // ================================
 // REQUEST/RESPONSE INTERCEPTORS
 // ================================
-
-// Attach token and CSRF to Laravel requests
-laravelAPI.interceptors.request.use((config) => {
-  // Note: Token and CSRF are attached per-request in the route handlers
-  // This interceptor is kept for any global headers but tokens are handled per-request
-  return config;
-});
-
-// Handle Laravel responses
 laravelAPI.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      // Let the client handle auth errors
-      return Promise.reject(error);
-    }
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 app.get('/', async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/plain');
-  return res.send('Express Backend is running');
+  res.send('Express Backend is running');
 });
-
-app.post('/api/regencies', async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/regencies');
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ================================
-// CSRF TOKEN UTILITIES
-// ================================
-
-// Extract CSRF token from cookies
-const extractCsrfToken = (cookieHeader?: string): string | null => {
-  if (!cookieHeader) return null;
-  
-  const cookies = cookieHeader.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'XSRF-TOKEN') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-};
-
-// CSRF Middleware - attaches CSRF token to Laravel requests
-const csrfMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const csrfToken = extractCsrfToken(req.headers.cookie as string);
-  
-  if (csrfToken) {
-    // Store in request for later use
-    (req as any).csrfToken = csrfToken;
-  }
-  
-  next();
-};
-
-// Apply CSRF middleware to all routes
-app.use(csrfMiddleware);
 
 // ================================
 // CSRF TOKEN ENDPOINT
@@ -256,81 +297,51 @@ app.use(csrfMiddleware);
 
 app.get('/api/csrf-cookie', async (req: Request, res: Response) => {
   try {
-    // Call Laravel's Sanctum CSRF cookie endpoint
     const laravelResponse = await laravelAPICSRF.get('/sanctum/csrf-cookie');
-    
-    // Forward all Set-Cookie headers from Laravel to React
     const cookies = laravelResponse.headers['set-cookie'];
     if (cookies) {
       res.setHeader('Set-Cookie', cookies);
-      
-      // Extract and store CSRF token in session for later use
-      const xsrfCookie = cookies.find((cookie: string) => cookie.startsWith('XSRF-TOKEN='));
-      if (xsrfCookie) {
-        const tokenMatch = xsrfCookie.match(/XSRF-TOKEN=([^;]+)/);
-        if (tokenMatch) {
-          const csrfToken = decodeURIComponent(tokenMatch[1]);
-          (req.session as any).csrf_token = csrfToken;
-          console.log('CSRF token stored in session:', csrfToken.substring(0, 20) + '...');
-        }
-      }
     }
-    
-    // 204 No Content is the correct response
-    res.status(204).send();
+    return res.status(204).send();
   } catch (error: any) {
     console.error('Error fetching Sanctum CSRF cookie:', error.message);
-    res.status(500).json({ message: 'Gagal melakukan handshake otentikasi.' });
+    return res.status(500).json({ message: 'Gagal melakukan handshake otentikasi.' });
   }
 });
 
 // ================================
-// PUBLIC ENDPOINTS (No Auth Required)
+// PUBLIC ENDPOINTS
 // ================================
 
-// HOME - Get home page data
-app.post('/api/home', async (_req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/home');
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
+app.post('/api/regencies', (req, res) => {
+  return handleEncryptedRequest(req, res, (data) => laravelAPI.post('/regencies', data));
 });
 
+app.post('/api/home', async (req, res) => {
+  return handleEncryptedRequest(req, res, (data) => laravelAPI.post('/home', data), () => {}, true);
+});
+
+// REPORT CREATE - Handles multipart/form-data, so NO encryption here
 app.post('/api/report/create', upload.any(), async (req: Request, res: Response) => {
   try {
-    // Sekarang, berkat Multer, req.body berisi field teks dan req.files berisi file
     const form = new FormData();
-
-    // Tambahkan semua field teks dari body yang sudah di-parse oleh Multer
     if (req.body && typeof req.body === 'object') {
       Object.entries(req.body).forEach(([key, value]) => {
         form.append(key, value as string);
       });
     }
-
-    // Tambahkan semua file dari request yang sudah di-parse oleh Multer
     if (req.files && Array.isArray(req.files)) {
       req.files.forEach((file: Express.Multer.File) => {
-        // Gunakan buffer file dan nama file asli
         form.append(file.fieldname, file.buffer, file.originalname);
       });
     }
 
-    // Safety check jika form kosong
     if (form.getBuffer().length === 0) {
       return res.status(400).json({ message: 'Request body tidak boleh kosong.' });
     }
 
-    // Dapatkan panjang konten dan header yang benar untuk dikirim ke Laravel
-    const contentLength = form.getLengthSync();
-
     const response = await laravelAPI.post('/report/create', form, {
-      headers: {
-        ...form.getHeaders(), // Ini akan mengatur Content-Type dengan boundary yang benar
-        'Content-Length': contentLength,
-      },
+      headers: { ...form.getHeaders() },
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
     });
@@ -338,344 +349,202 @@ app.post('/api/report/create', upload.any(), async (req: Request, res: Response)
     res.json(response.data);
   } catch (error: any) {
     console.error('Error creating report:', error.response?.data || error.message);
-    res.status(error.response?.status || 500).json(error.response?.data);
+    return res.status(error.response?.status || 500).json(error.response?.data);
   }
 });
 
-// REPORT - Search/Track reports
-app.post('/api/reports/track', async (req: Request, res: Response) => {
-  try {
-    const filters = req.query || {};
-    const response = await laravelAPI.post('/reports/track', filters);
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
+app.post('/api/reports/track', (req, res) => {
+    return handleEncryptedRequest(req, res, (data) => laravelAPI.post('/reports/track', data));
 });
 
-// REPORT - Get report detail
-app.post('/api/report/:id/track', async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post(`/report/${req.params.id}/track`, req.body);
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
+app.post('/api/report/:id/track', (req, res) => {
+    const { id } = req.params;
+    return handleEncryptedRequest(req, res, (data) => laravelAPI.post(`/report/${id}/track`, data));
 });
 
 // LOGIN
 app.post('/api/auth/login', async (req: Request, res: Response) => {
   try {
-    const laravelResponse = await laravelAPI.post('/auth/login', req.body);
-    const parsedResponse = proccessResponseData<any>(laravelResponse);
+    const decodedData = req.body.d ? decodePayloadFromReact<any>(req.body.d) : req.body;
+    const encryptedData = { d: encodePayloadToLaravel(decodedData) };
 
-    const token = parsedResponse.data?.token;
+    const laravelResponse = await laravelAPI.post('/auth/login', encryptedData);
+    
+    const parsedResponse = processResponseData<any>(laravelResponse);
+    const token = parsedResponse?.data?.token;
 
-    if (parsedResponse.data.success && token) {
+    if (parsedResponse?.data?.success && token) {
       req.session.auth_token = token;
-      
-      console.log('Token saved to Express session:', token);
+      console.log('Token saved to Express session.');
     }
 
-    res.status(laravelResponse.status).json(laravelResponse.data);
+    const encryptedResponse = encodePayloadToReact(laravelResponse.data);
+    return res.status(laravelResponse.status).json({ d: encryptedResponse });
   } catch (error: any) {
     if (error.response) {
-      res.status(error.response.status).json(error.response.data);
+      const encryptedError = encodePayloadToReact(error.response.data);
+      return res.status(error.response.status).json({ d: encryptedError });
     } else {
-      res.status(500).json({ success: false, message: 'Internal Server Error' });
+      const encryptedError = encodePayloadToReact({ success: false, message: 'Internal Server Error' });
+      return res.status(500).json({ d: encryptedError });
     }
   }
 });
 
 // LOGOUT
-app.post('/api/auth/logout', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/auth/logout', {}, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
-      }
-    });
-    
-    // Clear session
-    (req.session as any).auth_token = null;
-    
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
+app.post('/api/auth/logout', authMiddleware, (req, res) => {
+  return handleEncryptedRequest(req, res, (data) => 
+    laravelAPI.post('/auth/logout', data, {
+      headers: { 'Authorization': `Bearer ${req.session.auth_token}` }
+    })
+  ), () => {
+    req.session.auth_token = '';
+  };
 });
 
 // REGISTER START
-app.post('/api/auth/register/start', async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/auth/register/send', req.body);
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
+app.post('/api/auth/register/start', (req, res) => {
+  return handleEncryptedRequest(req, res, (data) => laravelAPI.post('/auth/register/send', data));
 });
 
 // REGISTER VERIFY
-app.post('/api/auth/register/verify', async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/auth/register/verify/send', req.body);
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
+app.post('/api/auth/register/verify', (req, res) => {
+  return handleEncryptedRequest(req, res, (data) => laravelAPI.post('/auth/register/verify/send', data));
 });
 
 // REGISTER
 app.post('/api/auth/register', async (req: Request, res: Response) => {
   try {
-    const response = await laravelAPI.post('/auth/register', req.body);
-    const parsedResponse = proccessResponseData<any>(response);
+    const decodedData = req.body.d ? decodePayloadFromReact<any>(req.body.d) : req.body;
+    const encryptedData = { d: encodePayloadToLaravel(decodedData) };
+
+    const laravelResponse = await laravelAPI.post('/auth/register', encryptedData);
     
-    // Store token if provided
-    if (parsedResponse.data?.token) {
-      (req.session as any).auth_token = parsedResponse.data.token;
+    const parsedResponse = processResponseData<any>(laravelResponse);
+    if (parsedResponse?.data?.token) {
+      req.session.auth_token = parsedResponse.data.token;
     }
-    
-    res.json(response.data);
+
+    const encryptedResponse = encodePayloadToReact(laravelResponse.data);
+    return res.status(laravelResponse.status).json({ d: encryptedResponse });
   } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
+    if (error.response) {
+      const encryptedError = encodePayloadToReact(error.response.data);
+      return res.status(error.response.status).json({ d: encryptedError });
+    } else {
+      const encryptedError = encodePayloadToReact({ success: false, message: 'Internal Server Error' });
+      return res.status(500).json({ d: encryptedError });
+    }
   }
 });
 
-// PASSWORD RESET REQUEST
-app.post('/api/auth/password-reset/request', async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/auth/forgot-password', req.body);
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
+// PASSWORD RESET
+app.post('/api/auth/password-reset/request', (req, res) => {
+  return handleEncryptedRequest(req, res, (data) => laravelAPI.post('/auth/forgot-password', data));
 });
 
-// PASSWORD RESET VERIFY
-app.post('/api/auth/password-reset/verify', async (req: Request, res: Response) => {
-  try {
-    const { token, ...data } = req.body;
-    const response = await laravelAPI.post(`/auth/reset-password/${token}`, data);
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
+app.post('/api/auth/password-reset/verify', (req, res) => {
+    return handleEncryptedRequest(req, res, (data) => laravelAPI.post('/auth/reset-password', data));
 });
 
-// PASSWORD RESET CONFIRM
-app.post('/api/auth/password-reset/confirm', async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/reset-password', req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
+app.post('/api/auth/password-reset/confirm', authMiddleware, (req, res) => {
+  return handleEncryptedRequest(req, res, (data) => 
+    laravelAPI.post('/reset-password', data, {
+      headers: { 'Authorization': `Bearer ${req.session.auth_token}` }
+    })
+  );
 });
 
 // ================================
 // PROTECTED ENDPOINTS (Auth Required)
 // ================================
 
+const createAuthHandler = (method: 'post' | 'put' | 'delete', url: string) => {
+  return (req: Request, res: Response) => {
+    const finalUrl = url.replace(/:([a-zA-Z0-9_]+)/g, (_, paramName) => req.params[paramName]);
+    return handleEncryptedRequest(req, res, (data) => 
+      laravelAPI[method](finalUrl, data, {
+        headers: { 'Authorization': `Bearer ${req.session.auth_token}` }
+      })
+    );
+  };
+};
+
 // ADMIN DASHBOARD
-app.post('/api/admin/dashboard', authMiddleware, async (req: Request, res: Response) => {
+app.post('/api/admin/dashboard', authMiddleware, createAuthHandler('post', '/admin/dashboard'));
+app.post('/api/admin/analytics', authMiddleware, createAuthHandler('post', '/admin/analytics'));
+app.post('/api/admin/analytics/export-reports', authMiddleware, createAuthHandler('post', '/admin/analytics/export-reports'));
+app.post('/api/admin/profile', authMiddleware, createAuthHandler('post', '/admin/profile'));
+app.post('/api/admin/profile/update-info', authMiddleware, createAuthHandler('post', '/admin/profile/update-info'));
+app.post('/api/admin/profile/update-full-name', authMiddleware, createAuthHandler('post', '/admin/profile/update-full-name'));
+app.post('/api/admin/profile/update-nip', authMiddleware, createAuthHandler('post', '/admin/profile/update-nip'));
+app.post('/api/admin/profile/update-password', authMiddleware, createAuthHandler('post', '/admin/profile/update-password'));
+app.post('/api/admin/profile/request-email-change', authMiddleware, createAuthHandler('post', '/admin/profile/request-email-change'));
+app.post('/api/admin/profile/verify-email-change', authMiddleware, createAuthHandler('post', '/admin/profile/verify-email-change'));
+app.post('/api/admin/profile/request-phone-change', authMiddleware, createAuthHandler('post', '/admin/profile/request-phone-change'));
+app.post('/api/admin/profile/verify-phone-change', authMiddleware, createAuthHandler('post', '/admin/profile/verify-phone-change'));
+app.post('/api/admin/profile/deactivate-self', authMiddleware, createAuthHandler('post', '/admin/profile/deactivate-self'));
+app.post('/api/admin/manage', authMiddleware, createAuthHandler('post', '/admin/manage'));
+app.put('/api/admin/manage/:id', authMiddleware, createAuthHandler('put', '/admin/manage/:id'));
+app.delete('/api/admin/manage/:id', authMiddleware, createAuthHandler('delete', '/admin/manage/:id'));
+app.post('/api/admin/manage/:id/toggle-status', authMiddleware, createAuthHandler('post', '/admin/manage/:id/toggle-status'));
+app.post('/api/admin/manage/:id/reset-password', authMiddleware, createAuthHandler('post', '/admin/manage/:id/reset-password'));
+app.post('/api/admin/performance', authMiddleware, createAuthHandler('post', '/admin/performance'));
+app.post('/api/admin/performance/export', authMiddleware, createAuthHandler('post', '/admin/performance/export'));
+
+// ADMIN PROFILE FILE UPLOADS - NO ENCRYPTION
+app.post('/api/admin/profile/update-picture', authMiddleware, upload.single('profile_picture'), async (req: Request, res: Response) => {
   try {
-    const response = await laravelAPI.post('/admin/dashboard', req.body, {
+    const form = new FormData();
+    if (req.file) {
+      form.append('profile_picture', req.file.buffer, req.file.originalname);
+    }
+    const response = await laravelAPI.post('/admin/profile/update-picture', form, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
+        'Authorization': `Bearer ${req.session.auth_token}`,
+        ...form.getHeaders(),
+      },
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
     });
     res.json(response.data);
   } catch (error: any) {
-    console.dir({ error }, { depth: null, colors: true })
-    res.status(error.response?.status || 500).json(error.response?.data);
+    return res.status(error.response?.status || 500).json(error.response?.data);
   }
 });
 
-// ADMIN ANALYTICS
-app.post('/api/admin/analytics', authMiddleware, async (req: Request, res: Response) => {
+app.post('/api/admin/profile/update-kta', authMiddleware, upload.single('kta_scan'), async (req: Request, res: Response) => {
   try {
-    const response = await laravelAPI.post('/admin/analytics', req.body, {
+    const form = new FormData();
+    if (req.file) {
+      form.append('kta_scan', req.file.buffer, req.file.originalname);
+    }
+    const response = await laravelAPI.post('/admin/profile/update-kta', form, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
+        'Authorization': `Bearer ${req.session.auth_token}`,
+        ...form.getHeaders(),
+      },
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
     });
     res.json(response.data);
   } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
+    return res.status(error.response?.status || 500).json(error.response?.data);
   }
 });
 
-// ADMIN ANALYTICS EXPORT
-app.post('/api/admin/analytics/export-reports', authMiddleware, async (req: Request, res: Response) => {
+// ADMIN PROFILE EXPORT - Stream response, NO encryption
+app.post('/api/admin/profile/export-profile', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const response = await laravelAPI.post('/admin/analytics/export-reports', req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
+    const response = await laravelAPI.post('/admin/profile/export-profile', req.body, {
+      headers: { 'Authorization': `Bearer ${req.session.auth_token}` },
+      responseType: 'stream'
     });
-    res.json(response.data);
+    res.setHeader('Content-Type', response.headers['content-type'] || 'application/csv');
+    res.setHeader('Content-Disposition', response.headers['content-disposition'] || 'attachment; filename="profile.csv"');
+    response.data.pipe(res);
   } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN PROFILE
-app.post('/api/admin/profile', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/admin/profile', req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN PROFILE UPDATE INFO
-app.post('/api/admin/profile/update-info', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.put('/admin/profile/update-info', req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN PROFILE UPDATE PASSWORD
-app.post('/api/admin/profile/update-password', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/admin/profile/update-password', req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN PROFILE REQUEST EMAIL CHANGE
-app.post('/api/admin/profile/request-email-change', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/admin/profile/request-email-change', req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN MANAGE
-app.post('/api/admin/manage', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/admin/manage', req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN MANAGE UPDATE
-app.put('/api/admin/manage/:id', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.put(`/admin/manage/${req.params.id}`, req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN MANAGE DELETE
-app.delete('/api/admin/manage/:id', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.delete(`/admin/manage/${req.params.id}`, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN MANAGE TOGGLE STATUS
-app.post('/api/admin/manage/:id/toggle-status', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post(`/admin/manage/${req.params.id}/toggle-status`, req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN MANAGE RESET PASSWORD
-app.post('/api/admin/manage/:id/reset-password', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post(`/admin/manage/${req.params.id}/reset-password`, req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN PERFORMANCE
-app.post('/api/admin/performance', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.get('/admin/performance', {
-      params: req.body,
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN PERFORMANCE EXPORT
-app.post('/api/admin/performance/export', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/admin/performance/export', req.body, {
-      headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`,
-      }
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data);
+    return res.status(error.response?.status || 500).json(error.response?.data);
   }
 });
 
@@ -697,8 +566,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Express Error:', err);
-  
-  res.status(err.status || 500).json({
+  return res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error',
     error: !IS_PRODUCTION ? err : {}
@@ -713,22 +581,14 @@ app.listen(PORT, async () => {
   const baseURL = await searchBaseURL();
 
   console.log(`
-╔════════════════════════════════════════╗
+╔═══════════════════════════════════════╗
 ║     EXPRESS API GATEWAY RUNNING        ║
-╚════════════════════════════════════════╝
+╚═══════════════════════════════════════╝
 
 🚀 Server running on: http://localhost:${PORT}
 🔗 React Frontend: http://localhost:3000
-📡 Laravel Backend: http://${baseURL}
-✅ CORS enabled for ${CLIENT_URLS.map(url => url.includes('http') ? url : 'http://' + url).join(', ')}
-
-Endpoints:
-  - POST /sanctum/csrf-token
-  - POST /api/auth/login
-  - POST /api/auth/logout
-  - POST /api/auth/register
-  - POST /api/admin/*
-  - And more...
+📡 Laravel Backend: ${baseURL}
+✅ CORS enabled for ${CLIENT_URLS.join(', ')}
 
 Architecture:
   React (${!IS_PRODUCTION ? 'http://localhost:3000' : 'https://lapor-ai-jatim.vercel.app/'})
