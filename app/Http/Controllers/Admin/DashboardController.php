@@ -19,7 +19,12 @@ class DashboardController extends Controller
     
     public function index(Request $request)
     {
-        $admin = Auth::user();
+        /** @var Request $request */
+        // Decode request
+        $request = $this->decodeRequest($request);
+
+        // Access authenticated user
+        $admin = $request->user(); // atau Auth::user()
 
         $baseReportQuery = Report::query();
         if ($admin->role === RoleAdministratorEnum::BaseAdmin) {
@@ -30,7 +35,8 @@ class DashboardController extends Controller
         $reportsToday = (clone $baseReportQuery)->whereDate('created_at', Carbon::today())->count();
         
         $avgResolutionHours = (clone $baseReportQuery)->whereJsonContains('statuses', 'finished')
-            ->select(DB::raw('AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) / 3600 as avg_hours'))->value('avg_hours');
+            ->select(DB::raw('AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) / 3600 as avg_hours'))
+            ->value('avg_hours');
         $avgResolutionTime = $avgResolutionHours ? round($avgResolutionHours, 1) . ' Jam' : 'N/A';
         
         $reportTrend = (clone $baseReportQuery)
@@ -62,17 +68,21 @@ class DashboardController extends Controller
             
         $reportQuery = $baseReportQuery;
 
-        $reportQuery->when($request->filled('search_id'), fn($q) => $q->where('id', $request->search_id));
-        $reportQuery->when($request->filled('search_term'), function ($q) use ($request) {
-            $term = '%' . $request->search_term . '%';
+        // Use $request->input() with default value
+        $reportQuery->when($request->input('search_id'), fn($q) => $q->where('id', $request->input('search_id')));
+        
+        $reportQuery->when($request->input('search_term'), function ($q) use ($request) {
+            $term = '%' . $request->input('search_term') . '%';
             return $q->where(fn($sub) => $sub->where('title', 'like', $term)->orWhere('description', 'like', $term));
         });
-        $reportQuery->when($request->filled('search_location'), function ($q) use ($request) {
-            $loc = '%' . $request->search_location . '%';
+        
+        $reportQuery->when($request->input('search_location'), function ($q) use ($request) {
+            $loc = '%' . $request->input('search_location') . '%';
             return $q->where(fn($sub) => $sub->where('address', 'like', $loc)->orWhere('city', 'like', $loc)->orWhere('district', 'like', $loc));
         });
-        $reportQuery->when($request->filled('search_admin'), fn($q) => $q->where('assignee_admin_id', $request->search_admin));
-        $reportQuery->when($request->filled('search_priority'), fn($q) => $q->where('priority', $request->search_priority));
+        
+        $reportQuery->when($request->input('search_admin'), fn($q) => $q->where('assignee_admin_id', $request->input('search_admin')));
+        $reportQuery->when($request->input('search_priority'), fn($q) => $q->where('priority', $request->input('search_priority')));
 
         $sort = $request->input('sort', 'updated_at_desc');
         match ($sort) {
@@ -93,13 +103,6 @@ class DashboardController extends Controller
         }
         $admins = $adminsQuery->orderBy('full_name')->get();
         $priorities = PriorityEnum::cases();
-
-        // return view('admin.dashboard', compact(
-        //     'totalReports', 'reportsToday', 'avgResolutionTime',
-        //     'trendLabels', 'trendData', 'serviceLabels', 'serviceData',
-        //     'adminLabels', 'adminData',
-        //     'reports', 'admins', 'priorities'
-        // ));
 
         return $this->successResponse([
             'stats' => [

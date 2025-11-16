@@ -9,6 +9,7 @@ use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class LoginController extends Controller
 {
@@ -16,11 +17,16 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $request->validate([
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
+        // Validate using $request->all()
+        Validator::make($request->all(), [
             'login_identifier' => 'required|string',
             'password' => 'required|string',
-        ]);
+        ])->validate();
 
+        // Access input using $request->input() or magic property
         $loginIdentifier = $request->input('login_identifier');
         $password = $request->input('password');
 
@@ -30,33 +36,19 @@ class LoginController extends Controller
                                 ->first();
 
         if (!$admin || !Hash::check($password, $admin->password_hash)) {
-            // return back()->withErrors([
-            //     'login_identifier' => 'Kredensial yang diberikan tidak cocok dengan data kami.',
-            // ])->onlyInput('login_identifier');
-
             return $this->errorResponse('Kredensial yang diberikan tidak cocok dengan data kami.', 400);
         }
 
         if ($admin->status === AdminStatusEnum::Pending) {
-            // return back()->withErrors([
-            //     'login_identifier' => 'Akun Anda sedang dalam proses peninjauan. Silakan coba lagi nanti.',
-            // ])->onlyInput('login_identifier');
-
             return $this->errorResponse('Akun Anda sedang dalam proses peninjauan. Silakan coba lagi nanti.', 403);
         }
 
         if ($admin->status === AdminStatusEnum::Suspended) {
-            // return back()->withErrors([
-            //     'login_identifier' => 'Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.',
-            // ])->onlyInput('login_identifier');
-            
             return $this->errorResponse('Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.', 403);
         }
 
         $admin->tokens()->delete();
         $token = $admin->createToken('admin-token', ['role:' . $admin->role->value])->plainTextToken;
-
-        // return redirect()->intended(route('admin.dashboard'));
 
         return $this->successResponse([
             'token' => $token,
@@ -73,6 +65,10 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
+        // Decode request (walaupun tidak ada data yang perlu di-decode)
+        $request = $this->decodeRequest($request);
+        
+        // Access authenticated user via $request->user()
         $admin = Auth::user();
 
         if ($admin) {

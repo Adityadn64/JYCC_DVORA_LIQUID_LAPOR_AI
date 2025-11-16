@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -20,11 +21,11 @@ class AdminManagementController extends Controller
 {
     use ApiResponseTrait;
 
-    public function getIndexQuery(Request $request) {
+    private function getIndexQuery(Request $request) {
         $query = Administrator::query()->with('serviceProfile');
 
         // Filter: Keyword
-        $query->when($request->filled('keyword'), function ($q) use ($request) {
+        $query->when($request->keyword ?? null, function ($q) use ($request) {
             $keyword = '%' . $request->keyword . '%';
             $q->where(fn($sub) => $sub->where('full_name', 'like', $keyword)
                 ->orWhere('email', 'like', $keyword)
@@ -33,19 +34,22 @@ class AdminManagementController extends Controller
         });
 
         // Filter: Role
-        $query->when($request->filled('role'), fn($q) => $q->where('role', $request->role));
+        $query->when($request->role ?? null, fn($q) => $q->where('role', $request->role));
 
         // Filter: Status
-        $query->when($request->filled('status'), fn($q) => $q->where('status', $request->status));
+        $query->when($request->status ?? null, fn($q) => $q->where('status', $request->status));
 
         // Filter: Service (Dinas)
-        $query->when($request->filled('service_code'), fn($q) => $q->where('service_code', $request->service_code));
+        $query->when($request->service_code ?? null, fn($q) => $q->where('service_code', $request->service_code));
 
         return $query;
     }
 
     public function index(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $query = $this->getIndexQuery($request);
 
         $admins = $query->orderBy('full_name', 'asc')->paginate(15)->withQueryString();
@@ -58,7 +62,7 @@ class AdminManagementController extends Controller
         ];
 
         // return view('admin.manage', compact('admins', 'filterOptions'));
-        
+
         return $this->successResponse([
             'admins' => $admins,
             'filterOptions' => $filterOptions,
@@ -67,6 +71,9 @@ class AdminManagementController extends Controller
 
     public function pendingPage(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $query = $this->getIndexQuery($request);
 
         $admins = $query->where('status', AdminStatusEnum::Pending)
@@ -81,7 +88,7 @@ class AdminManagementController extends Controller
         ];
 
         // return view('admin.manage-request', compact('admins', 'filterOptions'));
-        
+
         return $this->successResponse([
             'admins' => $admins,
             'filterOptions' => $filterOptions,
@@ -90,7 +97,10 @@ class AdminManagementController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
+        $validated = Validator::make($request->all(), [
             'full_name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:administrators,email',
             'phone' => 'required|string|max:20|unique:administrators,phone',
@@ -99,6 +109,9 @@ class AdminManagementController extends Controller
             'role' => ['required', Rule::in(RoleAdministratorEnum::cases())],
             'status' => ['required', Rule::in(AdminStatusEnum::cases())],
             'service_code' => ['nullable', Rule::requiredIf($request->role == RoleAdministratorEnum::BaseAdmin->value), 'exists:service_profiles,code'],
+        ])->validate();
+
+        $request->validate([
             'profile_picture' => 'nullable|image|max:2048',
             'kta_scan' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
         ]);
@@ -129,7 +142,10 @@ class AdminManagementController extends Controller
      */
     public function update(Request $request, Administrator $admin)
     {
-        $validated = $request->validate([
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
+        $validated = Validator::make($request->all(), [
             'full_name' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255', Rule::unique('administrators')->ignore($admin->id)],
             'phone' => ['required', 'string', 'max:20', Rule::unique('administrators')->ignore($admin->id)],
@@ -137,6 +153,9 @@ class AdminManagementController extends Controller
             'role' => ['required', Rule::in(RoleAdministratorEnum::cases())],
             'status' => ['required', Rule::in(AdminStatusEnum::cases())],
             'service_code' => ['nullable', Rule::requiredIf($request->role == RoleAdministratorEnum::BaseAdmin->value), 'exists:service_profiles,code'],
+        ])->validate();
+
+        $request->validate([
             'profile_picture' => 'nullable|image|max:2048',
             'kta_scan' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
         ]);
@@ -158,15 +177,17 @@ class AdminManagementController extends Controller
         $admin->update($validated);
 
         // return redirect()->route('admin.manage.index')->with('success', 'Data admin berhasil diperbarui.');
-        
+
         return $this->successResponse([], 'Data admin berhasil diperbarui.');
     }
 
     /**
      * POINT 6: Mengubah status (Aktif/Nonaktif).
      */
-    public function toggleStatus(Administrator $admin)
+    public function toggleStatus(Request $request, Administrator $admin)
     {
+        $request = $this->decodeRequest($request);
+
         if ($admin->id === request()->user()->id) {
             // return back()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
 
@@ -177,15 +198,17 @@ class AdminManagementController extends Controller
         $admin->update(['status' => $newStatus]);
 
         // return redirect()->route('admin.manage.index')->with('success', 'Status admin berhasil diubah.');
-        
+
         return $this->successResponse([], 'Status admin berhasil diubah.');
     }
 
     /**
      * POINT 5: Mengirim reset password.
      */
-    public function sendPasswordReset(Administrator $admin)
+    public function sendPasswordReset(Request $request, Administrator $admin)
     {
+        $request = $this->decodeRequest($request);
+
         // Di aplikasi nyata, ini akan men-trigger Mailable dengan signed link.
         // Untuk saat ini, kita hanya log sebagai placeholder.
 
@@ -195,15 +218,17 @@ class AdminManagementController extends Controller
         Log::info("System Admin memicu reset password untuk: {$admin->email}");
 
         // return redirect()->route('admin.manage.index')->with('success', "Link reset password (placeholder) telah dikirim ke {$admin->email}.");
-        
+
         return $this->successResponse([], 'Link reset password (placeholder) telah dikirim ke {$admin->email}.');
     }
 
     /**
      * POINT 8: Mengambil data untuk Activity Drawer (via Fetch).
      */
-    public function showActivity(Administrator $admin)
+    public function showActivity(Request $request, Administrator $admin)
     {
+        $request = $this->decodeRequest($request);
+
         $admin->load('serviceProfile');
         $recentReports = $admin->assignedReports()
             ->orderBy('updated_at', 'desc')
@@ -216,7 +241,9 @@ class AdminManagementController extends Controller
         ]);
     }
 
-    public function accept(Administrator $admin) {
+    public function accept(Request $request, Administrator $admin) {
+        $request = $this->decodeRequest($request);
+
         $admin->update(['status' => AdminStatusEnum::Active->value]);
 
         // return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil diaktifkan.');
@@ -224,11 +251,13 @@ class AdminManagementController extends Controller
         return $this->successResponse([], 'Admin berhasil diaktifkan.');
     }
 
-    public function reject(Administrator $admin) {
+    public function reject(Request $request, Administrator $admin) {
+        $request = $this->decodeRequest($request);
+
         $admin->delete();
 
         // return redirect()->route('admin.manage.request')->with('success', 'Admin berhasil dihapus.');
-        
+
         return $this->successResponse([], 'Admin berhasil dihapus.');
     }
 }

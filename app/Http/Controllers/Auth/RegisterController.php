@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Administrator;
 use App\Models\ServiceProfile;
 use App\Models\EmailRegistration;
-use App\Models\PhoneRegistration; 
+use App\Models\PhoneRegistration;
 use App\Enums\RoleAdministratorEnum;
 use App\Enums\AdminStatusEnum;
 use App\Mail\OtpMail;
@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Support\Facades\Validator;
 use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -24,8 +25,11 @@ class RegisterController extends Controller
 {
     use ApiResponseTrait;
 
-    public function showRegistrationForm(Request $_request)
+    public function showRegistrationForm(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $serviceProfiles = ServiceProfile::orderBy('full_name')->get();
         $roles = RoleAdministratorEnum::cases();
         // return view('auth.register', compact('serviceProfiles', 'roles'));
@@ -38,17 +42,23 @@ class RegisterController extends Controller
 
     public function startRegistration(Request $request)
     {
-        $request->validate([
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
+        Validator::make($request->all(), [
             'full_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:administrators',
             'phone' => 'required|string|max:255|unique:administrators',
             'password' => 'required|string|min:8|confirmed',
             'nip' => 'required|string|unique:administrators',
             'role' => ['required', new Enum(RoleAdministratorEnum::class)],
-            'service_code' => 'required_if:role,' . RoleAdministratorEnum::BaseAdmin->value, 
+            'service_code' => 'required_if:role,' . RoleAdministratorEnum::BaseAdmin->value,
+        ])->validate();
+
+        $request->validate([
             'kta_scan' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
-        
+
         $ktaPath = Storage::disk(env("FILESYSTEM_DISK"))->put('kta_scans', $request->file('kta_scan')); // $request->file('kta_scan')->store('kta_scans');
 
         $request->session()->put('registration_data', [
@@ -128,7 +138,7 @@ Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah 
     public function showVerificationForm(Request $_request)
     {
         if (!Session::has('registration_data')) {
-            return redirect()->route('register');
+            return $this->errorResponse('Sesi registrasi Anda telah berakhir, silakan ulangi.', 400);
         }
 
         $email = Session::get('registration_data')['email'];
@@ -144,15 +154,18 @@ Jika Anda tidak merasa meminta kode ini, harap abaikan email ini. Jangan pernah 
 
     public function completeRegistration(Request $request)
     {
+        /** @var Request $request */
         $registrationData = $request->session()->get('registration_data');
         if (!$registrationData) {
-            return redirect()->route('register')->withErrors('Sesi registrasi Anda telah berakhir, silakan ulangi.');
+            return $this->errorResponse('Sesi registrasi Anda telah berakhir, silakan ulangi.', 400);
         }
 
-        $request->validate([
+        $request = $this->decodeRequest($request);
+
+        Validator::make($request->all(), [
             'email_otp' => 'required|numeric',
             'phone_otp' => 'required|numeric',
-        ]);
+        ])->validate();
 
         $emailTokenRecord = EmailRegistration::where('email', $registrationData['email'])->first();
         $phoneOtpRecord = PhoneRegistration::where('phone', $registrationData['phone'])->first();

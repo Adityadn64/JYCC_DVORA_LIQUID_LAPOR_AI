@@ -13,8 +13,11 @@ class HomeController extends Controller
 {
     use ApiResponseTrait;
 
-    public function index(Request $_request)
+    public function index(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $allReports = Report::select('created_at', 'statuses')
                             ->where('created_at', '>=', Carbon::now()->subMonth())
                             ->orderBy('created_at')

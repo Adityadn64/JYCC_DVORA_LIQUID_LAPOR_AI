@@ -25,6 +25,10 @@ class ReportController extends Controller
 
     public function store(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
+        // Sekarang $request sudah support semua method Laravel Request
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|min:4',
             'phone' => 'required|string|min:4',
@@ -40,6 +44,7 @@ class ReportController extends Controller
             return $this->errorResponse('Validation failed', 422, $validator->errors()->toArray());
         }
 
+        // Gunakan $request->input() atau property magic
         $regency = Regency::where('code', $request->input('city'))->first();
 
         if (!$regency) {
@@ -71,13 +76,13 @@ class ReportController extends Controller
         ];
 
         $report = Report::create([
-            'description' => $request->description,
-            'address' => $request->location,
+            'description' => $request->input('description'),
+            'address' => $request->input('location'),
             'city' => $regency->code,
             'district' => $district->code,
-            
-            'reporter_name' => $request->name,
-            'reporter_contact' => $request->phone,
+
+            'reporter_name' => $request->input('name'),
+            'reporter_contact' => $request->input('phone'),
             'title' => $aiResult['title'],
             'category' => $aiResult['category'],
             'priority' => $aiResult['priority'],
@@ -95,9 +100,10 @@ class ReportController extends Controller
         $allPaths = [];
         $allTypes = [];
 
+        // Gunakan hasFile() dan file() method
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $path = Storage::disk(env("FILESYSTEM_DISK"))->put('reports', $image); // $image->store('reports');
+                $path = Storage::disk(env("FILESYSTEM_DISK"))->put('reports', $image);
                 $allPaths[] = $path;
                 $allTypes[] = $image->getMimeType();
             }
@@ -105,7 +111,7 @@ class ReportController extends Controller
         
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $video) {
-                $path = Storage::disk(env("FILESYSTEM_DISK"))->put('reports', $video); // $video->store('reports');
+                $path = Storage::disk(env("FILESYSTEM_DISK"))->put('reports', $video);
                 $allPaths[] = $path;
                 $allTypes[] = $video->getMimeType();
             }
@@ -118,9 +124,6 @@ class ReportController extends Controller
                 'files_type' => $allTypes,
             ]);
         }
-        
-        // return redirect()->route('report.track.show', $report->id)
-        //                  ->with('success', 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.');
     
         return $this->successResponse([
             'id' => $report->id,
@@ -129,46 +132,48 @@ class ReportController extends Controller
 
     public function trackIndex(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+        
         $query = Report::query();
 
-        $query->when($request->filled('search_id'), function ($q) use ($request) {
-            return $q->where('id', $request->search_id);
+        // Gunakan input() method atau property magic
+        $query->when($request->input('search_id'), function ($q) use ($request) {
+            return $q->where('id', $request->input('search_id'));
         });
 
-        $query->when($request->filled('search_term'), function ($q) use ($request) {
-            $term = '%' . $request->search_term . '%';
+        $query->when($request->input('search_term'), function ($q) use ($request) {
+            $term = '%' . $request->input('search_term') . '%';
             return $q->where(function($subQuery) use ($term) {
                 $subQuery->where('title', 'like', $term)
                          ->orWhere('description', 'like', $term);
             });
         });
 
-        $query->when($request->filled('search_location'), function ($q) use ($request) {
-            $location = '%' . $request->search_location . '%';
+        $query->when($request->input('search_location'), function ($q) use ($request) {
+            $location = '%' . $request->input('search_location') . '%';
             return $q->where(function($subQuery) use ($location) {
                 $subQuery->where('address', 'like', $location)
                          ->orWhere('city', 'like', $location)
                          ->orWhere('district', 'like', $location);
             });
         });
-        
-        $query->when($request->filled('search_admin'), function ($q) use ($request) {
-            return $q->where('assignee_admin_id', $request->search_admin);
+
+        $query->when($request->input('search_admin'), function ($q) use ($request) {
+            return $q->where('assignee_admin_id', $request->input('search_admin'));
         });
 
-        $query->when($request->filled('search_priority'), function ($q) use ($request) {
-            return $q->where('priority', $request->search_priority);
+        $query->when($request->input('search_priority'), function ($q) use ($request) {
+            return $q->where('priority', $request->input('search_priority'));
         });
 
-        $sort = $request->input('sort', 'updated_at_desc'); 
+        $sort = $request->input('sort', 'updated_at_desc');
         
         match ($sort) {
             'created_at_desc' => $query->orderBy('created_at', 'desc'),
             'updated_at_desc' => $query->orderBy('updated_at', 'desc'),
-            
             'created_at_asc' => $query->orderBy('created_at', 'asc'),
             'updated_at_asc' => $query->orderBy('updated_at', 'asc'),
-            
             default => $query->orderBy('updated_at', 'desc'),
         };
 
@@ -176,12 +181,6 @@ class ReportController extends Controller
         
         $admins = Administrator::where('role', RoleAdministratorEnum::BaseAdmin)->orderBy('full_name')->get();
         $priorities = PriorityEnum::cases();
-
-        // return view('report.track_index', [
-        //     'reports' => $reports,
-        //     'admins' => $admins,
-        //     'priorities' => $priorities,
-        // ]);
 
         return $this->successResponse([
             'reports' => $reports,
@@ -193,10 +192,6 @@ class ReportController extends Controller
     public function trackShow(Report $report)
     {
         $report->load('media', 'serviceProfile');
-
-        // return view('report.track_show', [
-        //     'report' => $report,
-        // ]);
 
         return $this->successResponse([
             'report' => $report,

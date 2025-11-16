@@ -46,6 +46,9 @@ class PerformanceController extends Controller
      */
     public function index(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         // 1. BUAT FILTER (BUKAN KUERI)
         $filters = $this->buildFilters($request);
 
@@ -90,10 +93,10 @@ class PerformanceController extends Controller
         return [
             'admin_role' => $admin->role,
             'admin_service_code' => ($admin->role === RoleAdministratorEnum::BaseAdmin) ? $admin->service_code : null,
-            'scope_type' => $request->input('scope_type', 'all'),
-            'scope_value' => $request->input('scope_value'),
-            'date_start' => $request->input('date_start') ? Carbon::parse($request->date_start) : now()->subDays(30),
-            'date_end' => $request->input('date_end') ? Carbon::parse($request->date_end)->endOfDay() : now()->endOfDay(),
+            'scope_type' => $request->scope_type ?? 'all',
+            'scope_value' => $request->scope_value ?? null,
+            'date_start' => isset($request->date_start) ? Carbon::parse($request->date_start) : now()->subDays(30),
+            'date_end' => isset($request->date_end) ? Carbon::parse($request->date_end)->endOfDay() : now()->endOfDay(),
         ];
     }
 

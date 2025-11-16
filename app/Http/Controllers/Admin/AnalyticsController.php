@@ -19,6 +19,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator as ValidatorFacade;
 
 class AnalyticsController extends Controller
 {
@@ -44,6 +45,9 @@ class AnalyticsController extends Controller
      */
     public function index(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         // 1. BUAT KUERI DASAR (POINT 1: FILTERS)
         $baseQuery = $this->buildBaseQuery($request);
 
@@ -120,41 +124,41 @@ class AnalyticsController extends Controller
         }
 
         // Filter Opsional dari Request
-        $query->when($request->filled('date_start'), function ($q) use ($request) {
+        $query->when($request->date_start ?? null, function ($q) use ($request) {
             $q->where('created_at', '>=', Carbon::parse($request->date_start));
         });
 
-        $query->when($request->filled('date_end'), function ($q) use ($request) {
+        $query->when($request->date_end ?? null, function ($q) use ($request) {
             $q->where('created_at', '<=', Carbon::parse($request->date_end)->endOfDay());
         });
 
-        $query->when($request->filled('category'), function ($q) use ($request) {
+        $query->when($request->category ?? null, function ($q) use ($request) {
             $q->where('category', $request->category);
         });
 
-        $query->when($request->filled('status'), function ($q) use ($request) {
+        $query->when($request->status ?? null, function ($q) use ($request) {
             // Kueri status terakhir di array JSON (PostgreSQL)
             $q->whereRaw("statuses->>(jsonb_array_length(statuses) - 1) = ?", [$request->status]);
         });
 
-        $query->when($request->filled('service_code'), function ($q) use ($request) {
+        $query->when($request->service_code ?? null, function ($q) use ($request) {
             $q->where('service_code', $request->service_code);
         });
 
-        $query->when($request->filled('assignee_admin_id'), function ($q) use ($request) {
+        $query->when($request->assignee_admin_id ?? null, function ($q) use ($request) {
             $q->where('assignee_admin_id', $request->assignee_admin_id);
         });
 
-        $query->when($request->filled('priority'), function ($q) use ($request) {
+        $query->when($request->priority ?? null, function ($q) use ($request) {
             $q->where('priority', $request->priority);
         });
 
         // Filter Lokasi (Sederhana)
-        $query->when($request->filled('location'), function ($q) use ($request) {
+        $query->when($request->location ?? null, function ($q) use ($request) {
             $loc = '%' . $request->location . '%';
             $q->where(fn($sub) => $sub->where('city', 'like', $loc)
-                ->orWhere('district', 'like', 'like', $loc)
-                ->orWhere('address', 'like', 'like', $loc));
+                ->orWhere('district', 'like', $loc)
+                ->orWhere('address', 'like', $loc));
         });
 
         return $query;
@@ -374,13 +378,12 @@ class AnalyticsController extends Controller
     }
 
     public function exportReports(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'exportType' => ['required', 'string', Rule::in(['CSV', 'Excel'])],
-        ]);
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
 
-        if ($validator->fails()) {
-            return $this->errorResponse('Tipe ekspor tidak valid.', 422);
-        }
+        ValidatorFacade::make($request->all(), [
+            'exportType' => ['required', 'string', Rule::in(['CSV', 'Excel'])],
+        ])->validate();
 
         $baseQuery = $this->buildBaseQuery($request);
 

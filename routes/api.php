@@ -52,6 +52,8 @@ Route::middleware(['auth:sanctum', 'admin.status'])->prefix('admin')->name('admi
         Route::post('/export-profile', [ProfileController::class, 'exportProfile'])->name('profile.export-profile');
 
         Route::put('/update-info', [ProfileController::class, 'updateInfo'])->name('updateInfo');
+        Route::post('/update-full-name', [ProfileController::class, 'updateFullName'])->name('updateFullName');
+        Route::post('/update-nip', [ProfileController::class, 'updateNip'])->name('updateNip');
         Route::post('/update-picture', [ProfileController::class, 'updateProfilePicture'])->name('updatePicture');
         Route::post('/update-kta', [ProfileController::class, 'updateKtaScan'])->name('updateKta');
 

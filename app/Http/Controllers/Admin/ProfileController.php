@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
@@ -22,7 +23,7 @@ class ProfileController extends Controller
     use ApiResponseTrait;
 
     public function getAdminAndActivity() {
-        $admin = request()->user();
+        $admin = Auth::user();
         $admin->load('serviceProfile');
 
         $activity = $this->getAdminActivity($admin);
@@ -30,8 +31,10 @@ class ProfileController extends Controller
         return [$admin, $activity];
     }
 
-    public function show()
+    public function show(Request $request)
     {
+        $request = $this->decodeRequest($request);
+
         [$admin, $activity] = $this->getAdminAndActivity();
 
         // return view('admin.profile', [
@@ -128,18 +131,61 @@ class ProfileController extends Controller
      */
     public function updateInfo(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $admin = Auth::user();
 
-        $validated = $request->validate([
+        Validator::make($request->all(), [
             'full_name' => 'required|string|max:255',
             'nip' => 'required|string|max:50|unique:administrators,nip,' . $admin->id,
-        ]);
+        ])->validate();
 
-        $admin->update($validated);
+        $admin->update($request->all());
 
         // return back()->with('success_info', 'Informasi akun berhasil diperbarui.');
 
         return $this->successResponse([], 'Informasi akun berhasil diperbarui.');
+    }
+
+    /**
+     * POINT 2: Memperbarui nama lengkap dengan password.
+     */
+    public function updateFullName(Request $request)
+    {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
+        $admin = Auth::user();
+
+        Validator::make($request->all(), [
+            'full_name' => 'required|string|max:255',
+            'password' => ['required', new CurrentPassword('administrators')],
+        ])->validate();
+
+        $admin->update(['full_name' => $request->full_name]);
+
+        return $this->successResponse([], 'Nama lengkap berhasil diperbarui.');
+    }
+
+    /**
+     * POINT 2: Memperbarui NIP dengan password.
+     */
+    public function updateNip(Request $request)
+    {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
+        $admin = Auth::user();
+
+        Validator::make($request->all(), [
+            'nip' => 'required|string|max:50|unique:administrators,nip,' . $admin->id,
+            'password' => ['required', new CurrentPassword('administrators')],
+        ])->validate();
+
+        $admin->update(['nip' => $request->nip]);
+
+        return $this->successResponse([], 'NIP berhasil diperbarui.');
     }
 
     /**
@@ -195,22 +241,25 @@ class ProfileController extends Controller
      */
     public function updatePassword(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $admin = Auth::user();
 
-        $validated = $request->validate([
+        Validator::make($request->all(), [
             'current_password' => ['required', 'string', new CurrentPassword('administrators')],
             'password' => ['required', 'confirmed', Password::min(8)],
             'logout_other_devices' => 'nullable|boolean',
-        ]);
+        ])->validate();
 
         // Update password
         $admin->forceFill([
-            'password_hash' => Hash::make($validated['password']),
+            'password_hash' => Hash::make($request->password),
         ])->save();
 
         // Logout dari sesi lain jika dicentang
-        if ($request->logout_other_devices) {
-            Auth::guard('administrators')->logoutOtherDevices($validated['current_password']);
+        if ($request->logout_other_devices ?? false) {
+            Auth::guard('administrators')->logoutOtherDevices($request->current_password);
         }
 
         // return back()->with('success_password', 'Password berhasil diubah.');
@@ -223,13 +272,16 @@ class ProfileController extends Controller
      */
     public function requestEmailChange(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $admin = Auth::user();
-        $validated = $request->validate([
+        Validator::make($request->all(), [
             'new_email' => 'required|email|max:255|unique:administrators,email',
             'password' => ['required', new CurrentPassword('administrators')],
-        ]);
+        ])->validate();
 
-        $newEmail = $validated['new_email'];
+        $newEmail = $request->new_email;
         $otp = rand(100000, 999999);
 
         // Simpan OTP dan email baru di session untuk diverifikasi
@@ -256,10 +308,13 @@ class ProfileController extends Controller
      */
     public function verifyEmailChange(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $admin = Auth::user();
-        $validated = $request->validate([
+        Validator::make($request->all(), [
             'otp' => 'required|numeric|digits:6',
-        ]);
+        ])->validate();
 
         // Cek data session
         $sessionOtp = Session::get('profile_change_otp');
@@ -282,7 +337,7 @@ class ProfileController extends Controller
         }
 
         // Cek OTP
-        if ($validated['otp'] != $sessionOtp) {
+        if ($request->otp != $sessionOtp) {
             // return back()->withErrors(['otp' => 'Kode OTP tidak valid.']);
 
             return $this->errorResponse('Kode OTP tidak valid.', 400);
@@ -304,13 +359,16 @@ class ProfileController extends Controller
      */
     public function requestPhoneChange(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $admin = Auth::user();
-        $validated = $request->validate([
+        Validator::make($request->all(), [
             'new_phone' => 'required|string|max:20|unique:administrators,phone',
             'password' => ['required', new CurrentPassword('administrators')],
-        ]);
+        ])->validate();
 
-        $newPhone = $validated['new_phone'];
+        $newPhone = $request->new_phone;
         $otp = rand(100000, 999999);
 
         // Gunakan key session yang BERBEDA untuk telepon
@@ -323,7 +381,7 @@ class ProfileController extends Controller
         Log::info("OTP untuk ganti telepon {$admin->phone} ke {$newPhone}: {$otp}");
         // ---
 
-        return back()->with('success_otp_sent_phone', 'OTP telah dikirim ke nomor telepon baru Anda.');
+        return $this->successResponse([], 'OTP telah dikirim ke nomor telepon baru Anda.');
     }
 
     /**
@@ -331,10 +389,13 @@ class ProfileController extends Controller
      */
     public function verifyPhoneChange(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
         $admin = Auth::user();
-        $validated = $request->validate([
+        Validator::make($request->all(), [
             'otp_phone' => 'required|numeric|digits:6',
-        ]);
+        ])->validate();
 
         // Ambil dari key session telepon
         $sessionOtp = Session::get('profile_change_phone_otp');
@@ -355,7 +416,7 @@ class ProfileController extends Controller
             return $this->errorResponse('OTP telah kedaluwarsa. Silakan minta lagi.', 400);
         }
 
-        if ($validated['otp_phone'] != $sessionOtp) {
+        if ($request->otp_phone != $sessionOtp) {
             // return back()->withErrors(['otp_phone' => 'Kode OTP tidak valid.']);
 
             return $this->errorResponse('Kode OTP tidak valid.', 400);
@@ -372,8 +433,10 @@ class ProfileController extends Controller
         return $this->successResponse([], 'Nomor telepon Anda berhasil diperbarui.');
     }
 
-    public function deactivateSelf(Request $_request)
+    public function deactivateSelf(Request $request)
     {
+        $request = $this->decodeRequest($request);
+
         // return back()->with('error_self_deactivate', 'System Admin tidak dapat menonaktifkan akunnya sendiri.');
 
         return $this->successResponse([], 'System Admin tidak dapat menonaktifkan akunnya sendiri.');
