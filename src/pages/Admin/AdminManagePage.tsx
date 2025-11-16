@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { adminManageService, decodeErrorResponse } from '../services/api';
-import { SkeletonTable, SkeletonList, Skeleton } from '../components/SkeletonLoading';
+import { adminManageService, decodeErrorResponse } from '../../services/api';
+import { SkeletonTable, SkeletonList, Skeleton } from '../../components/SkeletonLoading';
 
 interface Admin {
   id: number;

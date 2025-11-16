@@ -103,10 +103,16 @@ def encode_payload(data: Any) -> Dict[str, str]:
     }
 
 if __name__ == "__main__":
-    while True:
+    # while True:
         encoded_data = {
             "d": input("Masukkan data teren kode (field 'd'): "),
             "k": input("Masukkan kunci (field 'k'): ")
+        }
+
+        
+        encoded_data = {
+            "d": "fCJ7dmZpZnZ6JTt0enZoMiNwbHZ0YW9mJUAjJTMlZWF8YiVAfCVoZ25pdiM9gSNsayU7MTwtJXlmdX1sZGVnZHJqZiVBJUVQO0JOKC0ldWxxIkIjNzY5Njk6ODM4MjQ7MTk4NDY3Ki0lbHZvc2JvYXVmJUAjSmhvamgoTmR4cWR8cWgiNCNoc2JscyU7In92b2dvZ2h1ai50YnVndENse2JteG1oNHB1biUtInhpcnRmJUElMTRANSM5Njs5IzkxOyMvKHF1dmlqbG1gc29kd3x1Zl94YnduIz11eG1sNCNuemJiemZibmdxZHppJUFxdmx0LSV4cG9sJTsie3p2emZwZmRlbXFvJTIjdntkdXV7Iz0oYmZ7bHdlKi0laXNoaHdmZGdidyg7JTkzMzU1MjQzMjhbNDM6OzY9OTExNzMxMDgxXSgtJXxzZWF8ZmdlYncpPSMyODM4MzI0NDQ2VDkzPTk2PTozLzA4MTM2MV0pLyNkbW1oemZnZmR1IkJveHJtLyl2ZnJ+amZrYHN5cmdpdGYlQHwlcGcjOjo1LyhneHNvYG5pbmgoOyVLbG9heyFTa25lbHVlYYFiZHQhU2x1Zm14dmR0LSNXaHNscW9ne29qaHEhQXZibiZlZHUjTGV4ZnFqdmd8bmJuKi0laXBnbCU7IkxRNkdMJTMlcWh3b2goOyUvMzQxMSE8Pzk3OTU2MSotJWtuZHBvIzoqZXM5Ym5HbWJ0cW5zeHB5NWpwLnFlJTIjemxldGl8ZiVAI2t7d3FzQl0yYjBndzZiazZrZHpqcHd1cHY2aHI0amdjMiMsKmR1a2J3bGdgYXwjPSgzMzk4LjE5LjQ7VTQ5PTQ0QjI4NDEzNzMxMGIjLyh2c2tkdWVsYGR6Iz0pNTEyPS40Ny40PFcyMkI0N0AyODUzMTA4MTNgIy8pZ2ZsbXVoamBkeyU7bn1tb4N+LylkZHRxd2x6eiVBfiN0d3VkcmBkenZqZ3ZmZyg7MzMldW98Ym9lZ2x1bHRobWUlQDEvKWR3Z2dzaHlwb3x3am92YHdvbmgpPSNOZDBEKC0leWhkZXZ1Ynhmc3Z1dXMqO15jfoCE",
+            "k": "1081361373"
         }
         
         print("\nData Terenkode (yang akan dikirim server):", encoded_data)

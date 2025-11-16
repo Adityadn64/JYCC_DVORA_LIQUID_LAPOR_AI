@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import LoginPage from './pages/LoginPage';
+import LoginPage from './pages/Auth/LoginPage';
 import HomePage from './pages/HomePage';
-import RegisterPage from './pages/RegisterPage';
-import PasswordResetPage from './pages/PasswordResetPage';
-import ReportCreatePage from './pages/ReportCreatePage';
-import ReportTrackPage from './pages/ReportTrackPage';
-import ReportTrackShowPage from './pages/ReportTrackShowPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
-import AdminProfilePage from './pages/AdminProfilePage';
-import AdminManagePage from './pages/AdminManagePage';
-import AdminPerformancePage from './pages/AdminPerformancePage';
+import RegisterPage from './pages/Auth/RegisterPage';
+import PasswordResetPage from './pages/Auth/PasswordResetPage';
+import ReportCreatePage from './pages/Report/ReportCreatePage';
+import ReportTrackPage from './pages/Report/ReportTrackPage';
+import ReportTrackShowPage from './pages/Report/ReportTrackShowPage';
+import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
+import AdminAnalyticsPage from './pages/Admin/AdminAnalyticsPage';
+import AdminProfilePage from './pages/Admin/AdminProfilePage';
+import AdminManagePage from './pages/Admin/AdminManagePage';
+import AdminPerformancePage from './pages/Admin/AdminPerformancePage';
 import { csrfService } from './services/api';
 import { AuthUser } from './types';
 import WavingTextLoader from './components/WavingTextLoader';
@@ -29,13 +29,15 @@ function App() {
       try {
         const userData = localStorage.getItem('user_data');
         const auth_token = localStorage.getItem('auth_token');
-        
+
         if (userData && auth_token) {
           setIsAuthenticated(true);
           setUser(JSON.parse(userData));
         }
 
+        // Initialize CSRF token for cross-site requests
         await csrfService.getCsrfToken();
+        console.log('CSRF token initialized successfully');
       } catch (error) {
         console.error('App initialization failed:', error);
       } finally {

@@ -168,31 +168,26 @@ export const SkeletonReportDetailPage: React.FC = () => (
       </div>
     </div>
 
-    {/* Grid Dua Kolom */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Kartu Kiri: Info Laporan */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <Skeleton className="h-6 w-40 mb-6" /> {/* Judul Kartu */}
-        <div className="space-y-4">
-          <div className="flex justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-32" /></div>
-          <div className="flex justify-between"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>
-          <div className="flex justify-between"><Skeleton className="h-4 w-32" /><Skeleton className="h-4 w-40" /></div>
-          <div className="flex justify-between"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-36" /></div>
-          <div className="flex justify-between"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-48" /></div>
-          <div className="flex justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-32" /></div>
-          <div className="flex justify-between"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-32" /></div>
-        </div>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <Skeleton className="h-6 w-40 mb-6" /> {/* Judul Kartu */}
+      <div className="space-y-4">
+        <div className="flex justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-32" /></div>
+        <div className="flex justify-between"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>
+        <div className="flex justify-between"><Skeleton className="h-4 w-32" /><Skeleton className="h-4 w-40" /></div>
+        <div className="flex justify-between"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-36" /></div>
+        <div className="flex justify-between"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-48" /></div>
+        <div className="flex justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-32" /></div>
+        <div className="flex justify-between"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-32" /></div>
       </div>
+    </div>
 
-      {/* Kartu Kanan: Info Penanganan */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <Skeleton className="h-6 w-32 mb-6" /> {/* Judul Kartu */}
-        <div className="space-y-3">
-          <div>
-            <Skeleton className="h-4 w-40 mb-2" />
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-3 w-36 mt-2" />
-          </div>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <Skeleton className="h-6 w-32 mb-6" /> {/* Judul Kartu */}
+      <div className="space-y-3">
+        <div>
+          <Skeleton className="h-4 w-40 mb-2" />
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-3 w-36 mt-2" />
         </div>
       </div>
     </div>
@@ -220,6 +215,11 @@ export const SkeletonReportDetailPage: React.FC = () => (
       </div>
     </div>
   </div>
+);
+
+// Komponen dasar untuk elemen skeleton
+const SkeletonPiece: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={`bg-gray-200 rounded animate-pulse ${className}`} />
 );
 
 export const SkeletonAdminDashboard: React.FC = () => (
@@ -260,4 +260,101 @@ export const SkeletonAdminDashboard: React.FC = () => (
         <SkeletonTable rows={5} />
     </section>
   </div>
+);
+
+// Skeleton untuk bagian Filter
+export const SkeletonFilter: React.FC = () => (
+    <div className="mb-8 bg-white p-6 rounded-xl shadow-lg border">
+        <SkeletonPiece className="h-6 w-1/4 mb-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonPiece key={i} className="h-10 w-full" />)}
+        </div>
+        <div className="mt-6 flex items-center justify-end gap-x-4">
+            <SkeletonPiece className="h-5 w-20" />
+            <SkeletonPiece className="h-10 w-28" />
+        </div>
+    </div>
+);
+
+// Skeleton untuk bagian Insight
+export const SkeletonInsights: React.FC = () => (
+    <div className="mb-8 space-y-3">
+        <SkeletonPiece className="h-6 w-48" />
+        <SkeletonPiece className="h-16 w-full" />
+    </div>
+);
+
+// Skeleton untuk kartu KPI
+export const SkeletonKpiCards: React.FC = () => (
+    <div className="mb-8">
+        <SkeletonPiece className="h-7 w-1/3 mb-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-white p-6 rounded-xl shadow border">
+                    <SkeletonPiece className="h-4 w-3/4" />
+                    <SkeletonPiece className="h-8 w-1/2 mt-2" />
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+// Skeleton untuk kartu chart generik
+export const SkeletonChartCard: React.FC = () => (
+    <div className="bg-white p-6 rounded-xl shadow border">
+        <SkeletonPiece className="h-5 w-1/2 mb-4" />
+        <SkeletonPiece className="h-80 w-full" />
+    </div>
+);
+
+// Skeleton untuk kartu tabel analisis generik
+export const SkeletonAnalysisTableCard: React.FC = () => (
+     <div className="bg-white p-6 rounded-xl shadow border">
+        <SkeletonPiece className="h-5 w-1/3 mb-4" />
+        <div className="space-y-2 mt-4">
+            <SkeletonPiece className="h-4 w-full" />
+            <SkeletonPiece className="h-4 w-11/12" />
+            <SkeletonPiece className="h-4 w-full" />
+            <SkeletonPiece className="h-4 w-10/12" />
+            <SkeletonPiece className="h-4 w-full" />
+        </div>
+    </div>
+);
+
+// Skeleton untuk Data Grid utama di bagian bawah
+export const SkeletonDataGrid: React.FC = () => (
+    <div className="bg-white p-6 rounded-xl shadow-lg border">
+        <div className="flex justify-between items-center mb-4">
+            <SkeletonPiece className="h-7 w-1/3" />
+        </div>
+        <SkeletonPiece className="h-64 w-full" />
+    </div>
+);
+
+// Skeleton for the main profile header card
+export const SkeletonProfileHeader: React.FC = () => (
+    <div className="bg-white rounded-xl shadow p-6">
+        <div className="flex flex-col sm:flex-row gap-6 items-start">
+            <div className="flex-shrink-0">
+                <SkeletonPiece className="h-32 w-32 rounded-full" />
+            </div>
+            <div className="flex-1 space-y-3 mt-2">
+                <SkeletonPiece className="h-8 w-1/2" />
+                <SkeletonPiece className="h-5 w-3/4" />
+                <SkeletonPiece className="h-4 w-1/3" />
+                <SkeletonPiece className="h-4 w-1/2" />
+                <SkeletonPiece className="h-10 w-28 mt-4" />
+            </div>
+        </div>
+    </div>
+);
+
+// Skeleton for an action card (e.g., Security, Contact)
+export const SkeletonActionCard: React.FC<{ title: string; description: string }> = ({ title, description }) => (
+    <div className="bg-white rounded-xl shadow p-6">
+        <SkeletonPiece className="h-6 w-1/3 mb-3" />
+        <SkeletonPiece className="h-4 w-full mb-1" />
+        <SkeletonPiece className="h-4 w-10/12 mb-4" />
+        <SkeletonPiece className="h-10 w-full" />
+    </div>
 );

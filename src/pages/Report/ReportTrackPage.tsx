@@ -1,7 +1,7 @@
 import React, { useState, useEffect, FormEvent } from 'react';
-import { decodeErrorResponse, reportService } from '../services/api';
+import { decodeErrorResponse, reportService } from '../../services/api';
 import { Link, useSearchParams } from 'react-router-dom';
-import { SkeletonReportCard } from '../components/SkeletonLoading';
+import { SkeletonReportCard } from '../../components/SkeletonLoading';
 
 // --- Mendefinisikan Tipe Data ---
 // Ini membuat kode lebih aman dan mudah dibaca, meniru struktur data dari backend
@@ -251,8 +251,7 @@ export default function ReportTrackPage() {
       {/* --- Daftar Laporan --- */}
       <div className="space-y-4">
         {loading ? (
-          // Tampilkan 3 skeleton card saat loading
-          [...Array(3)].map((_, i) => <SkeletonReportCard key={i} />)
+          [...Array(10)].map((_, i) => <SkeletonReportCard key={i} />)
         ) : error ? (
           <div className="text-center bg-white p-12 rounded-lg shadow"><p className="text-red-600">{error}</p></div>
         ) : reports.length > 0 ? (

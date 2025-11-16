@@ -1,4 +1,4 @@
-import { ResponseData } from '@/types';
+import { AuthUser, ResponseData } from '@/types';
 import axios from 'axios';
 import type { AxiosResponse, AxiosInstance, AxiosError } from 'axios';
 
@@ -24,6 +24,22 @@ const searchBaseURL = async () => {
   return DEFAULT_SERVER_API_URL;
 }
 
+// ================================
+// CSRF TOKEN UTILITIES
+// ================================
+
+// Extract CSRF token from cookies
+const getCsrfTokenFromCookie = (): string | null => {
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'XSRF-TOKEN') {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+};
+
 const apiClient: AxiosInstance = axios.create({
   baseURL: `${DEFAULT_SERVER_API_URL}/api`,
   headers: {
@@ -47,6 +63,12 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${authToken}`;
     }
 
+    // Attach CSRF token from cookies for cross-site requests
+    const csrfToken = getCsrfTokenFromCookie();
+    if (csrfToken) {
+      config.headers['X-XSRF-TOKEN'] = csrfToken;
+    }
+
     return config;
   },
   (error) => {
@@ -63,6 +85,10 @@ apiClient.interceptors.response.use(
     // Store auth token if provided in response
     if (response.data?.token) {
       localStorage.setItem('auth_token', response.data.token);
+    }
+
+    if (response.data?.user) {
+      localStorage.setItem('user_data', JSON.stringify(response.data.user));
     }
 
     return response;
@@ -191,7 +217,13 @@ export const homeService = {
 
 export const csrfService = {
   async getCsrfToken() {
-    return apiClient.get('/csrf-cookie');
+    const response = await apiClient.get('/csrf-cookie');
+    // CSRF token is set as httpOnly cookie, no need to store in localStorage
+    return response;
+  },
+
+  getCurrentToken(): string | null {
+    return getCsrfTokenFromCookie();
   }
 };
 
@@ -278,7 +310,7 @@ export const reportService = {
   },
 
   async searchReports(params: string) {
-    return proccessResponseData<any>(apiClient.post(params ? `/report/track?${params}` : '/reports/track'));
+    return proccessResponseData<any>(apiClient.post(params ? `/reports/track?${params}` : '/reports/track'));
   },
 
   async getReportDetail(reportId: string | number) {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { decodeErrorResponse, reportService } from '../services/api';
+import { decodeErrorResponse, reportService } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
-import { SkeletonReportDetailPage } from '../components/SkeletonLoading';
+import { SkeletonReportDetailPage } from '../../components/SkeletonLoading';
 
 interface Report {
   id: number;
@@ -93,28 +93,26 @@ export default function ReportTrackShowPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Laporan</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between"><strong className="text-gray-700">Kategori:</strong> <span className="text-gray-600">{report.category}</span></div>
-            <div className="flex justify-between"><strong className="text-gray-700">Prioritas:</strong> <span className="text-gray-600">{report.priority}</span></div>
-            <div className="flex justify-between"><strong className="text-gray-700">Kota/Kabupaten:</strong> <span className="text-gray-600">{report.city_name}</span></div>
-            <div className="flex justify-between"><strong className="text-gray-700">Kecamatan:</strong> <span className="text-gray-600">{report.district_name}</span></div>
-            <div className="flex justify-between"><strong className="text-gray-700">Lokasi:</strong> <span className="text-gray-600">{report.address}</span></div>
-            <div className="flex justify-between"><strong className="text-gray-700">Dibuat:</strong> <span className="text-gray-600">{new Date(report.created_at).toLocaleDateString('id-ID')}</span></div>
-            <div className="flex justify-between"><strong className="text-gray-700">Diperbarui:</strong> <span className="text-gray-600">{new Date(report.updated_at).toLocaleDateString('id-ID')}</span></div>
-          </div>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Laporan</h3>
+        <div className="space-y-3">
+          <div className="flex justify-between"><strong className="text-gray-700">Kategori:</strong> <span className="text-gray-600">{report.category}</span></div>
+          <div className="flex justify-between"><strong className="text-gray-700">Prioritas:</strong> <span className="text-gray-600">{report.priority}</span></div>
+          <div className="flex justify-between"><strong className="text-gray-700">Kota/Kabupaten:</strong> <span className="text-gray-600">{report.city_name}</span></div>
+          <div className="flex justify-between"><strong className="text-gray-700">Kecamatan:</strong> <span className="text-gray-600">{report.district_name}</span></div>
+          <div className="flex justify-between"><strong className="text-gray-700">Lokasi:</strong> <span className="text-gray-600">{report.address}</span></div>
+          <div className="flex justify-between"><strong className="text-gray-700">Dibuat:</strong> <span className="text-gray-600">{new Date(report.created_at).toLocaleDateString('id-ID')}</span></div>
+          <div className="flex justify-between"><strong className="text-gray-700">Diperbarui:</strong> <span className="text-gray-600">{new Date(report.updated_at).toLocaleDateString('id-ID')}</span></div>
         </div>
+      </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Penanganan</h3>
-          <div className="space-y-3">
-            <div>
-              <strong className="text-gray-700">Penanggung Jawab:</strong>
-              <p className="text-gray-600">{report.assignee?.full_name || 'Belum ditugaskan'}</p>
-              {report.assignee && <p className="text-sm text-gray-500">{report.assignee.email}</p>}
-            </div>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Penanganan</h3>
+        <div className="space-y-3">
+          <div>
+            <strong className="text-gray-700">Penanggung Jawab:</strong>
+            <p className="text-gray-600">{report.assignee?.full_name || 'Belum ditugaskan'}</p>
+            {report.assignee && <p className="text-sm text-gray-500">{report.assignee.email}</p>}
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { decodeErrorResponse, regionService, reportService } from '../services/api'; // Pastikan path ini benar
+import { decodeErrorResponse, regionService, reportService } from '../../services/api'; // Pastikan path ini benar
 import { useNavigate } from 'react-router-dom';
 
 interface DistrictsData {

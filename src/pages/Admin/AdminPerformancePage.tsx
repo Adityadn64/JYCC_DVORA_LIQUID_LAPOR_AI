@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { adminPerformanceService, decodeErrorResponse } from '../services/api';
-import { SkeletonStatsGrid, SkeletonChart, Skeleton } from '../components/SkeletonLoading';
+import { adminPerformanceService, decodeErrorResponse } from '../../services/api';
+import { SkeletonStatsGrid, SkeletonChart, Skeleton } from '../../components/SkeletonLoading';
 
 interface PerformanceData {
   totalReports: number;
