@@ -1,6 +1,10 @@
+export interface CsrfLoadingProps {
+  csrfLoading: boolean;
+}
+
+
 export interface ResponseData {
-    d: string;
-    k: string;
+  d: string;
 }
 
 export interface AuthUser {

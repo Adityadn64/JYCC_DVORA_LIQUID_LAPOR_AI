@@ -14,6 +14,7 @@ import {
     CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { errorDiv } from '@/components/Error';
+import { CsrfLoadingProps } from '@/types';
 
 // [PERBAIKAN TOTAL] Interface data disesuaikan dengan struktur JSON dari API
 interface FilterOptions {
@@ -90,7 +91,7 @@ interface AnalyticsData {
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#38BDF8', '#EC4899'];
 
-export default function AdminAnalyticsPage() {
+export default function AdminAnalyticsPage({csrfLoading}: CsrfLoadingProps) {
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -107,8 +108,8 @@ export default function AdminAnalyticsPage() {
     });
 
     useEffect(() => {
-        fetchAnalytics();
-    }, []);
+        if (csrfLoading) fetchAnalytics();
+    }, [csrfLoading]);
 
     const fetchAnalytics = async (appliedFilters = {}) => {
         try {
@@ -120,7 +121,7 @@ export default function AdminAnalyticsPage() {
             const response = await adminAnalyticsService.getAnalytics(cleanFilters);
             setData(response.data);
         } catch (err: any) {
-            setError(decodeErrorResponse(err) || 'Gagal memuat data analisis');
+            setError((await decodeErrorResponse(err)) || 'Gagal memuat data analisis');
         } finally {
             setLoading(false);
         }

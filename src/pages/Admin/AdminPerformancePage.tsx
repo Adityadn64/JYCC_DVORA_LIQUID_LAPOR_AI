@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { adminPerformanceService, decodeErrorResponse } from '../../services/api';
 import { SkeletonStatsGrid, SkeletonChart, Skeleton } from '../../components/SkeletonLoading';
+import { CsrfLoadingProps } from '@/types';
 
 interface PerformanceData {
   totalReports: number;
@@ -16,7 +17,7 @@ interface PerformanceData {
 
 type ScopeType = 'all' | 'admin' | 'service' | 'category';
 
-export default function AdminPerformancePage() {
+export default function AdminPerformancePage({csrfLoading}: CsrfLoadingProps) {
   const [performance, setPerformance] = useState<PerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +27,8 @@ export default function AdminPerformancePage() {
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#38BDF8'];
 
   useEffect(() => {
-    fetchPerformance();
-  }, [scopeType, scopeValue]);
+    if (csrfLoading) fetchPerformance();
+  }, [scopeType, scopeValue, csrfLoading]);
 
   const fetchPerformance = async () => {
     try {
@@ -40,7 +41,7 @@ export default function AdminPerformancePage() {
       const response = await adminPerformanceService.getPerformance(filters);
       setPerformance(response.data);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal memuat data performa');
+      setError((await decodeErrorResponse(err)) || 'Gagal memuat data performa');
     } finally {
       setLoading(false);
     }
@@ -64,7 +65,7 @@ export default function AdminPerformancePage() {
       link.download = `performance_${new Date().toISOString().split('T')[0]}.${exportFormat === 'csv' ? 'csv' : 'xlsx'}`;
       link.click();
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal mengunduh file');
+      setError((await decodeErrorResponse(err)) || 'Gagal mengunduh file');
     } finally {
       setLoading(false);
     }

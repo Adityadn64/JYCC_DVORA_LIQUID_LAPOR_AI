@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { decodeErrorResponse, reportService } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SkeletonReportDetailPage } from '../../components/SkeletonLoading';
+import { CsrfLoadingProps } from '@/types';
 
 interface Report {
   id: number;
@@ -19,7 +20,7 @@ interface Report {
   assignee?: { full_name: string; email: string };
 }
 
-export default function ReportTrackShowPage() {
+export default function ReportTrackShowPage({csrfLoading}: CsrfLoadingProps) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState<Report | null>(null);
@@ -27,8 +28,8 @@ export default function ReportTrackShowPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchReport();
-  }, [id]);
+    if (csrfLoading) fetchReport();
+  }, [id, csrfLoading]);
 
   const fetchReport = async () => {
     // Set loading ke true setiap kali fetch dimulai (opsional, baik untuk re-fetch)
@@ -40,7 +41,7 @@ export default function ReportTrackShowPage() {
       setReport(response.data.report);
     } catch (err) {
       console.error('Error fetching report:', err);
-      setError(decodeErrorResponse(err) || 'Gagal memuat data laporan');
+      setError((await decodeErrorResponse(err)) || 'Gagal memuat data laporan');
     } finally {
       setLoading(false);
     }

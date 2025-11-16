@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.DEFAULT_SERVER_API_URL': JSON.stringify(env.DEFAULT_SERVER_API_URL),
         'process.env.SERVER_API_URLS': JSON.stringify(env.SERVER_API_URLS),
+        'process.env.K1': JSON.stringify(env.K1),
+        'process.env.K4': JSON.stringify(env.K4),
       },
       resolve: {
         alias: {

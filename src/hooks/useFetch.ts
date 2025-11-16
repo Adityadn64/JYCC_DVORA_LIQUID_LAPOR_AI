@@ -13,7 +13,7 @@ export function useFetch(url: string, options: any = {}) {
         setData(response.data);
         setLoading(false);
       } catch (err: any) {
-        setError(decodeErrorResponse(err));
+        setError((await decodeErrorResponse(err)));
         setLoading(false);
       }
     };

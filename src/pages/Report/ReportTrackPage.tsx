@@ -2,6 +2,7 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import { decodeErrorResponse, reportService } from '../../services/api';
 import { Link, useSearchParams } from 'react-router-dom';
 import { SkeletonReportCard } from '../../components/SkeletonLoading';
+import { CsrfLoadingProps } from '@/types';
 
 // --- Mendefinisikan Tipe Data ---
 // Ini membuat kode lebih aman dan mudah dibaca, meniru struktur data dari backend
@@ -34,8 +35,7 @@ interface PaginationMeta {
 
 
 // --- Komponen Utama ---
-
-export default function ReportTrackPage() {
+export default function ReportTrackPage({csrfLoading}: CsrfLoadingProps) {
   // State untuk menyimpan data dari API
   const [reports, setReports] = useState<Report[]>([]);
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -81,14 +81,14 @@ export default function ReportTrackPage() {
         });
 
       } catch (err: any) {
-        setError(decodeErrorResponse(err) || 'Gagal memuat data laporan');
+        setError((await decodeErrorResponse(err)) || 'Gagal memuat data laporan');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [searchParams]); // Dependensi: jalankan ulang effect ini jika searchParams berubah
+    if (csrfLoading) fetchData();
+  }, [searchParams, csrfLoading]); // Dependensi: jalankan ulang effect ini jika searchParams berubah
 
   // Menangani perubahan pada input filter
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

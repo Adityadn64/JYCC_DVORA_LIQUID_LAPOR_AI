@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { authService, decodeErrorResponse } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import { CsrfLoadingProps } from '@/types';
 
 interface RegisterFormData {
   phone?: string;
@@ -9,7 +10,7 @@ interface RegisterFormData {
   password_confirmation?: string;
 }
 
-export default function RegisterPage() {
+export default function RegisterPage({csrfLoading}: CsrfLoadingProps) {
   const [step, setStep] = useState(1); // 1: contact, 2: verify, 3: password
   const [formData, setFormData] = useState<RegisterFormData>({
     phone: '',
@@ -39,7 +40,7 @@ export default function RegisterPage() {
       setSuccess(response.data.message || 'OTP telah dikirim. Silakan verifikasi.');
       setStep(2);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Terjadi kesalahan');
+      setError((await decodeErrorResponse(err)) || 'Terjadi kesalahan');
     } finally {
       setLoading(false);
     }
@@ -55,7 +56,7 @@ export default function RegisterPage() {
       setSuccess(response.data.message || 'Verifikasi berhasil! Silakan atur password.');
       setStep(3);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'OTP tidak valid');
+      setError((await decodeErrorResponse(err)) || 'OTP tidak valid');
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ export default function RegisterPage() {
         navigate('/login');
       }, 2000);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Terjadi kesalahan');
+      setError((await decodeErrorResponse(err)) || 'Terjadi kesalahan');
     } finally {
       setLoading(false);
     }

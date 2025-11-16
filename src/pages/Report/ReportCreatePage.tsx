@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { decodeErrorResponse, regionService, reportService } from '../../services/api'; // Pastikan path ini benar
 import { useNavigate } from 'react-router-dom';
+import { CsrfLoadingProps } from '@/types';
 
 interface DistrictsData {
   code: string;
@@ -25,7 +26,7 @@ interface ReportForm {
   video_files: File[];
 }
 
-export default function ReportCreatePage() {
+export default function ReportCreatePage({csrfLoading}: CsrfLoadingProps) {
   const [formData, setFormData] = useState<ReportForm>({
     name: '',
     phone: '',
@@ -60,8 +61,8 @@ export default function ReportCreatePage() {
         setRegenciesDataLoading(false);
       }
     };
-    fetchRegenciesData();
-  }, []);
+    if (csrfLoading) fetchRegenciesData();
+  }, [csrfLoading]);
 
   // --- Fetch Data Kecamatan saat Kota Dipilih ---
   useEffect(() => {
@@ -175,7 +176,7 @@ export default function ReportCreatePage() {
         navigate(`/report/${response.data.id}/track`);
       }, 1500);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal membuat laporan');
+      setError((await decodeErrorResponse(err)) || 'Gagal membuat laporan');
     } finally {
       setLoading(false);
     }

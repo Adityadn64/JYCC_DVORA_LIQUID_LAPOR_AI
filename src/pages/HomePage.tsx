@@ -3,6 +3,7 @@ import { decodeErrorResponse, homeService } from '../services/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Skeleton, SkeletonChart } from '../components/SkeletonLoading';
 import { errorDiv } from '@/components/Error';
+import { CsrfLoadingProps } from '@/types';
 
 interface ReportStats {
   pending: number;
@@ -25,7 +26,7 @@ interface ReportHistoryItem {
   rejected: number;
 }
 
-export default function HomePage() {
+export default function HomePage({csrfLoading}: CsrfLoadingProps) {
   const [stats, setStats] = useState<ReportStats>({
     pending: 0,
     process: 0,
@@ -74,13 +75,13 @@ export default function HomePage() {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching home data:', err);
-        setError(decodeErrorResponse(err) || 'Gagal memuat data');
+        setError((await decodeErrorResponse(err)) || 'Gagal memuat data');
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    if (csrfLoading) fetchData();
+  }, [csrfLoading]);
 
   function renderError() {
     return errorDiv(error || 'Terjadi kesalahan');

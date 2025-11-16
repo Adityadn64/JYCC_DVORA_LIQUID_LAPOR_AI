@@ -3,11 +3,20 @@ import axios from 'axios';
 import type { AxiosResponse, AxiosInstance, AxiosError } from 'axios';
 
 // ================================
+// ENCRYPTION KEYS
+// ================================
+
+const K1 = process.env.K1 || '^UAFU!Tce1$P^jX$2xdfF6s6t0x7Wtlv'; // K1: React->Express (encrypt)
+const K4 = process.env.K4 || 'Kg6$F5ptNZ2%qcRGav!QhZr*LXLpO6Zr'; // K4: Express->React (decrypt)
+
+// ================================
 // AXIOS INSTANCE CONFIGURATION
 // ================================
 
-const DEFAULT_SERVER_API_URL: string = process.env.DEFAULT_SERVER_API_URL || "http://localhost:3001";
-const SERVER_API_URLS: string[] = JSON.parse(process.env.SERVER_API_URLS || `[${DEFAULT_SERVER_API_URL}]`);
+const DEFAULT_SERVER_API_URL: string = process.env.NEXT_PUBLIC_DEFAULT_SERVER_API_URL || "http://localhost:3001";
+const SERVER_API_URLS: string[] = JSON.parse(
+  process.env.NEXT_PUBLIC_SERVER_API_URLS || `["${DEFAULT_SERVER_API_URL}"]`
+);
 
 const searchBaseURL = async () => {
   for (const url of SERVER_API_URLS) {
@@ -28,7 +37,6 @@ const searchBaseURL = async () => {
 // CSRF TOKEN UTILITIES
 // ================================
 
-// Extract CSRF token from cookies
 const getCsrfTokenFromCookie = (): string | null => {
   const cookies = document.cookie.split(';');
   for (const cookie of cookies) {
@@ -46,27 +54,158 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
-    'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+    'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') || '' : ''}`,
   },
   withCredentials: true
 });
+
+// ================================
+// ENCRYPTION/DECRYPTION UTILITIES
+// ================================
+
+const normalizeKey = (key: string): Uint8Array => {
+  const encoder = new TextEncoder();
+  let keyBytes = encoder.encode(key);
+
+  if (keyBytes.length < 32) {
+    const padded = new Uint8Array(32);
+    padded.set(keyBytes);
+    padded.fill(0x20, keyBytes.length); // pad with space (0x20)
+    keyBytes = padded;
+  } else if (keyBytes.length > 32) {
+    keyBytes = keyBytes.slice(0, 32);
+  }
+  return keyBytes;
+};
+
+const bufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+};
+
+const base64ToBuffer = (base64: string): ArrayBuffer => {
+  const binary_string = atob(base64);
+  const len = binary_string.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binary_string.charCodeAt(i);
+  return bytes.buffer;
+};
+
+const cleanBase64 = (s: string): string => {
+  if (!s) return s;
+  s = s.replace(/\s+/g, '');
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4 !== 0) s += '=';
+  return s;
+};
+
+export const aesEncrypt = async (text: string, key: string): Promise<string> => {
+  const data = new TextEncoder().encode(text);
+  const keyBytes = normalizeKey(key);
+
+  const cryptoKey = await crypto.subtle.importKey('raw', keyBytes as BufferSource, 'AES-CBC', false, ['encrypt']);
+  const iv = crypto.getRandomValues(new Uint8Array(16));
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, cryptoKey, data);
+
+  const result = new Uint8Array(iv.length + encrypted.byteLength);
+  result.set(iv);
+  result.set(new Uint8Array(encrypted), iv.length);
+
+  return bufferToBase64(result.buffer);
+};
+
+export const aesDecrypt = async (encrypted: string, key: string): Promise<string> => {
+  try {
+    const cleaned = cleanBase64(encrypted);
+    const combined = new Uint8Array(base64ToBuffer(cleaned));
+    if (combined.length < 17) throw new Error('combined data too short');
+    const iv = combined.slice(0, 16);
+    const ciphertext = combined.slice(16);
+    if (ciphertext.length % 16 !== 0) throw new Error('ciphertext length not multiple of 16 (possible base64 corruption)');
+
+    const keyBytes = normalizeKey(key);
+    const cryptoKey = await crypto.subtle.importKey('raw', keyBytes as BufferSource, 'AES-CBC', false, ['decrypt']);
+    const decryptedBuffer = await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, cryptoKey, ciphertext);
+    return new TextDecoder().decode(decryptedBuffer);
+  } catch (err: any) {
+    console.error('AES Decrypt error:', err.name ?? err, err.message ?? err);
+    throw err;
+  }
+};
+
+const encodePayloadToExpress = async (data: any): Promise<string> => {
+  try {
+    const jsonString = JSON.stringify(data);
+    return await aesEncrypt(jsonString, K1);
+  } catch (error) {
+    console.error("Gagal men-encode payload ke Express:", error);
+    throw error;
+  }
+};
+
+const decodePayloadFromExpress = async <T>(encodedPayload: string): Promise<T | null> => {
+  try {
+    const decrypted = await aesDecrypt(encodedPayload, K4);
+    return JSON.parse(decrypted) as T;
+  } catch (error) {
+    console.error("Gagal men-decode payload dari Express:", error);
+    return null;
+  }
+};
+
+export const decodeErrorResponse = async (error: any): Promise<string> => {
+  if (axios.isAxiosError(error) && error.response?.data) {
+    const encodedData = error.response.data as { d: string };
+    if (encodedData.d) {
+      try {
+        const decodedPayload = await decodePayloadFromExpress<{ message: string; errors?: any }>(
+          encodedData.d
+        );
+
+        if (decodedPayload?.errors) {
+          const firstErrorKey = Object.keys(decodedPayload.errors)[0];
+          const firstErrorMessage = decodedPayload.errors[firstErrorKey][0];
+          return firstErrorMessage;
+        }
+
+        if (decodedPayload?.message) {
+          return decodedPayload.message;
+        }
+      } catch (decodeError) {
+        console.error("Gagal decode error response:", decodeError);
+      }
+    }
+  }
+
+  return "Terjadi kesalahan yang tidak diketahui. Silakan coba lagi.";
+};
 
 // ================================
 // REQUEST INTERCEPTOR
 // ================================
 
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Get Bearer token from localStorage
-    const authToken = localStorage.getItem('auth_token');
-    if (authToken) {
-      config.headers.Authorization = `Bearer ${authToken}`;
+    if (typeof window !== 'undefined') {
+      const authToken = localStorage.getItem('auth_token');
+      if (authToken) {
+        config.headers.Authorization = `Bearer ${authToken}`;
+      }
     }
 
-    // Attach CSRF token from cookies for cross-site requests
+    // Attach CSRF token from cookies
     const csrfToken = getCsrfTokenFromCookie();
     if (csrfToken) {
       config.headers['X-XSRF-TOKEN'] = csrfToken;
+    }
+
+    // Encrypt request data if it's a POST/PUT/PATCH request with data
+    if (config.data && ['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '')) {
+      const encrypted = await encodePayloadToExpress(config.data);
+      config.data = { d: encrypted };
     }
 
     return config;
@@ -81,30 +220,40 @@ apiClient.interceptors.request.use(
 // ================================
 
 apiClient.interceptors.response.use(
-  (response) => {
-    // Store auth token if provided in response
-    if (response.data?.token) {
-      localStorage.setItem('auth_token', response.data.token);
-    }
+  async (response) => {
+    console.log({apiClientResponse: response});
+    if (response.data && response.data.d) {
+      try {
+        const decrypted = await decodePayloadFromExpress<any>(response.data.d);
+        
+        // Store auth token if provided
+        if (decrypted?.data?.token && typeof window !== 'undefined') {
+          localStorage.setItem('auth_token', decrypted.data.token);
+        }
 
-    if (response.data?.user) {
-      localStorage.setItem('user_data', JSON.stringify(response.data.user));
+        // Store user data if provided
+        if (decrypted?.data?.user && typeof window !== 'undefined') {
+          localStorage.setItem('user_data', JSON.stringify(decrypted.data.user));
+        }
+
+        // Replace response data with decrypted data
+        response.data = decrypted || response.data;
+      } catch (error) {
+        console.error('Failed to decrypt response:', error);
+      }
     }
 
     return response;
   },
   (error: AxiosError) => {
-    // Handle 401 Unauthorized - Token expired or invalid
-    if (error.response?.status === 401) {
-      // // Clear auth data
-      // localStorage.removeItem('auth_token');
-      // localStorage.removeItem('user_data');
-      
-      // // Redirect to login
-      // window.location.href = '/login';
+    // Handle 401 Unauthorized
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      window.location.href = '/login';
     }
 
-    // Handle 403 Forbidden - Admin status issue
+    // Handle 403 Forbidden
     if (error.response?.status === 403) {
       console.error('Access Forbidden:', error.response.data);
     }
@@ -113,101 +262,14 @@ apiClient.interceptors.response.use(
   }
 );
 
-const vigenereCipher = (input: string, key: string, mode: 'encode' | 'decode'): string => {
-    const keyLength = key.length;
-    let output = '';
-
-    for (let i = 0; i < input.length; i++) {
-        const keyChar = key[i % keyLength];
-        const keyOffset = parseInt(keyChar, 10);
-
-        const inputAscii = input.charCodeAt(i);
-
-        let newAscii: number;
-        if (mode === 'encode') {
-            newAscii = (inputAscii + keyOffset) % 256;
-        } else {
-            newAscii = (inputAscii - keyOffset + 256) % 256;
-        }
-
-        output += String.fromCharCode(newAscii);
-    }
-
-    return output;
-};
-
-const decodePayload = <T>(encodedPayload: string, key: string): T | null => {
-    try {
-        // 1. Dekode dari Base64 untuk mendapatkan string yang diacak
-        const scrambledString = atob(encodedPayload);
-
-        // 2. Terapkan Vigenère Cipher untuk membalikkan acakan
-        const jsonString = vigenereCipher(scrambledString, key, 'decode');
-
-        // 3. Parse string JSON kembali menjadi objek
-        return JSON.parse(jsonString) as T;
-
-    } catch (error) {
-        console.error("Gagal men-decode payload:", error);
-        return null; // Gagal decode
-    }
-};
-
-const proccessResponseData = async <T>(request: Promise<AxiosResponse<ResponseData>>): Promise<T | null> => {
-    try {
-        const response = await request;
-        
-        // Gunakan destructuring agar lebih ringkas
-        const { d, k } = response.data; 
-
-        // Sekarang kita teruskan tipe generic <T> ke decodePayload
-        return decodePayload<T>(d, k);
-    
-    } catch (error) {
-        console.error("Gagal memproses respons:", error);
-        // Lempar kembali error agar bisa ditangkap oleh pemanggil
-        throw error;
-    }
-}
-
-export const decodeErrorResponse = (error: any): string => {
-    // Cek apakah ini adalah error dari Axios dan memiliki body respons
-    if (axios.isAxiosError(error) && error.response?.data) {
-        
-        // Cek apakah body respons memiliki format terenkripsi kita {d, k}
-        const encodedData = error.response.data as { d: string; k: string };
-        if (encodedData.d && encodedData.k) {
-            // Lakukan decode payload error
-            const decodedPayload = decodePayload<{ message: string; errors?: any }>(
-                encodedData.d,
-                encodedData.k
-            );
-
-            // Jika ada 'errors' (untuk validasi), format pesannya
-            if (decodedPayload?.errors) {
-                const firstErrorKey = Object.keys(decodedPayload.errors)[0];
-                const firstErrorMessage = decodedPayload.errors[firstErrorKey][0];
-                return firstErrorMessage; // Contoh: "The password field is required."
-            }
-
-            // Jika tidak ada 'errors', kembalikan pesan utamanya
-            if (decodedPayload?.message) {
-                return decodedPayload.message; // Contoh: "Kredensial tidak cocok."
-            }
-        }
-    }
-
-    // Fallback jika error bukan dari Axios atau formatnya tidak dikenali
-    return "Terjadi kesalahan yang tidak diketahui. Silakan coba lagi.";
-};
-
 // ================================
 // HOME SERVICE
 // ================================
 
 export const homeService = {
   async getHome() {
-    return proccessResponseData<any>(apiClient.post('/home'));
+    const response = await apiClient.post('/home');
+    return response;
   }
 };
 
@@ -218,7 +280,6 @@ export const homeService = {
 export const csrfService = {
   async getCsrfToken() {
     const response = await apiClient.get('/csrf-cookie');
-    // CSRF token is set as httpOnly cookie, no need to store in localStorage
     return response;
   },
 
@@ -233,88 +294,85 @@ export const csrfService = {
 
 export const authService = {
   async login(credentials: { login_identifier: string; password: string; remember?: boolean }) {
-    const response = await proccessResponseData<any>(apiClient.post('/auth/login', credentials));
-    
-    if (response.data.token) {
-      localStorage.setItem('auth_token', response.data.token);
-    }
-    if (response.data.user) {
-      localStorage.setItem('user_data', JSON.stringify(response.data.user));
-    }
-    
-    return response;
+    const response = await apiClient.post('/auth/login', credentials);
+    return response.data;
   },
 
   async logout() {
-    const response = await proccessResponseData<any>(apiClient.post('/auth/logout', {}));
+    const response = await apiClient.post('/auth/logout', {});
     
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+    }
     
-    return response;
+    return response.data;
   },
 
   async registerStart(data: { email: string; phone: string }) {
-    return proccessResponseData<any>(apiClient.post('/auth/register/start', data));
+    const response = await apiClient.post('/auth/register/start', data);
+    return response.data;
   },
 
   async registerVerifyOtp(data: { email: string; otp_code: string }) {
-    const response = await proccessResponseData<any>(apiClient.post('/auth/register/verify', data));
-    
-    return response;
+    const response = await apiClient.post('/auth/register/verify', data);
+    return response.data;
   },
 
   async register(data: { email: string; password: string; password_confirmation: string }) {
-    const response = await proccessResponseData<any>(apiClient.post('/auth/register', data));
-    
-    if (response.data.token) {
-      localStorage.setItem('auth_token', response.data.token);
-    }
-    if (response.data.user) {
-      localStorage.setItem('user_data', JSON.stringify(response.data.user));
-    }
-    
-    return response;
+    const response = await apiClient.post('/auth/register', data);
+    return response.data;
   },
 
   async passwordResetRequest(email: string) {
-    return proccessResponseData<any>(apiClient.post('/auth/password-reset/request', { email }));
+    const response = await apiClient.post('/auth/password-reset/request', { email });
+    return response.data;
   },
 
   async passwordResetVerify(data: { email: string; token: string; otp_code: string }) {
-    return proccessResponseData<any>(apiClient.post('/auth/password-reset/verify', data));
+    const response = await apiClient.post('/auth/password-reset/verify', data);
+    return response.data;
   },
 
   async passwordResetConfirm(data: { email: string; token: string; password: string; password_confirmation: string }) {
-    return proccessResponseData<any>(apiClient.post('/auth/password-reset/confirm', data));
+    const response = await apiClient.post('/auth/password-reset/confirm', data);
+    return response.data;
   }
 };
+
+// ================================
+// REGION SERVICE
+// ================================
+
+export const regionService = {
+  async getRegencies() {
+    const response = await apiClient.post('/regencies');
+    return response.data;
+  },
+}
 
 // ================================
 // REPORT SERVICE
 // ================================
 
-export const regionService = {
-  async getRegencies() {
-    return proccessResponseData<any>(apiClient.post(`/regencies`));
-  },
-}
-
 export const reportService = {
   async createReport(formData: FormData) {
-    return proccessResponseData<any>(apiClient.post('/report/create', formData, {
+    const response = await apiClient.post('/report/create', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
-    }));
+    });
+    return response.data;
   },
 
   async searchReports(params: string) {
-    return proccessResponseData<any>(apiClient.post(params ? `/reports/track?${params}` : '/reports/track'));
+    const response = await apiClient.post(params ? `/reports/track?${params}` : '/reports/track');
+    return response.data;
   },
 
   async getReportDetail(reportId: string | number) {
-    return proccessResponseData<any>(apiClient.post(`/report/${reportId}/track`, {}));
+    const response = await apiClient.post(`/report/${reportId}/track`, {});
+    return response.data;
   }
 };
 
@@ -332,7 +390,8 @@ export const adminDashboardService = {
     search_id?: string;
     sort?: string;
   }) {
-    return proccessResponseData<any>(apiClient.post('/admin/dashboard', filters));
+    const response = await apiClient.post('/admin/dashboard', filters);
+    return response.data;
   }
 };
 
@@ -351,20 +410,23 @@ export const adminAnalyticsService = {
     priority?: string;
     location?: string;
   } = {}) {
-    return proccessResponseData<any>(apiClient.post('/admin/analytics', filters));
+    const response = await apiClient.post('/admin/analytics', filters);
+    return response.data;
   },
 
   async filterAnalytics(filters: object) {
-    return proccessResponseData<any>(apiClient.post('/admin/analytics', filters));
+    const response = await apiClient.post('/admin/analytics', filters);
+    return response.data;
   },
 
   async exportAnalytics(format: 'csv' | 'xlsx', filters: object) {
-    return proccessResponseData<any>(apiClient.post('/admin/analytics/export-reports', {
+    const response = await apiClient.post('/admin/analytics/export-reports', {
       format,
       ...filters
     }, {
       responseType: 'blob'
-    }));
+    });
+    return response.data;
   }
 };
 
@@ -374,7 +436,8 @@ export const adminAnalyticsService = {
 
 export const adminProfileService = {
   async getProfile() {
-    return proccessResponseData<any>(apiClient.post('/admin/profile', {}));
+    const response = await apiClient.post('/admin/profile', {});
+    return response.data;
   },
 
   async updateProfile(data: {
@@ -387,12 +450,29 @@ export const adminProfileService = {
     Object.entries(data).forEach(([key, value]) => {
       if (value) formData.append(key, value);
     });
-    
-    return proccessResponseData<any>(apiClient.post('/admin/profile/update-info', formData, {
+
+    const response = await apiClient.post('/admin/profile/update-info', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
-    }));
+    });
+    return response.data;
+  },
+
+  async updateFullName(data: {
+    full_name: string;
+    password: string;
+  }) {
+    const response = await apiClient.post('/admin/profile/update-full-name', data);
+    return response.data;
+  },
+
+  async updateNip(data: {
+    nip: string;
+    password: string;
+  }) {
+    const response = await apiClient.post('/admin/profile/update-nip', data);
+    return response.data;
   },
 
   async changePassword(data: {
@@ -400,14 +480,74 @@ export const adminProfileService = {
     password: string;
     password_confirmation: string;
   }) {
-    return proccessResponseData<any>(apiClient.post('/admin/profile/update-password', data));
+    const response = await apiClient.post('/admin/profile/update-password', data);
+    return response.data;
   },
 
   async changeContact(data: {
-    email?: string;
-    phone?: string;
+    new_email?: string;
+    new_phone?: string;
+    password: string;
   }) {
-    return proccessResponseData<any>(apiClient.post('/admin/profile/request-email-change', data));
+    let responses = [];
+
+    if (data.new_email) {
+      responses.push(await this.changeEmail({ new_email: data.new_email, password: data.password }));
+    }
+    if (data.new_phone) {
+      responses.push(await this.changePhone({ new_phone: data.new_phone, password: data.password }));
+    }
+
+    return responses[0];
+  },
+
+  async changeEmail(data: {
+    new_email: string;
+    password: string;
+  }) {
+    const response = await apiClient.post('/admin/profile/request-email-change', data);
+    return response.data;
+  },
+
+  async changePhone(data: {
+    new_phone: string;
+    password: string;
+  }) {
+    const response = await apiClient.post('/admin/profile/request-phone-change', data);
+    return response.data;
+  },
+
+  async verifyEmailChange(data: { otp: string }) {
+    const response = await apiClient.post('/admin/profile/verify-email-change', data);
+    return response.data;
+  },
+
+  async verifyPhoneChange(data: { otp_phone: string }) {
+    const response = await apiClient.post('/admin/profile/verify-phone-change', data);
+    return response.data;
+  },
+
+  async updateKta(data: { kta_scan: File }) {
+    const formData = new FormData();
+    formData.append('kta_scan', data.kta_scan);
+
+    const response = await apiClient.post('/admin/profile/update-kta', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
+
+  async exportProfile() {
+    return apiClient.post('/admin/profile/export-profile', {}, {
+      responseType: 'blob'
+    });
+  },
+
+  async deactivateSelf() {
+    const response = await apiClient.post('/admin/profile/deactivate-self', {});
+    return response.data;
   }
 };
 

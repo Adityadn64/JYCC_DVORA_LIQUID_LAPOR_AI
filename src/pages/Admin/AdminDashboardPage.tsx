@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { adminDashboardService, decodeErrorResponse } from '../../services/api';
+import { adminDashboardService, decodeErrorResponse } from '@/services/api';
 import { useNavigate } from 'react-router-dom';
-import { SkeletonAdminDashboard, Skeleton, SkeletonReportCard } from '../../components/SkeletonLoading';
+import { SkeletonAdminDashboard, Skeleton, SkeletonReportCard } from '@/components/SkeletonLoading';
 
 // 1. Import Chart.js dan komponennya
 import { Line, Pie, Bar } from 'react-chartjs-2'; 
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { errorDiv } from '@/components/Error';
+import { CsrfLoadingProps } from '@/types';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
 // 2. Definisikan tipe data yang lebih akurat
@@ -56,7 +57,7 @@ const formatRelativeTime = (dateString: string) => {
 };
 
 
-export default function AdminDashboardPage() {
+export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [charts, setCharts] = useState<{
     reportTrend: ChartData[];
@@ -97,7 +98,7 @@ export default function AdminDashboardPage() {
       setPaginationInfo(response.data.reports); // Simpan semua info paginasi
     } catch (err) {
       console.error('Error fetching dashboard:', err);
-      setError(decodeErrorResponse(err) || 'Gagal memuat data dashboard');
+      setError((await decodeErrorResponse(err)) || 'Gagal memuat data dashboard');
     } finally {
       setLoading(false);
     }
@@ -105,8 +106,8 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetchDashboardData(filters, 1);
-  }, []);
+    if (csrfLoading) fetchDashboardData(filters, 1);
+  }, [csrfLoading]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     // [FIXED] Menggunakan nama input/select sebagai key dinamis

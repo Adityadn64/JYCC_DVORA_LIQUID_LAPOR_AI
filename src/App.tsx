@@ -67,34 +67,34 @@ function App() {
         <main className="flex-grow px-6 py-12 sm:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/password-reset" element={<PasswordResetPage />} />
+              <Route path="/" element={<HomePage csrfLoading={!loading} />} />
+              <Route path="/login" element={<LoginPage csrfLoading={!loading} />} />
+              <Route path="/register" element={<RegisterPage csrfLoading={!loading} />} />
+              <Route path="/password-reset" element={<PasswordResetPage csrfLoading={!loading} />} />
               
-              <Route path="/report/create" element={<ReportCreatePage />} />
-              <Route path="/report/track" element={<ReportTrackPage />} />
-              <Route path="/report/:id/track" element={<ReportTrackShowPage />} />
+              <Route path="/report/create" element={<ReportCreatePage csrfLoading={!loading} />} />
+              <Route path="/report/track" element={<ReportTrackPage csrfLoading={!loading} />} />
+              <Route path="/report/:id/track" element={<ReportTrackShowPage csrfLoading={!loading} />} />
 
               <Route 
                 path="/admin/dashboard" 
-                element={isAuthenticated ? <AdminDashboardPage /> : <Navigate to="/login" />}
+                element={isAuthenticated ? <AdminDashboardPage csrfLoading={!loading} /> : <Navigate to="/login" />}
               />
               <Route 
                 path="/admin/analytics" 
-                element={isAuthenticated ? <AdminAnalyticsPage /> : <Navigate to="/login" />}
+                element={isAuthenticated ? <AdminAnalyticsPage csrfLoading={!loading} /> : <Navigate to="/login" />}
               />
               <Route 
                 path="/admin/profile" 
-                element={isAuthenticated ? <AdminProfilePage /> : <Navigate to="/login" />}
+                element={isAuthenticated ? <AdminProfilePage csrfLoading={!loading} /> : <Navigate to="/login" />}
               />
               <Route 
                 path="/admin/manage" 
-                element={isAuthenticated ? <AdminManagePage /> : <Navigate to="/login" />}
+                element={isAuthenticated ? <AdminManagePage csrfLoading={!loading} /> : <Navigate to="/login" />}
               />
               <Route 
                 path="/admin/performance" 
-                element={isAuthenticated ? <AdminPerformancePage /> : <Navigate to="/login" />}
+                element={isAuthenticated ? <AdminPerformancePage csrfLoading={!loading} /> : <Navigate to="/login" />}
               />
 
               <Route path="*" element={<Navigate to="/" />} />

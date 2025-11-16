@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, decodeErrorResponse } from '../../services/api';
+import { CsrfLoadingProps } from '@/types';
 
 type ResetStep = 'email' | 'verify' | 'password';
 
@@ -13,7 +14,7 @@ interface ResetFormData {
   password_confirmation?: string;
 }
 
-export default function PasswordResetPage() {
+export default function PasswordResetPage({csrfLoading}: CsrfLoadingProps) {
   const [step, setStep] = useState<ResetStep>('email');
   const [formData, setFormData] = useState<ResetFormData>({
     email: '',
@@ -48,7 +49,7 @@ export default function PasswordResetPage() {
       setSuccess(response.data.message || 'Email reset password telah dikirim. Silakan check email Anda.');
       setStep('verify');
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal mengirim email reset password');
+      setError((await decodeErrorResponse(err)) || 'Gagal mengirim email reset password');
     } finally {
       setLoading(false);
     }
@@ -77,7 +78,7 @@ export default function PasswordResetPage() {
       setSuccess(response.data.message || 'OTP berhasil diverifikasi. Silakan buat password baru.');
       setStep('password');
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal memverifikasi OTP');
+      setError((await decodeErrorResponse(err)) || 'Gagal memverifikasi OTP');
     } finally {
       setLoading(false);
     }
@@ -108,7 +109,7 @@ export default function PasswordResetPage() {
         navigate('/login');
       }, 2000);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal mereset password');
+      setError((await decodeErrorResponse(err)) || 'Gagal mereset password');
     } finally {
       setLoading(false);
     }

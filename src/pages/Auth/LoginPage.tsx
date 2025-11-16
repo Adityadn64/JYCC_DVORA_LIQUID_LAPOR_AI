@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { authService, decodeErrorResponse } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import { CsrfLoadingProps } from '@/types';
 
 interface LoginFormData {
   login_identifier: string;
@@ -8,7 +9,7 @@ interface LoginFormData {
   remember?: boolean;
 }
 
-export default function LoginPage() {
+export default function LoginPage({csrfLoading}: CsrfLoadingProps) {
   const [formData, setFormData] = useState<LoginFormData>({
     login_identifier: '',
     password: '',
@@ -43,7 +44,7 @@ export default function LoginPage() {
         window.location.href = '/admin/dashboard';
       }, 1000);
     } catch (err: any) {
-      setError(decodeErrorResponse(err));
+      setError((await decodeErrorResponse(err)));
     } finally {
       setLoading(false);
     }

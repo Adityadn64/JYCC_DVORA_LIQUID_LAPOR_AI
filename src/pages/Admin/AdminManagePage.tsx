@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminManageService, decodeErrorResponse } from '../../services/api';
 import { SkeletonTable, SkeletonList, Skeleton } from '../../components/SkeletonLoading';
+import { CsrfLoadingProps } from '@/types';
 
 interface Admin {
   id: number;
@@ -25,7 +26,7 @@ interface AdminRequest {
   request_reason?: string;
 }
 
-export default function AdminManagePage() {
+export default function AdminManagePage({csrfLoading}: CsrfLoadingProps) {
   const [tab, setTab] = useState<'manage' | 'requests'>('manage');
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [requests, setRequests] = useState<AdminRequest[]>([]);
@@ -48,8 +49,8 @@ export default function AdminManagePage() {
   });
 
   useEffect(() => {
-    fetchData();
-  }, [tab]);
+    if (csrfLoading) fetchData();
+  }, [tab, csrfLoading]);
 
   const fetchData = async () => {
     try {
@@ -65,7 +66,7 @@ export default function AdminManagePage() {
         setRequests(response.data.requests || []);
       }
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal memuat data');
+      setError((await decodeErrorResponse(err)) || 'Gagal memuat data');
     } finally {
       setLoading(false);
     }
@@ -94,7 +95,7 @@ export default function AdminManagePage() {
       resetForm();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal menambahkan admin');
+      setError((await decodeErrorResponse(err)) || 'Gagal menambahkan admin');
     }
   };
 
@@ -118,7 +119,7 @@ export default function AdminManagePage() {
       resetForm();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal memperbarui admin');
+      setError((await decodeErrorResponse(err)) || 'Gagal memperbarui admin');
     }
   };
 
@@ -132,7 +133,7 @@ export default function AdminManagePage() {
       setSuccess(response.data.message || 'Admin berhasil dihapus');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal menghapus admin');
+      setError((await decodeErrorResponse(err)) || 'Gagal menghapus admin');
     }
   };
 
@@ -144,7 +145,7 @@ export default function AdminManagePage() {
       setSuccess(response.data.message || 'Status admin berhasil diubah');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      setError(decodeErrorResponse(err) || 'Gagal mengubah status admin');
+      setError((await decodeErrorResponse(err)) || 'Gagal mengubah status admin');
     }
   };
 
