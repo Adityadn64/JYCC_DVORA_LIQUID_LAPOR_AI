@@ -46,7 +46,7 @@ app.use(cors({
   origin: CLIENT_URLS,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-TOKEN', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-TOKEN', 'X-XSRF-TOKEN', 'X-Requested-With'],
 }));
 
 app.use(express.json());
@@ -164,20 +164,19 @@ const proccessResponseData = <T>(response: AxiosResponse<ResponseData>): T | nul
 // ================================
 
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.replace('Bearer ', '') || req.session?.auth_token;
+  // Extract token from Authorization header (Bearer token from React)
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
-  console.dir({token}, {depth: null, colors: true});
-  
+  console.dir({token: token ? token.substring(0, 20) + '...' : null}, {depth: null, colors: true});
+
   if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'Token tidak ditemukan'
-    });
+    return res.status(401).json({ message: 'Unauthorized: No token provided.' });
   }
 
-  // Store token in session for Laravel
+  // Store token in session for Laravel requests
   (req.session as any).auth_token = token;
-  
+
   next();
 };
 
@@ -185,15 +184,10 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 // REQUEST/RESPONSE INTERCEPTORS
 // ================================
 
-// Attach token to Laravel requests
+// Attach token and CSRF to Laravel requests
 laravelAPI.interceptors.request.use((config) => {
-  const token = (app.get('request') as any)?.session?.auth_token || 
-                process.env.DEFAULT_TOKEN;
-  
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  
+  // Note: Token and CSRF are attached per-request in the route handlers
+  // This interceptor is kept for any global headers but tokens are handled per-request
   return config;
 });
 
@@ -224,21 +218,65 @@ app.post('/api/regencies', async (req: Request, res: Response) => {
 });
 
 // ================================
+// CSRF TOKEN UTILITIES
+// ================================
+
+// Extract CSRF token from cookies
+const extractCsrfToken = (cookieHeader?: string): string | null => {
+  if (!cookieHeader) return null;
+  
+  const cookies = cookieHeader.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'XSRF-TOKEN') {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+};
+
+// CSRF Middleware - attaches CSRF token to Laravel requests
+const csrfMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const csrfToken = extractCsrfToken(req.headers.cookie as string);
+  
+  if (csrfToken) {
+    // Store in request for later use
+    (req as any).csrfToken = csrfToken;
+  }
+  
+  next();
+};
+
+// Apply CSRF middleware to all routes
+app.use(csrfMiddleware);
+
+// ================================
 // CSRF TOKEN ENDPOINT
 // ================================
 
-app.get('/api/csrf-cookie', async (_req: Request, res: Response) => {
+app.get('/api/csrf-cookie', async (req: Request, res: Response) => {
   try {
-    // Panggil endpoint Sanctum yang benar
+    // Call Laravel's Sanctum CSRF cookie endpoint
     const laravelResponse = await laravelAPICSRF.get('/sanctum/csrf-cookie');
     
-    // Teruskan header 'set-cookie' dari Laravel ke klien (React)
+    // Forward all Set-Cookie headers from Laravel to React
     const cookies = laravelResponse.headers['set-cookie'];
     if (cookies) {
       res.setHeader('Set-Cookie', cookies);
+      
+      // Extract and store CSRF token in session for later use
+      const xsrfCookie = cookies.find((cookie: string) => cookie.startsWith('XSRF-TOKEN='));
+      if (xsrfCookie) {
+        const tokenMatch = xsrfCookie.match(/XSRF-TOKEN=([^;]+)/);
+        if (tokenMatch) {
+          const csrfToken = decodeURIComponent(tokenMatch[1]);
+          (req.session as any).csrf_token = csrfToken;
+          console.log('CSRF token stored in session:', csrfToken.substring(0, 20) + '...');
+        }
+      }
     }
     
-    // 204 No Content adalah respons yang benar
+    // 204 No Content is the correct response
     res.status(204).send();
   } catch (error: any) {
     console.error('Error fetching Sanctum CSRF cookie:', error.message);
@@ -446,9 +484,14 @@ app.post('/api/auth/password-reset/confirm', async (req: Request, res: Response)
 // ADMIN DASHBOARD
 app.post('/api/admin/dashboard', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const response = await laravelAPI.post('/admin/dashboard', req.body);
+    const response = await laravelAPI.post('/admin/dashboard', req.body, {
+      headers: {
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
+      }
+    });
     res.json(response.data);
   } catch (error: any) {
+    console.dir({ error }, { depth: null, colors: true })
     res.status(error.response?.status || 500).json(error.response?.data);
   }
 });
@@ -458,7 +501,7 @@ app.post('/api/admin/analytics', authMiddleware, async (req: Request, res: Respo
   try {
     const response = await laravelAPI.post('/admin/analytics', req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -472,7 +515,7 @@ app.post('/api/admin/analytics/export-reports', authMiddleware, async (req: Requ
   try {
     const response = await laravelAPI.post('/admin/analytics/export-reports', req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -486,7 +529,7 @@ app.post('/api/admin/profile', authMiddleware, async (req: Request, res: Respons
   try {
     const response = await laravelAPI.post('/admin/profile', req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -500,7 +543,7 @@ app.post('/api/admin/profile/update-info', authMiddleware, async (req: Request, 
   try {
     const response = await laravelAPI.put('/admin/profile/update-info', req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -514,7 +557,7 @@ app.post('/api/admin/profile/update-password', authMiddleware, async (req: Reque
   try {
     const response = await laravelAPI.post('/admin/profile/update-password', req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -528,7 +571,7 @@ app.post('/api/admin/profile/request-email-change', authMiddleware, async (req: 
   try {
     const response = await laravelAPI.post('/admin/profile/request-email-change', req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -542,7 +585,7 @@ app.post('/api/admin/manage', authMiddleware, async (req: Request, res: Response
   try {
     const response = await laravelAPI.post('/admin/manage', req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -556,7 +599,7 @@ app.put('/api/admin/manage/:id', authMiddleware, async (req: Request, res: Respo
   try {
     const response = await laravelAPI.put(`/admin/manage/${req.params.id}`, req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -570,7 +613,7 @@ app.delete('/api/admin/manage/:id', authMiddleware, async (req: Request, res: Re
   try {
     const response = await laravelAPI.delete(`/admin/manage/${req.params.id}`, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -584,7 +627,7 @@ app.post('/api/admin/manage/:id/toggle-status', authMiddleware, async (req: Requ
   try {
     const response = await laravelAPI.post(`/admin/manage/${req.params.id}/toggle-status`, req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -598,7 +641,7 @@ app.post('/api/admin/manage/:id/reset-password', authMiddleware, async (req: Req
   try {
     const response = await laravelAPI.post(`/admin/manage/${req.params.id}/reset-password`, req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -613,7 +656,7 @@ app.post('/api/admin/performance', authMiddleware, async (req: Request, res: Res
     const response = await laravelAPI.get('/admin/performance', {
       params: req.body,
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
@@ -627,7 +670,7 @@ app.post('/api/admin/performance/export', authMiddleware, async (req: Request, r
   try {
     const response = await laravelAPI.post('/admin/performance/export', req.body, {
       headers: {
-        'Authorization': `Bearer ${(req.session as any).auth_token}`
+        'Authorization': `Bearer ${(req.session as any).auth_token}`,
       }
     });
     res.json(response.data);
