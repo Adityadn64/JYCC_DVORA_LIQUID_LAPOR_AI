@@ -1,6 +1,7 @@
 {
     "version": 2,
     "framework": null,
+    "buildCommand": "php artisan config:cache && php artisan view:cache && php artisan route:cache && php artisan route:list",
     "builds": [
         {
             "src": "public/index.php",
@@ -18,7 +19,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "/api/index.php"
+            "dest": "/public/index.php"
         }
     ],
     "env": {
