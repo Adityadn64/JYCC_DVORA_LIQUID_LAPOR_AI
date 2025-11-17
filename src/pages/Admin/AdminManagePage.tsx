@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { adminManageService, decodeErrorResponse } from '../../services/api';
-import { SkeletonTable, SkeletonList, Skeleton } from '../../components/SkeletonLoading';
+import { adminManageService, decodeErrorResponse } from '@/services/api';
+import { SkeletonTable, SkeletonList, Skeleton } from '@/components/SkeletonLoading';
 import { CsrfLoadingProps } from '@/types';
 
 interface Admin {
@@ -58,10 +58,9 @@ export default function AdminManagePage({csrfLoading}: CsrfLoadingProps) {
       setError(null);
       
       if (tab === 'manage') {
-        const response = await adminManageService.listAdmins();
+        const response = await adminManageService.listAdmins({ pending: false });
         setAdmins(response.data.admins || response.data);
       } else {
-        // Assuming there's an endpoint for pending requests
         const response = await adminManageService.listAdmins({ pending: true });
         setRequests(response.data.requests || []);
       }

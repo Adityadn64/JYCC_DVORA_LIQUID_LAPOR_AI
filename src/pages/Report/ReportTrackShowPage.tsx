@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { decodeErrorResponse, reportService } from '../../services/api';
+import { decodeErrorResponse, reportService } from '@/services/api';
 import { useParams, useNavigate } from 'react-router-dom';
-import { SkeletonReportDetailPage } from '../../components/SkeletonLoading';
+import { SkeletonReportDetailPage } from '@/components/SkeletonLoading';
 import { CsrfLoadingProps } from '@/types';
 
 interface Report {
-  id: number;
+  id: number; 
   title: string;
   description: string;
   category: string;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { adminAnalyticsService, decodeErrorResponse } from '../../services/api';
+import { adminAnalyticsService, decodeErrorResponse } from '@/services/api';
 // [PERBAIKAN] Import skeleton yang sudah dipecah
 import {
     SkeletonFilter,
@@ -8,7 +8,7 @@ import {
     SkeletonChartCard,
     SkeletonAnalysisTableCard,
     SkeletonDataGrid
-} from '../../components/SkeletonLoading';
+} from '@/components/SkeletonLoading';
 import {
     LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis,
     CartesianGrid, Tooltip, Legend, ResponsiveContainer

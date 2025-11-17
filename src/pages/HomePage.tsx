@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { decodeErrorResponse, homeService } from '../services/api';
+import { decodeErrorResponse, homeService } from '@/services/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Skeleton, SkeletonChart } from '../components/SkeletonLoading';
+import { Skeleton, SkeletonChart } from '@/components/SkeletonLoading';
 import { errorDiv } from '@/components/Error';
 import { CsrfLoadingProps } from '@/types';
 
@@ -125,10 +125,10 @@ export default function HomePage({csrfLoading}: CsrfLoadingProps) {
         <div>
           <div className="bg-white p-6 rounded-xl shadow-lg border">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Riwayat Laporan Bulanan</h3>
-            <div className={`${error ? 'flex justify-center items-center' : ''} h-64`}>
+            <div className={`${error ? 'flex justify-center items-center' : ''} h-400`}>
               {error ? renderError() : loading ? (
                 <>
-                  <SkeletonChart />
+                  <SkeletonChart height={'[400px]'}/>
                   <br />
                   <div className="flex flex-row gap-4">
                     <Skeleton className="h-8 w-full mx-auto" />
@@ -138,13 +138,34 @@ export default function HomePage({csrfLoading}: CsrfLoadingProps) {
                   </div>
                 </>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={historyData}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart
+                    data={historyData}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
+                    <XAxis
+                      dataKey="date"
+                      label={{
+                        value:
+                        'Tanggal',
+                        position: 'insideBottom',
+                        offset: -15,
+                        dx: -25
+                      }}
+                    />
+
+                    <YAxis
+                      allowDecimals={false}
+                      label={{
+                        value:
+                        'Jumlah Laporan',
+                        angle: -90,
+                        position: 'insideLeft',
+                        dy: 50
+                      }}
+                    />
                     <Tooltip />
-                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                    <Legend wrapperStyle={{ paddingTop: '40px' }} />
                     <Line type="monotone" dataKey="pending" stroke="#EAB308" strokeWidth={2} name="Pending" dot={false} />
                     <Line type="monotone" dataKey="process" stroke="#06B6D4" strokeWidth={2} name="Diproses" dot={false} />
                     <Line type="monotone" dataKey="finished" stroke="#22C55E" strokeWidth={2} name="Selesai" dot={false} />

@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import LoginPage from './pages/Auth/LoginPage';
-import HomePage from './pages/HomePage';
-import RegisterPage from './pages/Auth/RegisterPage';
-import PasswordResetPage from './pages/Auth/PasswordResetPage';
-import ReportCreatePage from './pages/Report/ReportCreatePage';
-import ReportTrackPage from './pages/Report/ReportTrackPage';
-import ReportTrackShowPage from './pages/Report/ReportTrackShowPage';
-import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
-import AdminAnalyticsPage from './pages/Admin/AdminAnalyticsPage';
-import AdminProfilePage from './pages/Admin/AdminProfilePage';
-import AdminManagePage from './pages/Admin/AdminManagePage';
-import AdminPerformancePage from './pages/Admin/AdminPerformancePage';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import LoginPage from '@/pages/Auth/LoginPage';
+import HomePage from '@/pages/HomePage';
+import RegisterPage from '@/pages/Auth/RegisterPage';
+import PasswordResetPage from '@/pages/Auth/PasswordResetPage';
+import ReportCreatePage from '@/pages/Report/ReportCreatePage';
+import ReportTrackPage from '@/pages/Report/ReportTrackPage';
+import ReportTrackShowPage from '@/pages/Report/ReportTrackShowPage';
+import AdminDashboardPage from '@/pages/Admin/AdminDashboardPage';
+import AdminAnalyticsPage from '@/pages/Admin/AdminAnalyticsPage';
+import AdminProfilePage from '@/pages/Admin/AdminProfilePage';
+import AdminManagePage from '@/pages/Admin/AdminManagePage';
+import AdminPerformancePage from '@/pages/Admin/AdminPerformancePage';
 import { csrfService } from './services/api';
 import { AuthUser } from './types';
-import WavingTextLoader from './components/WavingTextLoader';
+import WavingTextLoader from '@/components/WavingTextLoader';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -55,7 +55,9 @@ function App() {
     localStorage.removeItem('user_data');
   };
 
-  if (window.location.pathname.startsWith('/admin') && loading) {
+  const windowLocationPath = window.location.pathname;
+
+  if ((windowLocationPath.startsWith('/admin') && loading) || windowLocationPath.startsWith('/loading')) {
     return <WavingTextLoader />;
   }
 

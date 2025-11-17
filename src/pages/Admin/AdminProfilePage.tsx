@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { adminProfileService, decodeErrorResponse } from '../../services/api';
+import { adminProfileService, decodeErrorResponse } from '@/services/api';
 // [PERBAIKAN] Import componentized skeletons instead of a generic one
-import { SkeletonProfileHeader, SkeletonActionCard } from '../../components/SkeletonLoading';
+import { SkeletonProfileHeader, SkeletonActionCard } from '@/components/SkeletonLoading';
 import { CsrfLoadingProps } from '@/types';
 
 // [PERBAIKAN] Interface for the nested service profile object

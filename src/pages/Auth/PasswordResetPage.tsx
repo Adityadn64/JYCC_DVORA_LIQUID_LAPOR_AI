@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService, decodeErrorResponse } from '../../services/api';
+import { authService, decodeErrorResponse } from '@/services/api';
 import { CsrfLoadingProps } from '@/types';
 
 type ResetStep = 'email' | 'verify' | 'password';

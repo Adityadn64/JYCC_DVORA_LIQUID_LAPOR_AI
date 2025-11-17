@@ -1,4 +1,4 @@
-import { AuthUser, ResponseData } from '@/types';
+import { AuthUser, ErrorResultResponseData, ResponseData, SuccessResultResponseData } from '@/types';
 import axios from 'axios';
 import type { AxiosResponse, AxiosInstance, AxiosError } from 'axios';
 
@@ -6,17 +6,42 @@ import type { AxiosResponse, AxiosInstance, AxiosError } from 'axios';
 // ENCRYPTION KEYS
 // ================================
 
-const K1 = process.env.K1 || '^UAFU!Tce1$P^jX$2xdfF6s6t0x7Wtlv'; // K1: React->Express (encrypt)
-const K4 = process.env.K4 || 'Kg6$F5ptNZ2%qcRGav!QhZr*LXLpO6Zr'; // K4: Express->React (decrypt)
+const VITE_K1 = (import.meta.env.VITE_K1 || '^UAFU!Tce1$P^jX$2xdfF6s6t0x7Wtlv'); // VITE_K1: React->Express (encrypt)
+const VITE_K4 = (import.meta.env.VITE_K4 || 'Kg6$F5ptNZ2%qcRGav!QhZr*LXLpO6Zr'); // VITE_K4: Express->React (decrypt)
 
 // ================================
 // AXIOS INSTANCE CONFIGURATION
 // ================================
 
-const DEFAULT_SERVER_API_URL: string = process.env.NEXT_PUBLIC_DEFAULT_SERVER_API_URL || "http://localhost:3001";
-const SERVER_API_URLS: string[] = JSON.parse(
-  process.env.NEXT_PUBLIC_SERVER_API_URLS || `["${DEFAULT_SERVER_API_URL}"]`
-);
+const isIPV4URL: boolean = window.location.href.includes('192');
+
+const setAPIURL = (apiURI: string | string[]): string | string[] => {
+  const originURI = window.location.origin;
+  const originURIFilter = originURI.replace('3000', '3001').replace('https', 'http');
+  
+  console.log({apiURI, originURI, originURIFilter});
+
+  let newAPIUri = apiURI
+
+  if (isIPV4URL) {
+    if (Array.isArray(apiURI)) {
+      newAPIUri = originURIFilter;
+    } else if (typeof apiURI === 'string') {
+      newAPIUri = originURIFilter;
+    }
+  }
+
+  return newAPIUri;
+};
+
+const DEFAULT_SERVER_API_URL: string = setAPIURL(process.env.DEFAULT_SERVER_API_URL || "http://localhost:3001") as string;
+
+const SERVER_API_URLS: string[] = setAPIURL(JSON.parse(
+  process.env.SERVER_API_URLS || `["${DEFAULT_SERVER_API_URL}"]`
+)) as string[];
+
+console.log({DEFAULT_SERVER_API_URL});
+console.log({SERVER_API_URLS});
 
 const searchBaseURL = async () => {
   for (const url of SERVER_API_URLS) {
@@ -63,18 +88,25 @@ const apiClient: AxiosInstance = axios.create({
 // ENCRYPTION/DECRYPTION UTILITIES
 // ================================
 
+const toHex = (b) => {
+  let hex = '';
+  for (const byte of b) {
+    hex += byte.toString(16).padStart(2, '0');
+  }
+  return hex;
+};
+
 const normalizeKey = (key: string): Uint8Array => {
   const encoder = new TextEncoder();
   let keyBytes = encoder.encode(key);
 
   if (keyBytes.length < 32) {
-    const padded = new Uint8Array(32);
-    padded.set(keyBytes);
-    padded.fill(0x20, keyBytes.length); // pad with space (0x20)
-    keyBytes = padded;
+    throw Error("keyBytes length must be more than 32")
   } else if (keyBytes.length > 32) {
-    keyBytes = keyBytes.slice(0, 32);
+    keyBytes = keyBytes.slice(0,32);
+    console.log("key truncated to 32 bytes (python-style).");
   }
+
   return keyBytes;
 };
 
@@ -85,8 +117,8 @@ const bufferToBase64 = (buffer: ArrayBuffer): string => {
   return btoa(binary);
 };
 
-const base64ToBuffer = (base64: string): ArrayBuffer => {
-  const binary_string = atob(base64);
+const base64ToBuffer = (cleaned: string): ArrayBuffer => {
+  const binary_string = atob(cleaned);
   const len = binary_string.length;
   const bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) bytes[i] = binary_string.charCodeAt(i);
@@ -105,7 +137,8 @@ export const aesEncrypt = async (text: string, key: string): Promise<string> => 
   const data = new TextEncoder().encode(text);
   const keyBytes = normalizeKey(key);
 
-  const cryptoKey = await crypto.subtle.importKey('raw', keyBytes as BufferSource, 'AES-CBC', false, ['encrypt']);
+  // @ts-ignore
+  const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, 'AES-CBC', false, ['encrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(16));
   const encrypted = await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, cryptoKey, data);
 
@@ -116,19 +149,26 @@ export const aesEncrypt = async (text: string, key: string): Promise<string> => 
   return bufferToBase64(result.buffer);
 };
 
-export const aesDecrypt = async (encrypted: string, key: string): Promise<string> => {
+export const aesDecrypt = async <T>(encrypted: string, key: string): Promise<T | null> => {
   try {
-    const cleaned = cleanBase64(encrypted);
-    const combined = new Uint8Array(base64ToBuffer(cleaned));
-    if (combined.length < 17) throw new Error('combined data too short');
-    const iv = combined.slice(0, 16);
-    const ciphertext = combined.slice(16);
-    if (ciphertext.length % 16 !== 0) throw new Error('ciphertext length not multiple of 16 (possible base64 corruption)');
-
     const keyBytes = normalizeKey(key);
-    const cryptoKey = await crypto.subtle.importKey('raw', keyBytes as BufferSource, 'AES-CBC', false, ['decrypt']);
-    const decryptedBuffer = await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, cryptoKey, ciphertext);
-    return new TextDecoder().decode(decryptedBuffer);
+
+    const cleaned = cleanBase64(encrypted);
+
+    const combined = new Uint8Array(base64ToBuffer(cleaned));
+
+    const combinedU8 = new Uint8Array(combined);
+    const iv = combinedU8.slice(0,16);
+    const ciphertext = combinedU8.slice(16);
+
+    // @ts-ignore
+    const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, 'AES-CBC', false, ['decrypt']);
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, cryptoKey, ciphertext);
+    const result = JSON.parse(new TextDecoder().decode(decrypted));
+
+    console.log({result});
+
+    return result as T;
   } catch (err: any) {
     console.error('AES Decrypt error:', err.name ?? err, err.message ?? err);
     throw err;
@@ -138,7 +178,7 @@ export const aesDecrypt = async (encrypted: string, key: string): Promise<string
 const encodePayloadToExpress = async (data: any): Promise<string> => {
   try {
     const jsonString = JSON.stringify(data);
-    return await aesEncrypt(jsonString, K1);
+    return await aesEncrypt(jsonString, VITE_K1.toString());
   } catch (error) {
     console.error("Gagal men-encode payload ke Express:", error);
     throw error;
@@ -147,8 +187,8 @@ const encodePayloadToExpress = async (data: any): Promise<string> => {
 
 const decodePayloadFromExpress = async <T>(encodedPayload: string): Promise<T | null> => {
   try {
-    const decrypted = await aesDecrypt(encodedPayload, K4);
-    return JSON.parse(decrypted) as T;
+    const decrypted = await aesDecrypt<SuccessResultResponseData>(encodedPayload, VITE_K4.toString());
+    return decrypted as T;
   } catch (error) {
     console.error("Gagal men-decode payload dari Express:", error);
     return null;
@@ -160,17 +200,15 @@ export const decodeErrorResponse = async (error: any): Promise<string> => {
     const encodedData = error.response.data as { d: string };
     if (encodedData.d) {
       try {
-        const decodedPayload = await decodePayloadFromExpress<{ message: string; errors?: any }>(
-          encodedData.d
-        );
+      const decodedPayload = await aesDecrypt<ErrorResultResponseData>(encodedData.d, VITE_K4.toString());
 
-        if (decodedPayload?.errors) {
+        if (decodedPayload.errors) {
           const firstErrorKey = Object.keys(decodedPayload.errors)[0];
           const firstErrorMessage = decodedPayload.errors[firstErrorKey][0];
           return firstErrorMessage;
         }
 
-        if (decodedPayload?.message) {
+        if (decodedPayload.message) {
           return decodedPayload.message;
         }
       } catch (decodeError) {
@@ -203,7 +241,11 @@ apiClient.interceptors.request.use(
     }
 
     // Encrypt request data if it's a POST/PUT/PATCH request with data
-    if (config.data && ['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '')) {
+    if (
+      config.data &&
+      !(config.data instanceof FormData) &&
+      ['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '')
+    ) {
       const encrypted = await encodePayloadToExpress(config.data);
       config.data = { d: encrypted };
     }
@@ -221,10 +263,11 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   async (response) => {
-    console.log({apiClientResponse: response});
     if (response.data && response.data.d) {
       try {
-        const decrypted = await decodePayloadFromExpress<any>(response.data.d);
+        const data = response.data.d;
+
+        const decrypted = await decodePayloadFromExpress<any>(data);
         
         // Store auth token if provided
         if (decrypted?.data?.token && typeof window !== 'undefined') {
@@ -269,7 +312,7 @@ apiClient.interceptors.response.use(
 export const homeService = {
   async getHome() {
     const response = await apiClient.post('/home');
-    return response;
+    return response.data;
   }
 };
 
@@ -365,8 +408,8 @@ export const reportService = {
     return response.data;
   },
 
-  async searchReports(params: string) {
-    const response = await apiClient.post(params ? `/reports/track?${params}` : '/reports/track');
+  async searchReports(filters: object) {
+    const response = await apiClient.post('/reports/track', filters);
     return response.data;
   },
 
@@ -556,8 +599,9 @@ export const adminProfileService = {
 // ================================
 
 export const adminManageService = {
-  async listAdmins(filters?: object) {
-    return apiClient.post('/admin/manage', filters || {});
+  async listAdmins(filters: object) {
+    const response = await apiClient.post('/admin/manage', filters || {});
+    return response.data;
   },
 
   async createAdmin(data: {
@@ -571,11 +615,11 @@ export const adminManageService = {
   },
 
   async updateAdmin(id: string | number, data: object) {
-    return apiClient.put(`/admin/manage/${id}`, data);
+    return apiClient.post(`/admin/manage/${id}`, data);
   },
 
   async deleteAdmin(id: string | number) {
-    return apiClient.delete(`/admin/manage/${id}`);
+    return apiClient.post(`/admin/manage/${id}`);
   },
 
   async toggleAdminStatus(id: string | number) {

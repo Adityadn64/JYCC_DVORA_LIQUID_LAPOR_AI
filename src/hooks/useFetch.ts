@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import apiClient, { decodeErrorResponse } from '../services/api';
+import apiClient, { decodeErrorResponse } from '@/services/api';
 
 export function useFetch(url: string, options: any = {}) {
   const [data, setData] = useState(null);

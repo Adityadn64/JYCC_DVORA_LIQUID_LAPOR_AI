@@ -1,8 +1,8 @@
-import React, { useState, useEffect, FormEvent } from 'react';
-import { decodeErrorResponse, reportService } from '../../services/api';
+import React, { useState, useEffect, FormEvent, useRef } from 'react';
+import { decodeErrorResponse, reportService } from '@/services/api';
 import { Link, useSearchParams } from 'react-router-dom';
-import { SkeletonReportCard } from '../../components/SkeletonLoading';
-import { CsrfLoadingProps } from '@/types';
+import { SkeletonReportCard } from '@/components/SkeletonLoading';
+import { CsrfLoadingProps, PaginationInfo, DOTS, generatePaginationItems } from '@/types';
 
 // --- Mendefinisikan Tipe Data ---
 // Ini membuat kode lebih aman dan mudah dibaca, meniru struktur data dari backend
@@ -25,22 +25,13 @@ interface Report {
   statuses: string[];
 }
 
-interface PaginationMeta {
-    current_page: number;
-    last_page: number;
-    from: number;
-    to: number;
-    total: number;
-}
-
-
 // --- Komponen Utama ---
 export default function ReportTrackPage({csrfLoading}: CsrfLoadingProps) {
   // State untuk menyimpan data dari API
   const [reports, setReports] = useState<Report[]>([]);
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [priorities, setPriorities] = useState<Priority[]>([]);
-  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
+  const [PaginationInfo, setPaginationInfo] = useState<PaginationInfo | null>(null);
 
   // State untuk mengelola UI
   const [loading, setLoading] = useState(true);
@@ -65,20 +56,13 @@ export default function ReportTrackPage({csrfLoading}: CsrfLoadingProps) {
       setLoading(true);
       setError(null);
       try {
-        // Mengambil data dari API dengan parameter dari URL
-        const response = await reportService.searchReports(searchParams.toString());
+        const filtersFromParams = Object.fromEntries(searchParams.entries());
+        const response = await reportService.searchReports(filtersFromParams);
 
-        // Memperbarui state dengan data dari response
         setReports(response.data.reports.data);
         setAdmins(response.data.admins);
         setPriorities(response.data.priorities);
-        setPaginationMeta({
-            current_page: response.data.reports.current_page,
-            last_page: response.data.reports.last_page,
-            from: response.data.reports.from,
-            to: response.data.reports.to,
-            total: response.data.reports.total
-        });
+        setPaginationInfo(response.data.reports);
 
       } catch (err: any) {
         setError((await decodeErrorResponse(err)) || 'Gagal memuat data laporan');
@@ -128,6 +112,31 @@ export default function ReportTrackPage({csrfLoading}: CsrfLoadingProps) {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const paginationItems = PaginationInfo 
+    ? generatePaginationItems(PaginationInfo.current_page, PaginationInfo.last_page)
+    : [];
+
+  const filterEl = useRef<HTMLDivElement>(null);
+  const endEl = useRef<HTMLDivElement>(null);
+
+  const scrollToTarget = (isUp: boolean = true) => {
+    if (isUp) {
+      if (filterEl.current) {
+        filterEl.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    } else {
+      if (endEl.current) {
+        endEl.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-10">
       <div>
@@ -136,9 +145,8 @@ export default function ReportTrackPage({csrfLoading}: CsrfLoadingProps) {
       </div>
 
       {/* --- Filter Form --- */}
-      <div className="bg-white p-6 rounded-xl shadow-lg border">
+      <div className="bg-white p-6 rounded-xl shadow-lg border" ref={filterEl}>
         <form onSubmit={handleSearch}>
-          {/* PERBAIKAN: Grid layout diubah menjadi lg:grid-cols-4 dan setiap input dibungkus div+label */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             
             <div>
@@ -289,35 +297,75 @@ export default function ReportTrackPage({csrfLoading}: CsrfLoadingProps) {
           </div>
         )}
 
-        {/* --- Pagination --- */}
-        {paginationMeta && paginationMeta.total > 0 && !loading && (
+        {PaginationInfo && PaginationInfo.total > 0 && !loading && (
             <div className="pt-4 flex items-center justify-between md:flex-row flex-col gap-4">
                 <p className="text-sm text-gray-700">
-                    Menampilkan <span className="font-medium">{paginationMeta.from}</span> sampai <span className="font-medium">{paginationMeta.to}</span> dari <span className="font-medium">{paginationMeta.total}</span> hasil
+                    Menampilkan <span className="font-medium">{PaginationInfo.from}</span> sampai <span className="font-medium">{PaginationInfo.to}</span> dari <span className="font-medium">{PaginationInfo.total}</span> hasil
                 </p>
-                <div className="flex gap-2">
-                    <button 
-                        onClick={() => setSearchParams(prev => {
-                            prev.set('page', String(paginationMeta.current_page - 1));
-                            return prev;
-                        })}
-                        disabled={paginationMeta.current_page === 1}
-                        className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50">
-                        Sebelumnya
-                    </button>
+                <nav aria-label="Pagination" className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
                     <button
-                        onClick={() => setSearchParams(prev => {
-                            prev.set('page', String(paginationMeta.current_page + 1));
+                        onClick={() => {
+                          setSearchParams(prev => {
+                            prev.set('page', String(PaginationInfo.current_page - 1));
                             return prev;
-                        })}
-                        disabled={paginationMeta.current_page === paginationMeta.last_page}
-                        className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50">
-                        Selanjutnya
+                          });
+                          scrollToTarget(false);
+                        }}
+                        disabled={PaginationInfo.current_page === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        <span className="sr-only">Sebelumnya</span>
+                        &lt;
                     </button>
-                </div>
+
+                    {paginationItems.map((item, index) => {
+                        if (item === DOTS) {
+                            return <span key={`dots-${index}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>;
+                        }
+
+                        const isCurrent = item === PaginationInfo.current_page;
+                        return (
+                            <button
+                                key={item}
+                                onClick={() => {
+                                  setSearchParams(prev => {
+                                    prev.set('page', String(item));
+                                    return prev;
+                                  });
+                                  scrollToTarget();
+                                }}
+                                aria-current={isCurrent ? 'page' : undefined}
+                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                    isCurrent 
+                                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
+                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                }`}
+                            >
+                                {item}
+                            </button>
+                        );
+                    })}
+
+                    <button
+                        onClick={() => {
+                          setSearchParams(prev => {
+                            prev.set('page', String(PaginationInfo.current_page + 1));
+                            return prev;
+                          });
+                          scrollToTarget();
+                        }}
+                        disabled={PaginationInfo.current_page === PaginationInfo.last_page}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        <span className="sr-only">Selanjutnya</span>
+                        &gt;
+                    </button>
+                </nav>
             </div>
         )}
-
+        <div className="mt-4" ref={endEl}>
+          <br />
+        </div>
       </div>
     </div>
   );

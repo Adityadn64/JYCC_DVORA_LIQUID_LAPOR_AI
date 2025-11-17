@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { adminDashboardService, decodeErrorResponse } from '@/services/api';
 import { useNavigate } from 'react-router-dom';
 import { SkeletonAdminDashboard, Skeleton, SkeletonReportCard } from '@/components/SkeletonLoading';
@@ -7,7 +7,7 @@ import { SkeletonAdminDashboard, Skeleton, SkeletonReportCard } from '@/componen
 import { Line, Pie, Bar } from 'react-chartjs-2'; 
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { errorDiv } from '@/components/Error';
-import { CsrfLoadingProps } from '@/types';
+import { CsrfLoadingProps, PaginationInfo, DOTS, generatePaginationItems } from '@/types';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
 // 2. Definisikan tipe data yang lebih akurat
@@ -17,6 +17,7 @@ interface Stats {
   avgResolutionTime: string;
 }
 interface ChartData { label: string; value: number; }
+
 interface Report {
   id: number;
   title: string;
@@ -27,18 +28,10 @@ interface Report {
   statuses: string[];
   updated_at: string;
 }
+
 interface FilterOptions {
     admins: { id: number; full_name: string }[];
     priorities: { value: string; name: string }[];
-}
-interface PaginationInfo {
-    current_page: number;
-    last_page: number;
-    total: number;
-    per_page: number;
-    from: number;
-    to: number;
-    links: { url: string | null; label: string; active: boolean }[];
 }
 
 // Utilitas untuk format waktu seperti `diffForHumans`
@@ -133,8 +126,6 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   const handlePageChange = (page: number) => {
       if (page !== paginationInfo?.current_page) {
           setLoading(true);
-          // Scroll to top
-          window.scrollTo(0, 0);
           fetchDashboardData(filters, page);
       }
   };
@@ -154,6 +145,31 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
     datasets: [{ label: 'Laporan Selesai', data: charts?.topAdmins.map(d => d.value) || [], backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: '#3B82F6', borderWidth: 1 }]
   }), [charts]);
 
+  const paginationItems = paginationInfo 
+    ? generatePaginationItems(paginationInfo.current_page, paginationInfo.last_page)
+    : [];
+    
+  const filterEl = useRef<HTMLDivElement>(null);
+  const endEl = useRef<HTMLDivElement>(null);
+
+  const scrollToTarget = (isUp: boolean = true) => {
+    if (isUp) {
+      if (filterEl.current) {
+        filterEl.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    } else {
+      if (endEl.current) {
+        endEl.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }
+  };
+
   if (loading && !stats) {
     return <SkeletonAdminDashboard />;
   }
@@ -161,7 +177,7 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   function renderError() {
     return errorDiv(error || 'Terjadi kesalahan');
   }
-
+  
   return (
     <div className="space-y-12">
       <div>
@@ -176,7 +192,8 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border"><h3 className="text-lg font-semibold text-gray-800 mb-4">Tren Laporan Masuk (30 Hari Terakhir)</h3><div className="h-80"><Line data={reportTrendChartData} options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }} /></div></div>
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border"><h3 className="text-lg font-semibold text-gray-800 mb-4">Tren Laporan Masuk (30 Hari Terakhir)</h3><div className="h-80">
+          <Line data={reportTrendChartData} options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }} /></div></div>
         <div className="bg-white p-6 rounded-xl shadow border"><h3 className="text-lg font-semibold text-gray-800 mb-4">Distribusi Laporan per Dinas</h3><div className="h-80"><Pie data={serviceDistributionChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} /></div></div>
       </section>
       <section className="bg-white p-6 rounded-xl shadow border"><h3 className="text-lg font-semibold text-gray-800 mb-4">Top 5 Admin Produktif (Laporan Selesai)</h3><div className="h-80"><Bar data={topAdminsChartData} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }} /></div></section>
@@ -184,7 +201,7 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
       <section className="space-y-8">
         <div><h2 className="text-2xl font-bold text-gray-900">Manajemen Laporan</h2><p className="mt-1 text-gray-600">Cari, filter, dan kelola semua laporan yang masuk.</p></div>
 
-        <div className="bg-white p-6 rounded-xl shadow border">
+        <div className="bg-white p-6 rounded-xl shadow border" ref={filterEl}>
           <form onSubmit={handleSearch}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div><label htmlFor="search_term" className="block text-sm font-medium text-gray-700">Judul / Deskripsi</label><input type="text" name="search_term" id="search_term" value={filters.search_term} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"/></div>
@@ -245,42 +262,66 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
           )}
         </div>
         
-        {!loading && paginationInfo && paginationInfo.last_page > 1 && (
-            <div className="pt-4 flex justify-between items-center text-sm text-gray-700">
-                <p>
+        {paginationInfo && paginationInfo.total > 0 && !loading && (
+            <div className="pt-4 flex items-center justify-between md:flex-row flex-col gap-4">
+                <p className="text-sm text-gray-700">
                     Menampilkan <span className="font-medium">{paginationInfo.from}</span> sampai <span className="font-medium">{paginationInfo.to}</span> dari <span className="font-medium">{paginationInfo.total}</span> hasil
                 </p>
-                <div className="flex gap-1">
-                  {paginationInfo.links.map((link, index) => {
-                      const pageNumber = link.url ? new URL(link.url).searchParams.get('page') : null;
+                <nav aria-label="Pagination" className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button
+                        onClick={() => {
+                          handlePageChange(parseInt(String(paginationInfo.current_page - 1)));
+                          scrollToTarget(false);
+                        }}
+                        disabled={paginationInfo.current_page === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        <span className="sr-only">Sebelumnya</span>
+                        &lt;
+                    </button>
 
-                      // --- PERUBAHAN DIMULAI DI SINI ---
-                      let labelContent: React.ReactNode;
-                      // Cek apakah label mengandung kata 'Previous' atau 'Next'
-                      if (link.label.includes('previous')) {
-                          labelContent = 'Sebelumnya';
-                      } else if (link.label.includes('next')) {
-                          labelContent = 'Selanjutnya';
-                      } else {
-                          // Jika bukan, berarti ini adalah nomor halaman
-                          labelContent = link.label;
-                      }
-                      // --- PERUBAHAN SELESAI ---
+                    {paginationItems.map((item, index) => {
+                        if (item === DOTS) {
+                            return <span key={`dots-${index}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>;
+                        }
 
-                      return (
-                          <button key={index}
-                            onClick={() => pageNumber && handlePageChange(parseInt(pageNumber))}
-                            disabled={!link.url || link.active}
-                            // Hapus `dangerouslySetInnerHTML` dan tampilkan konten secara langsung
-                            className={`px-3 py-1.5 rounded-md transition-colors text-sm ${link.active ? 'bg-blue-600 text-white cursor-default' : 'bg-white text-gray-700 hover:bg-gray-100'} ${!link.url ? 'text-gray-400 cursor-not-allowed' : ''}`}
-                          >
-                              {labelContent}
-                          </button>
-                      )
-                  })}
-                </div>
+                        const isCurrent = item === paginationInfo.current_page;
+                        return (
+                            <button
+                                key={item}
+                                onClick={() => {
+                                  handlePageChange(parseInt(String(item)));
+                                  scrollToTarget();
+                                }}
+                                aria-current={isCurrent ? 'page' : undefined}
+                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                    isCurrent 
+                                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
+                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                }`}
+                            >
+                                {item}
+                            </button>
+                        );
+                    })}
+
+                    <button
+                        onClick={() => {
+                          handlePageChange(parseInt(String(paginationInfo.current_page + 1)));
+                          scrollToTarget();
+                        }}
+                        disabled={paginationInfo.current_page === paginationInfo.last_page}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        <span className="sr-only">Selanjutnya</span>
+                        &gt;
+                    </button>
+                </nav>
             </div>
         )}
+        <div className="mt-4" ref={endEl}>
+          <br />
+        </div>
       </section>
     </div>
   );

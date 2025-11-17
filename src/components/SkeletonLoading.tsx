@@ -17,10 +17,14 @@ export const SkeletonKPICard: React.FC = () => (
   </div>
 );
 
+interface SkeletonChartProps {
+  height?: string;
+}
+
 // Skeleton for Chart
-export const SkeletonChart: React.FC = () => (
+export const SkeletonChart: React.FC<SkeletonChartProps> = ({ height = '[48px]' }) => (
   <div className="bg-white rounded-lg shadow space-y-4 animate-pulse">
-    <Skeleton className="h-48 w-full rounded" />
+    <Skeleton className={`h-${height} w-full rounded`} />
   </div>
 );
 
