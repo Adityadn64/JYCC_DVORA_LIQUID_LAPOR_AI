@@ -25,7 +25,7 @@
     "env": {
         "APP_ENV": "production",
         "APP_DEBUG": "true",
-        "APP_URL": "https://lapor-ai-jatim.vercel.app",
+        "APP_URL": "https://lalim.vercel.app",
         "APP_KEY": "base64:6vfx6EY/pvh7OekwgLCGVtLo4U+Y2cSYychF+q/1ZHc=",
 
         "APP_CONFIG_CACHE": "/tmp/config.php",
