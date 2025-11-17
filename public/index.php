@@ -10,6 +10,8 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
     require $maintenance;
 }
 
+set_time_limit(1 * 60 * 60); 
+
 // Register the Composer autoloader...
 require __DIR__.'/../vendor/autoload.php';
 

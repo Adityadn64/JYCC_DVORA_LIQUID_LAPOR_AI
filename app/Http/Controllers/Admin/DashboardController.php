@@ -9,6 +9,7 @@ use App\Enums\PriorityEnum;
 use App\Enums\RoleAdministratorEnum;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -23,8 +24,7 @@ class DashboardController extends Controller
         // Decode request
         $request = $this->decodeRequest($request);
 
-        // Access authenticated user
-        $admin = $request->user(); // atau Auth::user()
+        $admin = Auth::user();
 
         $baseReportQuery = Report::query();
         if ($admin->role === RoleAdministratorEnum::BaseAdmin) {
@@ -72,13 +72,23 @@ class DashboardController extends Controller
         $reportQuery->when($request->input('search_id'), fn($q) => $q->where('id', $request->input('search_id')));
         
         $reportQuery->when($request->input('search_term'), function ($q) use ($request) {
-            $term = '%' . $request->input('search_term') . '%';
-            return $q->where(fn($sub) => $sub->where('title', 'like', $term)->orWhere('description', 'like', $term));
+            $term = strtolower('%' . $request->input('search_term') . '%');
+            
+            return $q->where(function($subQuery) use ($term) {
+                $subQuery->whereRaw('LOWER(title) LIKE ?', [$term])
+                         ->orWhereRaw('LOWER(description) LIKE ?', [$term]);
+            });
         });
-        
+
         $reportQuery->when($request->input('search_location'), function ($q) use ($request) {
-            $loc = '%' . $request->input('search_location') . '%';
-            return $q->where(fn($sub) => $sub->where('address', 'like', $loc)->orWhere('city', 'like', $loc)->orWhere('district', 'like', $loc));
+            $loc = strtolower('%' . $request->input('search_location') . '%');
+
+            return $q->where(function($subQuery) use ($loc) {
+                $subQuery->whereRaw('LOWER(address) LIKE ?', [$loc])
+                         ->orWhereRaw('LOWER(city) LIKE ?', [$loc])
+                         ->orWhereRaw('LOWER(district) LIKE ?', [$loc])
+                         ->orWhereRaw('LOWER(address) LIKE ?', [$loc]);
+            });
         });
         
         $reportQuery->when($request->input('search_admin'), fn($q) => $q->where('assignee_admin_id', $request->input('search_admin')));
@@ -92,9 +102,15 @@ class DashboardController extends Controller
             default => $reportQuery->orderBy('updated_at', 'desc'),
         };
         
+        $currentPage = $request->input('page', 1);
+        
+        LengthAwarePaginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
         $reports = $reportQuery->with(['assignee:id,full_name', 'serviceProfile:id,full_name'])
                                 ->latest('updated_at')
-                                ->paginate(10)
+                                ->paginate(20)
                                 ->withQueryString();
         
         $adminsQuery = Administrator::where('role', RoleAdministratorEnum::BaseAdmin);

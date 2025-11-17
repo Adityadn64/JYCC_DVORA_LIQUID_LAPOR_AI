@@ -16,6 +16,8 @@ use App\Enums\ReportStatusEnum;
 use App\Time\Time;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,10 +27,6 @@ class ReportController extends Controller
 
     public function store(Request $request)
     {
-        /** @var Request $request */
-        $request = $this->decodeRequest($request);
-
-        // Sekarang $request sudah support semua method Laravel Request
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|min:4',
             'phone' => 'required|string|min:4',
@@ -143,19 +141,22 @@ class ReportController extends Controller
         });
 
         $query->when($request->input('search_term'), function ($q) use ($request) {
-            $term = '%' . $request->input('search_term') . '%';
+            $term = strtolower('%' . $request->input('search_term') . '%');
+            
             return $q->where(function($subQuery) use ($term) {
-                $subQuery->where('title', 'like', $term)
-                         ->orWhere('description', 'like', $term);
+                $subQuery->whereRaw('LOWER(title) LIKE ?', [$term])
+                         ->orWhereRaw('LOWER(description) LIKE ?', [$term]);
             });
         });
 
         $query->when($request->input('search_location'), function ($q) use ($request) {
-            $location = '%' . $request->input('search_location') . '%';
-            return $q->where(function($subQuery) use ($location) {
-                $subQuery->where('address', 'like', $location)
-                         ->orWhere('city', 'like', $location)
-                         ->orWhere('district', 'like', $location);
+            $loc = strtolower('%' . $request->input('search_location') . '%');
+
+            return $q->where(function($subQuery) use ($loc) {
+                $subQuery->whereRaw('LOWER(address) LIKE ?', [$loc])
+                         ->orWhereRaw('LOWER(city) LIKE ?', [$loc])
+                         ->orWhereRaw('LOWER(district) LIKE ?', [$loc])
+                         ->orWhereRaw('LOWER(address) LIKE ?', [$loc]);
             });
         });
 
@@ -177,7 +178,13 @@ class ReportController extends Controller
             default => $query->orderBy('updated_at', 'desc'),
         };
 
-        $reports = $query->with(['assignee', 'serviceProfile'])->paginate(10);
+        $currentPage = $request->input('page', 1);
+        
+        LengthAwarePaginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        $reports = $query->with(['assignee', 'serviceProfile'])->paginate(20);
         
         $admins = Administrator::where('role', RoleAdministratorEnum::BaseAdmin)->orderBy('full_name')->get();
         $priorities = PriorityEnum::cases();

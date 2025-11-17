@@ -51,7 +51,7 @@ Route::middleware(['auth:sanctum', 'admin.status'])->prefix('admin')->name('admi
         Route::post('/', [ProfileController::class, 'show'])->name('show');
         Route::post('/export-profile', [ProfileController::class, 'exportProfile'])->name('profile.export-profile');
 
-        Route::put('/update-info', [ProfileController::class, 'updateInfo'])->name('updateInfo');
+        Route::post('/update-info', [ProfileController::class, 'updateInfo'])->name('updateInfo');
         Route::post('/update-full-name', [ProfileController::class, 'updateFullName'])->name('updateFullName');
         Route::post('/update-nip', [ProfileController::class, 'updateNip'])->name('updateNip');
         Route::post('/update-picture', [ProfileController::class, 'updateProfilePicture'])->name('updatePicture');
@@ -70,7 +70,6 @@ Route::middleware(['auth:sanctum', 'admin.status'])->prefix('admin')->name('admi
     Route::middleware('systemadmin')->group(function () {
         Route::prefix('manage')->name('manage.')->group(function () {
             Route::post('/', [AdminManagementController::class, 'index'])->name('index');
-            Route::post('/request', [AdminManagementController::class, 'pendingPage'])->name('request');
             Route::post('/{admin}/accept', [AdminManagementController::class, 'accept'])->name('accept');
             Route::post('/{admin}/reject', [AdminManagementController::class, 'reject'])->name('reject');
     

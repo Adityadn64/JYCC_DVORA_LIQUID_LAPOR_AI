@@ -20,7 +20,6 @@ class LoginController extends Controller
         /** @var Request $request */
         $request = $this->decodeRequest($request);
 
-        // Validate using $request->all()
         Validator::make($request->all(), [
             'login_identifier' => 'required|string',
             'password' => 'required|string',
@@ -65,16 +64,8 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
-        // Decode request (walaupun tidak ada data yang perlu di-decode)
         $request = $this->decodeRequest($request);
         
-        // Access authenticated user via $request->user()
-        $admin = Auth::user();
-
-        if ($admin) {
-            $admin->currentAccessToken()->delete();
-        }
-
         return $this->successResponse([], 'Logout berhasil.');
     }
 }

@@ -14,6 +14,7 @@ use App\Enums\PriorityEnum;
 use App\Enums\ReportStatusEnum;
 use App\Traits\ApiResponseTrait;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
@@ -72,6 +73,12 @@ class AnalyticsController extends Controller
         // 8. ANALISIS LOKASI (POINT 8)
         $locationAnalysis = $this->getLocationAnalysis(clone $baseQuery);
 
+        $currentPage = $request->input('page', 1);
+        
+        LengthAwarePaginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
         // 10. TABEL DATA LENGKAP (POINT 10)
         $reports = (clone $baseQuery)
             ->with(['assignee', 'serviceProfile'])
@@ -123,13 +130,12 @@ class AnalyticsController extends Controller
             $query->where('service_code', $admin->service_code);
         }
 
-        // Filter Opsional dari Request
         $query->when($request->date_start ?? null, function ($q) use ($request) {
-            $q->where('created_at', '>=', Carbon::parse($request->date_start));
+            $q->where('reports.created_at', '>=', Carbon::parse($request->date_start));
         });
 
         $query->when($request->date_end ?? null, function ($q) use ($request) {
-            $q->where('created_at', '<=', Carbon::parse($request->date_end)->endOfDay());
+            $q->where('reports.created_at', '<=', Carbon::parse($request->date_end)->endOfDay());
         });
 
         $query->when($request->category ?? null, function ($q) use ($request) {
@@ -153,12 +159,14 @@ class AnalyticsController extends Controller
             $q->where('priority', $request->priority);
         });
 
-        // Filter Lokasi (Sederhana)
         $query->when($request->location ?? null, function ($q) use ($request) {
-            $loc = '%' . $request->location . '%';
-            $q->where(fn($sub) => $sub->where('city', 'like', $loc)
-                ->orWhere('district', 'like', $loc)
-                ->orWhere('address', 'like', $loc));
+            $loc = strtolower('%' . $request->location . '%');
+            
+            $q->where(function($subQuery) use ($loc) {
+                $subQuery->whereRaw('LOWER(city) LIKE ?', [$loc])
+                         ->orWhereRaw('LOWER(district) LIKE ?', [$loc])
+                         ->orWhereRaw('LOWER(address) LIKE ?', [$loc]);
+            });
         });
 
         return $query;
@@ -166,7 +174,7 @@ class AnalyticsController extends Controller
 
     private function getFilterOptions()
     {
-        $admin = request()->user();
+        $admin = Auth::user();
         $serviceQuery = ServiceProfile::query()->orderBy('full_name');
         $adminQuery = Administrator::query()->where('role', RoleAdministratorEnum::BaseAdmin)->orderBy('full_name');
 
@@ -189,11 +197,12 @@ class AnalyticsController extends Controller
         $stats = [];
         $stats['total'] = (clone $baseQuery)->count();
 
-        // Waktu Penyelesaian Rata-rata (Jam)
-        $stats['avg_resolution_hours'] = (clone $baseQuery)
-            ->whereRaw("statuses->>(jsonb_array_length(statuses) - 1) = '{$this->statusFinished}'")
-            ->select(DB::raw('AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) / 3600'))
-            ->value('avg'); // Menggunakan alias 'avg'
+        $avgResult = (clone $baseQuery)
+            ->whereRaw("statuses->>(jsonb_array_length(statuses) - 1) = ?", [$this->statusFinished])
+            ->select(DB::raw('AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) / 3600 AS avg_hours'))
+            ->first();
+        
+        $stats['avg_resolution_hours'] = $avgResult->avg_hours ?? 0;
 
         // Persentase Selesai
         $totalFinished = (clone $baseQuery)->whereRaw("statuses->>(jsonb_array_length(statuses) - 1) = '{$this->statusFinished}'")->count();

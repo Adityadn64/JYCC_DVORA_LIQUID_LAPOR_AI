@@ -9,6 +9,7 @@ use App\Enums\RoleAdministratorEnum;
 use App\Enums\AdminStatusEnum;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -52,42 +53,41 @@ class AdminManagementController extends Controller
 
         $query = $this->getIndexQuery($request);
 
-        $admins = $query->orderBy('full_name', 'asc')->paginate(15)->withQueryString();
+        $currentPage = $request->input('page', 1);
+        
+        LengthAwarePaginator::currentPageResolver(function () use ($currentPage) {
+            return $currentPage;
+        });
+
+        $isPending = $request->pending === true;
+
+        $admins = $isPending
+            ? $query->where('status', AdminStatusEnum::Pending)
+                        ->orderBy('full_name', 'asc')
+                        ->paginate(20)
+                        ->withQueryString()
+            : $query->orderBy('full_name', 'asc')->paginate(20)->withQueryString();
 
         // Data untuk dropdown filter
         $filterOptions = [
-            'roles' => RoleAdministratorEnum::cases(),
-            'statuses' => AdminStatusEnum::cases(),
+            'roles' => array_map(function($enumCase) {
+                return [
+                    'name' => $enumCase->name,
+                    'value' => $enumCase->value,
+                ];
+            }, RoleAdministratorEnum::cases()),
+            
+            'statuses' => array_map(function($enumCase) {
+                return [
+                    'name' => $enumCase->name,
+                    'value' => $enumCase->value,
+                ];
+            }, AdminStatusEnum::cases()),
+
             'services' => ServiceProfile::orderBy('full_name')->get(),
         ];
 
         // return view('admin.manage', compact('admins', 'filterOptions'));
-
-        return $this->successResponse([
-            'admins' => $admins,
-            'filterOptions' => $filterOptions,
-        ]);
-    }
-
-    public function pendingPage(Request $request)
-    {
-        /** @var Request $request */
-        $request = $this->decodeRequest($request);
-
-        $query = $this->getIndexQuery($request);
-
-        $admins = $query->where('status', AdminStatusEnum::Pending)
-                        ->orderBy('full_name', 'asc')
-                        ->paginate(15)
-                        ->withQueryString();
-
-        // Data untuk dropdown filter
-        $filterOptions = [
-            'roles' => RoleAdministratorEnum::cases(),
-            'services' => ServiceProfile::orderBy('full_name')->get(),
-        ];
-
-        // return view('admin.manage-request', compact('admins', 'filterOptions'));
 
         return $this->successResponse([
             'admins' => $admins,
