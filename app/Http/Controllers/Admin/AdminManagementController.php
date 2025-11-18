@@ -87,103 +87,18 @@ class AdminManagementController extends Controller
             'services' => ServiceProfile::orderBy('full_name')->get(),
         ];
 
+        $totalPending = $query->where('status', AdminStatusEnum::Pending)
+                        ->orderBy('full_name', 'asc')
+                        ->count();
+
         // return view('admin.manage', compact('admins', 'filterOptions'));
 
         return $this->successResponse([
             'admins' => $admins,
             'filterOptions' => $filterOptions,
+            'pendingCount' => $totalPending,
         ]);
     }
-
-    public function store(Request $request)
-    {
-        /** @var Request $request */
-        $request = $this->decodeRequest($request);
-
-        $validated = Validator::make($request->all(), [
-            'full_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:administrators,email',
-            'phone' => 'required|string|max:20|unique:administrators,phone',
-            'nip' => 'required|string|max:50|unique:administrators,nip',
-            'password' => ['required', 'confirmed', Password::min(8)],
-            'role' => ['required', Rule::in(RoleAdministratorEnum::cases())],
-            'status' => ['required', Rule::in(AdminStatusEnum::cases())],
-            'service_code' => ['nullable', Rule::requiredIf($request->role == RoleAdministratorEnum::BaseAdmin->value), 'exists:service_profiles,code'],
-        ])->validate();
-
-        $request->validate([
-            'profile_picture' => 'nullable|image|max:2048',
-            'kta_scan' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
-        ]);
-
-        $validated['password_hash'] = Hash::make($validated['password']);
-
-        if ($request->hasFile('profile_picture')) {
-            $validated['profile_picture_path'] = $request->file('profile_picture')->store('profile_pictures', 'public');
-        }
-        if ($request->hasFile('kta_scan')) {
-            $validated['kta_scan_path'] = $request->file('kta_scan')->store('kta_scans', 'public');
-        }
-
-        // Pastikan System Admin tidak punya service code
-        if ($validated['role'] == RoleAdministratorEnum::SystemAdmin->value) {
-            $validated['service_code'] = null;
-        }
-
-        Administrator::create($validated);
-
-        // return redirect()->route('admin.manage.index')->with('success', 'Admin baru berhasil dibuat.');
-
-        return $this->successResponse([], 'Admin baru berhasil dibuat.');
-    }
-
-    /**
-     * POINT 4: Memperbarui admin.
-     */
-    public function update(Request $request, Administrator $admin)
-    {
-        /** @var Request $request */
-        $request = $this->decodeRequest($request);
-
-        $validated = Validator::make($request->all(), [
-            'full_name' => 'required|string|max:255',
-            'email' => ['required', 'email', 'max:255', Rule::unique('administrators')->ignore($admin->id)],
-            'phone' => ['required', 'string', 'max:20', Rule::unique('administrators')->ignore($admin->id)],
-            'nip' => ['required', 'string', 'max:50', Rule::unique('administrators')->ignore($admin->id)],
-            'role' => ['required', Rule::in(RoleAdministratorEnum::cases())],
-            'status' => ['required', Rule::in(AdminStatusEnum::cases())],
-            'service_code' => ['nullable', Rule::requiredIf($request->role == RoleAdministratorEnum::BaseAdmin->value), 'exists:service_profiles,code'],
-        ])->validate();
-
-        $request->validate([
-            'profile_picture' => 'nullable|image|max:2048',
-            'kta_scan' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
-        ]);
-
-        if ($request->hasFile('profile_picture')) {
-            if ($admin->profile_picture_path) Storage::disk('public')->delete($admin->profile_picture_path);
-            $validated['profile_picture_path'] = $request->file('profile_picture')->store('profile_pictures', 'public');
-        }
-        if ($request->hasFile('kta_scan')) {
-            if ($admin->kta_scan_path) Storage::disk('public')->delete($admin->kta_scan_path);
-            $validated['kta_scan_path'] = $request->file('kta_scan')->store('kta_scans', 'public');
-        }
-
-        // Pastikan System Admin tidak punya service code
-        if ($validated['role'] == RoleAdministratorEnum::SystemAdmin->value) {
-            $validated['service_code'] = null;
-        }
-
-        $admin->update($validated);
-
-        // return redirect()->route('admin.manage.index')->with('success', 'Data admin berhasil diperbarui.');
-
-        return $this->successResponse([], 'Data admin berhasil diperbarui.');
-    }
-
-    /**
-     * POINT 6: Mengubah status (Aktif/Nonaktif).
-     */
     public function toggleStatus(Request $request, Administrator $admin)
     {
         $request = $this->decodeRequest($request);
@@ -225,11 +140,10 @@ class AdminManagementController extends Controller
     /**
      * POINT 8: Mengambil data untuk Activity Drawer (via Fetch).
      */
-    public function showActivity(Request $request, Administrator $admin)
+    public function showActivity(string $id) // Ubah parameter di sini
     {
-        $request = $this->decodeRequest($request);
+        $admin = Administrator::find($id);
 
-        $admin->load('serviceProfile');
         $recentReports = $admin->assignedReports()
             ->orderBy('updated_at', 'desc')
             ->take(10)

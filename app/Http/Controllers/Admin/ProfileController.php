@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AdminStatusEnum;
 use App\Export\ExportFile;
 use App\Http\Controllers\Controller;
 use App\Enums\ReportStatusEnum;
 use App\Enums\RoleAdministratorEnum;
+use App\Http\Controllers\Auth\LoginController;
 use App\Rules\CurrentPassword;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
@@ -160,8 +162,11 @@ class ProfileController extends Controller
 
         Validator::make($request->all(), [
             'full_name' => 'required|string|max:255',
-            'password' => ['required', new CurrentPassword('administrators')],
         ])->validate();
+
+        if (!Hash::check($request->password, $admin->password_hash)) {
+            return $this->errorResponse("Invalid credentials.", 422);
+        }
 
         $admin->update(['full_name' => $request->full_name]);
 
@@ -179,9 +184,12 @@ class ProfileController extends Controller
         $admin = Auth::user();
 
         Validator::make($request->all(), [
-            'nip' => 'required|string|max:50|unique:administrators,nip,' . $admin->id,
-            'password' => ['required', new CurrentPassword('administrators')],
+            'nip' => 'required|string|min:10|max:100|unique:administrators,nip,' . $admin->id,
         ])->validate();
+
+        if (!Hash::check($request->password, $admin->password_hash)) {
+            return $this->errorResponse("Invalid credentials.", 422);
+        }
 
         $admin->update(['nip' => $request->nip]);
 
@@ -247,19 +255,22 @@ class ProfileController extends Controller
         $admin = Auth::user();
 
         Validator::make($request->all(), [
-            'current_password' => ['required', 'string', new CurrentPassword('administrators')],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => 'required|string|min:8|confirmed',
             'logout_other_devices' => 'nullable|boolean',
         ])->validate();
 
+        if (!Hash::check($request->current_password, $admin->password_hash)) {
+            return $this->errorResponse("Invalid credentials.", 422);
+        }
+
         // Update password
-        $admin->forceFill([
+        $admin->update([
             'password_hash' => Hash::make($request->password),
-        ])->save();
+        ]);
 
         // Logout dari sesi lain jika dicentang
         if ($request->logout_other_devices ?? false) {
-            Auth::guard('administrators')->logoutOtherDevices($request->current_password);
+            Auth::guard('administrators')->logoutOtherDevices($request->password);
         }
 
         // return back()->with('success_password', 'Password berhasil diubah.');
@@ -278,8 +289,11 @@ class ProfileController extends Controller
         $admin = Auth::user();
         Validator::make($request->all(), [
             'new_email' => 'required|email|max:255|unique:administrators,email',
-            'password' => ['required', new CurrentPassword('administrators')],
         ])->validate();
+
+        if (!Hash::check($request->password, $admin->password_hash)) {
+            return $this->errorResponse("Invalid credentials.", 422);
+        }
 
         $newEmail = $request->new_email;
         $otp = rand(100000, 999999);
@@ -365,8 +379,11 @@ class ProfileController extends Controller
         $admin = Auth::user();
         Validator::make($request->all(), [
             'new_phone' => 'required|string|max:20|unique:administrators,phone',
-            'password' => ['required', new CurrentPassword('administrators')],
         ])->validate();
+
+        if (!Hash::check($request->password, $admin->password_hash)) {
+            return $this->errorResponse("Invalid credentials.", 422);
+        }
 
         $newPhone = $request->new_phone;
         $otp = rand(100000, 999999);
@@ -436,9 +453,14 @@ class ProfileController extends Controller
     public function deactivateSelf(Request $request)
     {
         $request = $this->decodeRequest($request);
+        
+        $admin = Auth::user();
 
-        // return back()->with('error_self_deactivate', 'System Admin tidak dapat menonaktifkan akunnya sendiri.');
+        if ($admin->role === RoleAdministratorEnum::BaseAdmin) {
+            $admin->update(['status'=> AdminStatusEnum::Pending]);
+            return $this->successResponse([],'Akun Anda telah berhasil dinonaktifkan.');
+        }
 
-        return $this->successResponse([], 'System Admin tidak dapat menonaktifkan akunnya sendiri.');
+        return $this->errorResponse('System Admin tidak dapat menonaktifkan akunnya sendiri.', 400);
     }
 }

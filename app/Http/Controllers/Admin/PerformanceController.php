@@ -25,7 +25,7 @@ class PerformanceController extends Controller
         'critical' => 12,
         'high' => 24,
         'medium' => 72,
-        'low' => 168, // 1 minggu
+        'low' => 168,
     ];
 
     private $statusPending;
@@ -77,7 +77,7 @@ class PerformanceController extends Controller
             'kpiCards' => $kpiCards,
             'trendData' => $trendData,
             'dinasPerformance' => $dinasPerformance,
-            'adminPerformance' => $kpiCards,
+            'adminPerformance' => $adminPerformance,
             'topCategories' => $topCategories,
             'slaBreaches' => $slaBreaches,
             'filterOptions' => $filterOptions,
@@ -95,8 +95,8 @@ class PerformanceController extends Controller
             'admin_service_code' => ($admin->role === RoleAdministratorEnum::BaseAdmin) ? $admin->service_code : null,
             'scope_type' => $request->scope_type ?? 'all',
             'scope_value' => $request->scope_value ?? null,
-            'date_start' => isset($request->date_start) ? Carbon::parse($request->date_start) : now()->subDays(30),
-            'date_end' => isset($request->date_end) ? Carbon::parse($request->date_end)->endOfDay() : now()->endOfDay(),
+            'date_start' => $request->date_start != "" ? Carbon::parse($request->date_start) : now()->subDays(30),
+            'date_end' => $request->date_end != "" ? Carbon::parse($request->date_end)->endOfDay() : now()->endOfDay(),
         ];
     }
 
@@ -144,10 +144,23 @@ class PerformanceController extends Controller
             $adminQuery->where('service_code', $admin->service_code);
         }
 
+        $reportsByDistrict = Report::whereNotNull('district')
+            ->select('district')
+            ->groupBy('district')
+            ->orderBy('district')
+            ->get();
+
+        $formattedDistricts = $reportsByDistrict->map(function ($report) {
+            return [
+                'key'  => $report->district,
+                'value' => $report->district_name,
+            ];
+        });
+
         return [
             'services' => $serviceQuery->get(),
             'admins' => $adminQuery->get(),
-            'districts' => Report::select('district')->whereNotNull('district')->distinct()->orderBy('district')->pluck('district'),
+            'districts' => $formattedDistricts,
         ];
     }
 
@@ -174,7 +187,7 @@ class PerformanceController extends Controller
             $this->addSlaBreachLogic($q, 'created_at', 'updated_at');
         })->count();
 
-        $kpi['sla_percent'] = ($totalFinished > 0) ? (1 - ($slaBreaches / $totalFinished)) * 100 : 100;
+        $kpi['sla_percent'] = ($totalFinished > 0) ? (1 - ($slaBreaches / $totalFinished)) * 100 : 0;
         
         // Kueri ini sekarang AMAN. Tidak ada join, tidak ada ambiguitas.
         $kpi['avg_hours'] = (clone $finishedQuery)

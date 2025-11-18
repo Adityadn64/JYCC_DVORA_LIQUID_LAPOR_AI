@@ -32,7 +32,6 @@ class RegisterController extends Controller
 
         $serviceProfiles = ServiceProfile::orderBy('full_name')->get();
         $roles = RoleAdministratorEnum::cases();
-        // return view('auth.register', compact('serviceProfiles', 'roles'));
 
         return $this->successResponse([
             'serviceProfiles' => $serviceProfiles,
@@ -42,9 +41,6 @@ class RegisterController extends Controller
 
     public function startRegistration(Request $request)
     {
-        /** @var Request $request */
-        $request = $this->decodeRequest($request);
-
         Validator::make($request->all(), [
             'full_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:administrators',
