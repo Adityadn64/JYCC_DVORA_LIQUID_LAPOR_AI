@@ -299,6 +299,9 @@ apiClient.interceptors.response.use(
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
       console.error('Access Forbidden:', error.response.data);
+      setTimeout(() => {
+        window.location.href = '/admin/dashboard';
+      }, 3000)
     }
 
     return Promise.reject(error);
@@ -352,18 +355,22 @@ export const authService = {
     return response.data;
   },
 
-  async registerStart(data: { email: string; phone: string }) {
-    const response = await apiClient.post('/auth/register/start', data);
+  async getRegisterOptions() {
+    const response = await apiClient.post('/auth/register');
     return response.data;
   },
 
-  async registerVerifyOtp(data: { email: string; otp_code: string }) {
+  async registerStart(formData: FormData) {
+    const response = await apiClient.post('/auth/register/send', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
+
+  async registerVerifyOtp(data: { email: string; email_otp: string; phone_otp: string }) {
     const response = await apiClient.post('/auth/register/verify', data);
-    return response.data;
-  },
-
-  async register(data: { email: string; password: string; password_confirmation: string }) {
-    const response = await apiClient.post('/auth/register', data);
     return response.data;
   },
 
@@ -522,6 +529,7 @@ export const adminProfileService = {
     current_password: string;
     password: string;
     password_confirmation: string;
+    logout_other_devices: boolean;
   }) {
     const response = await apiClient.post('/admin/profile/update-password', data);
     return response.data;
@@ -599,35 +607,49 @@ export const adminProfileService = {
 // ================================
 
 export const adminManageService = {
-  async listAdmins(filters: object) {
-    const response = await apiClient.post('/admin/manage', filters || {});
+  // DIPERBAIKI: Menggunakan GET dan params untuk filter
+  async getAdmins(params: object) {
+    const response = await apiClient.post('/admin/manage', { ...params });
     return response.data;
   },
 
-  async createAdmin(data: {
-    full_name: string;
-    email: string;
-    phone: string;
-    nip?: string;
-    service_code?: string;
-  }) {
-    return apiClient.post('/admin/manage', data);
+  // Fungsi ini mungkin tidak lagi diperlukan jika create ditangani oleh modal/halaman lain
+  // async createAdmin(data: object) { ... },
+
+  async updateAdmin(id: string | number, data: FormData) {
+    // Penting: Gunakan FormData untuk update yang mungkin menyertakan file
+    // Laravel secara otomatis menangani _method=PUT dari POST dengan FormData
+    return apiClient.post(`/admin/manage/${id}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
   },
 
-  async updateAdmin(id: string | number, data: object) {
-    return apiClient.post(`/admin/manage/${id}`, data);
+  // DIPERBAIKI: Nama fungsi disesuaikan
+  async toggleStatus(id: string | number) {
+    return apiClient.post(`/admin/manage/${id}/toggle-status`);
   },
 
-  async deleteAdmin(id: string | number) {
-    return apiClient.post(`/admin/manage/${id}`);
+  // DIPERBAIKI: Nama fungsi disesuaikan
+  async sendPasswordReset(id: string | number) {
+    return apiClient.post(`/admin/manage/${id}/send-reset`);
   },
 
-  async toggleAdminStatus(id: string | number) {
-    return apiClient.post(`/admin/manage/${id}/toggle-status`, {});
+  // DITAMBAHKAN: Fungsi yang hilang untuk halaman 'pending'
+  async accept(id: string | number) {
+    return apiClient.post(`/admin/manage/${id}/accept`);
   },
 
-  async resetAdminPassword(id: string | number) {
-    return apiClient.post(`/admin/manage/${id}/reset-password`, {});
+  // DITAMBAHKAN: Fungsi yang hilang untuk halaman 'pending'
+  async reject(id: string | number) {
+    // Sesuai controller, ini adalah DELETE. Kita bisa POST dengan _method=DELETE
+    // atau setup rute DELETE di Laravel. Asumsi controller menangani POST untuk kesederhanaan.
+    return apiClient.post(`/admin/manage/${id}/reject`);
+  },
+
+  // DITAMBAHKAN: Fungsi untuk drawer aktivitas
+  async getActivity(id: string | number) {
+    const response = await apiClient.post(`/admin/manage/${id}/activity`);
+    return response.data;
   }
 };
 
@@ -636,8 +658,9 @@ export const adminManageService = {
 // ================================
 
 export const adminPerformanceService = {
-  async getPerformance(filters?: object) {
-    return apiClient.post('/admin/performance', filters || {});
+  async getPerformance(filters: object) {
+    const response = await apiClient.post('/admin/performance', filters);
+    return response.data;
   },
 
   async exportPerformance(format: 'csv' | 'xlsx', filters?: object) {

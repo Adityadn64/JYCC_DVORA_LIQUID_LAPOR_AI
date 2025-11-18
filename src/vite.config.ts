@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
@@ -17,6 +18,7 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [
         react(),
+        basicSsl()
       ],
       define: {
         'process.env.DEFAULT_SERVER_API_URL': JSON.stringify(env.DEFAULT_SERVER_API_URL),

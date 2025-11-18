@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { adminAnalyticsService, decodeErrorResponse } from '@/services/api';
 // [PERBAIKAN] Import skeleton yang sudah dipecah
 import {
@@ -10,11 +10,11 @@ import {
     SkeletonDataGrid
 } from '@/components/SkeletonLoading';
 import {
-    LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis,
+    LineChart, Line, XAxis, YAxis,
     CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { errorDiv } from '@/components/Error';
-import { CsrfLoadingProps } from '@/types';
+import { CsrfLoadingProps, DOTS, generatePaginationItems, PaginationInfo } from '@/types';
 
 // [PERBAIKAN TOTAL] Interface data disesuaikan dengan struktur JSON dari API
 interface FilterOptions {
@@ -107,19 +107,23 @@ export default function AdminAnalyticsPage({csrfLoading}: CsrfLoadingProps) {
         location: '',
     });
 
+    const [paginationInfo, setPaginationInfo] = useState<PaginationInfo | null>(null);
+
     useEffect(() => {
         if (csrfLoading) fetchAnalytics();
     }, [csrfLoading]);
 
-    const fetchAnalytics = async (appliedFilters = {}) => {
+    const fetchAnalytics = async (appliedFilters = {}, page = 1) => {
         try {
             setLoading(true);
             setError(null);
             const cleanFilters = Object.fromEntries(
                 Object.entries(appliedFilters).filter(([_, v]) => v !== '' && v !== null)
             );
+            cleanFilters.page = page;
             const response = await adminAnalyticsService.getAnalytics(cleanFilters);
             setData(response.data);
+            setPaginationInfo(response.data.reports);
         } catch (err: any) {
             setError((await decodeErrorResponse(err)) || 'Gagal memuat data analisis');
         } finally {
@@ -172,11 +176,44 @@ export default function AdminAnalyticsPage({csrfLoading}: CsrfLoadingProps) {
         return { status, statusClass };
     };
 
+    const handlePageChange = (page: number) => {
+        if (page !== paginationInfo?.current_page) {
+            setLoading(true);
+            fetchAnalytics(filters, page);
+        }
+    };
+
+    const paginationItems = paginationInfo 
+        ? generatePaginationItems(paginationInfo.current_page, paginationInfo.last_page)
+        : [];
+        
+      const filterEl = useRef<HTMLDivElement>(null);
+      const endEl = useRef<HTMLDivElement>(null);
+    
+      const scrollToTarget = (isUp: boolean = true) => {
+          // ... implementasi tidak berubah
+          if (isUp) {
+            if (filterEl.current) {
+              filterEl.current.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start',
+              });
+            }
+          } else {
+            if (endEl.current) {
+              endEl.current.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start',
+              });
+            }
+          }
+      };
+
     return (
         <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50">
             {/* [BARU] Filter Section with Skeleton */}
             {error ? renderError() : loading ? <SkeletonFilter /> : (
-                <div className="mb-8 bg-white p-6 rounded-xl shadow-lg border">
+                <div className="mb-8 bg-white p-6 rounded-xl shadow-lg border" ref={filterEl}>
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">Filter Analisis</h2>
                     <form onSubmit={handleApplyFilter}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -364,7 +401,7 @@ export default function AdminAnalyticsPage({csrfLoading}: CsrfLoadingProps) {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.service_profile?.full_name ?? 'N/A'}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.assignee?.full_name ?? 'Belum Ditugaskan'}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(report.updated_at).toLocaleString()}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium"><a href={`/report/track/${report.id}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-900">Lihat Detail</a></td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium"><a href={`/report/${report.id}/track`} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-900">Lihat Detail</a></td>
                                         </tr>
                                     )
                                 }) : (
@@ -375,6 +412,67 @@ export default function AdminAnalyticsPage({csrfLoading}: CsrfLoadingProps) {
                     </div>
                 </div>
             )}
+
+            {paginationInfo && paginationInfo.total > 0 && !loading && (
+                <div className="pt-4 flex items-center justify-between md:flex-row flex-col gap-4">
+                    <p className="text-sm text-gray-700">
+                        Menampilkan <span className="font-medium">{paginationInfo.from}</span> sampai <span className="font-medium">{paginationInfo.to}</span> dari <span className="font-medium">{paginationInfo.total}</span> hasil
+                    </p>
+                    <nav aria-label="Pagination" className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        <button
+                            onClick={() => {
+                                handlePageChange(parseInt(String(paginationInfo.current_page - 1)));
+                                scrollToTarget(false);
+                            }}
+                            disabled={paginationInfo.current_page === 1}
+                            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                            <span className="sr-only">Sebelumnya</span>
+                            &lt;
+                        </button>
+    
+                        {paginationItems.map((item, index) => {
+                            if (item === DOTS) {
+                                return <span key={`dots-${index}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>;
+                            }
+    
+                            const isCurrent = item === paginationInfo.current_page;
+                            return (
+                                <button
+                                    key={item}
+                                    onClick={() => {
+                                        handlePageChange(parseInt(String(item)));
+                                        scrollToTarget();
+                                    }}
+                                    aria-current={isCurrent ? 'page' : undefined}
+                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                        isCurrent 
+                                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
+                                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {item}
+                                </button>
+                            );
+                        })}
+    
+                        <button
+                            onClick={() => {
+                                handlePageChange(parseInt(String(paginationInfo.current_page + 1)));
+                                scrollToTarget();
+                            }}
+                            disabled={paginationInfo.current_page === paginationInfo.last_page}
+                            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                            <span className="sr-only">Selanjutnya</span>
+                            &gt;
+                        </button>
+                    </nav>
+                </div>
+            )}
+            <div className="mt-4" ref={endEl}>
+                <br />
+            </div>
         </div>
     );
 }

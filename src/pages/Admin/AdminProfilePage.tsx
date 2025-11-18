@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { adminProfileService, decodeErrorResponse } from '@/services/api';
+import { adminProfileService, authService, decodeErrorResponse } from '@/services/api';
 // [PERBAIKAN] Import componentized skeletons instead of a generic one
 import { SkeletonProfileHeader, SkeletonActionCard } from '@/components/SkeletonLoading';
 import { CsrfLoadingProps } from '@/types';
+import { useNavigate } from 'react-router-dom';
 
 // [PERBAIKAN] Interface for the nested service profile object
 interface ServiceProfile {
@@ -43,7 +44,7 @@ interface PasswordFormData {
   current_password: string;
   password: string;
   password_confirmation: string;
-  logout_other_devices?: boolean;
+  logout_other_devices: boolean;
 }
 
 interface ContactFormData {
@@ -79,12 +80,14 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
 
   const [displayFormData, setDisplayFormData] = useState<EditFormData>({ full_name: '', nip: '' });
   const [editFormData, setEditFormData] = useState<EditFormData>({ full_name: '', nip: '' });
-  const [passwordFormData, setPasswordFormData] = useState<PasswordFormData>({ current_password: '', password: '', password_confirmation: '' });
+  const [passwordFormData, setPasswordFormData] = useState<PasswordFormData>({ current_password: '', password: '', password_confirmation: '', logout_other_devices: false });
   const [contactFormData, setContactFormData] = useState<ContactFormData>({ email: '', phone: '', password: '' });
   const [emailChangeFormData, setEmailChangeFormData] = useState<EmailChangeFormData>({ new_email: '', password: '' });
   const [phoneChangeFormData, setPhoneChangeFormData] = useState<PhoneChangeFormData>({ new_phone: '', password: '' });
   const [otpFormData, setOtpFormData] = useState<OtpFormData>({ otp: '' });
   const [ktaFormData, setKtaFormData] = useState<KtaFormData>({ kta_scan: null as any });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (csrfLoading) fetchProfile();
@@ -131,8 +134,16 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPasswordFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, checked, type } = e.target;
+
+    const newValue = type === 'checkbox' ? checked : value;
+
+    console.log({name, value, checked, type});
+
+    setPasswordFormData(prev => ({
+      ...prev,
+      [name]: newValue
+    }));
   };
   
   const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,7 +182,7 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
       setSuccess(null);
       const response = await adminProfileService.changePassword(passwordFormData);
       setSuccess(response.message || 'Password berhasil diubah');
-      setPasswordFormData({ current_password: '', password: '', password_confirmation: '' });
+      setPasswordFormData({ current_password: '', password: '', password_confirmation: '', logout_other_devices: false });
       setActiveModal(null);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
@@ -229,48 +240,61 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
 
         {/* Header Section */}
         <div className="bg-white shadow-lg rounded-xl p-8 border">
-          {success && success.includes('header') && (
-            <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert">
-              <p>{success}</p>
-            </div>
-          )}
-          {profile && (
-            <form onSubmit={handleUpdateProfile} encType="multipart/form-data">
-              <div className="flex items-center space-x-6">
-                <img className="h-24 w-24 rounded-full object-cover"
-                  src={profile.profile_picture_path || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}`}
-                  alt="Foto Profil" id="profilePicPreview" />
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{profile.full_name}</h1>
-                  <p className="text-gray-500">
-                    <span className="font-medium text-blue-600">{profile.role}</span>
-                    <span className="mx-2 text-gray-300">|</span>
-                    Status: <span className="font-medium text-green-600">Aktif</span>
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6">
-                <label htmlFor="profile_picture" className="block text-sm font-medium text-gray-700 mb-1">Ubah Foto Profil</label>
-                <input type="file" id="profile_picture" name="profile_picture"
-                  accept="image/jpeg,image/png,image/jpg"
-                  className="block w-full max-w-sm text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  onChange={(e) => {
-                    handleFileChange(e);
-                    if (e.target.files && e.target.files[0]) {
-                      const reader = new FileReader();
-                      reader.onload = (e) => {
-                        const img = document.getElementById('profilePicPreview') as HTMLImageElement;
-                        if (img && e.target?.result) img.src = e.target.result as string;
-                      };
-                      reader.readAsDataURL(e.target.files[0]);
-                    }
-                  }} />
-                <button type="submit"
-                  className="mt-3 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">Simpan Foto</button>
-              </div>
-            </form>
-          )}
+  {success && success.includes('header') && (
+    <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert">
+      <p>{success}</p>
+    </div>
+  )}
+  {profile && (
+    <form onSubmit={handleUpdateProfile} encType="multipart/form-data">
+      <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
+        <img
+          className="h-24 w-24 rounded-full object-cover sm:h-32 sm:w-32"
+          src={profile.profile_picture_path || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}`}
+          alt="Foto Profil"
+          id="profilePicPreview"
+        />
+        <div className="text-center sm:text-left">
+          <h1 className="font-bold text-gray-900 sm:text-2xl md:text-3xl">{profile.full_name}</h1>
+          <p className="text-gray-500">
+            <span className="font-medium text-blue-600">{profile.role.replace(/_/, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
+            <span className="mx-2 text-gray-300">|</span>
+            Status: <span className="font-medium text-green-600">Aktif</span>
+          </p>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <label htmlFor="profile_picture" className="block text-sm font-medium text-gray-700 mb-1">Ubah Foto Profil</label>
+        <input
+          type="file"
+          id="profile_picture"
+          name="profile_picture"
+          accept="image/jpeg,image/png,image/jpg"
+          className="block w-full max-w-sm text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          onChange={(e) => {
+            handleFileChange(e);
+            if (e.target.files && e.target.files[0]) {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const img = document.getElementById('profilePicPreview') as HTMLImageElement;
+                if (img && e.target?.result) img.src = e.target.result as string;
+              };
+              reader.readAsDataURL(e.target.files[0]);
+            }
+          }}
+        />
+        <button
+          type="submit"
+          className="mt-3 w-full sm:w-auto rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+        >
+          Simpan Foto
+        </button>
+      </div>
+    </form>
+  )}
+</div>
+
 
         {/* Info & Contact Section */}
         <div className="bg-white shadow-lg rounded-xl p-8 border">
@@ -375,15 +399,11 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
               <p>{success}</p>
             </div>
           )}
+<div className="flex flex-col gap-4 sm:flex-row">
 
           <button onClick={() => setActiveModal('password')}
             className="w-full sm:w-auto rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
             Ganti Password
-          </button>
-          <button
-            className="w-full sm:w-auto rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            disabled>
-            Aktifkan Autentikasi 2 Langkah (TBD)
           </button>
           <button
             onClick={async () => {
@@ -405,24 +425,13 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
             Download Data Pribadi
           </button>
 
-          {profile?.role !== 'SystemAdmin' && (
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              if (confirm('Anda yakin ingin menonaktifkan akun Anda? Tindakan ini tidak dapat dibatalkan tanpa bantuan System Admin.')) {
-                try {
-                  const response = await adminProfileService.deactivateSelf();
-                  setSuccess(response.message || 'Akun berhasil dinonaktifkan');
-                } catch (err: any) {
-                  setError((await decodeErrorResponse(err)) || 'Gagal menonaktifkan akun');
-                }
-              }
-            }}>
-              <button type="submit"
-                className="w-full sm:w-auto rounded-md bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-sm ring-1 ring-inset ring-red-200 hover:bg-red-100">
+          {profile?.role !== 'system_admin' && (
+              <button onClick={() => setActiveModal("nonActive")}
+                className="w-full sm:w-auto rounded-md bg-red-600 px-4 py-2 text-sm font-semibold shadow-sm text-white hover:bg-red-700">
                 Nonaktifkan Akun Saya
               </button>
-            </form>
           )}
+</div>
         </div>
 
       </div>
@@ -670,7 +679,8 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
                     full_name: editFormData.full_name,
                     password: emailChangeFormData.password // Using existing password field
                   });
-                  setProfile(response.data.admin);
+                  setProfile({...profile, full_name: editFormData.full_name});
+                  setDisplayFormData({...displayFormData, full_name: editFormData.full_name})
                   setSuccess('Nama lengkap berhasil diperbarui.');
                   setActiveModal(null);
                 } catch (err: any) {
@@ -720,6 +730,8 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
                   });
                   setProfile(response.data.admin);
                   setSuccess('NIP berhasil diperbarui.');
+                  setProfile({...profile, nip: editFormData.nip});
+                  setDisplayFormData({...displayFormData, nip: editFormData.nip})
                   setActiveModal(null);
                 } catch (err: any) {
                   setError((await decodeErrorResponse(err)) || 'Gagal memperbarui NIP');
@@ -780,7 +792,7 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
                   </div>
                   <div className="flex items-center">
                     <input id="logout_other_devices" name="logout_other_devices" type="checkbox"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onChange={handlePasswordChange} checked={passwordFormData.logout_other_devices} />
                     <label htmlFor="logout_other_devices" className="ml-2 block text-sm text-gray-900">Keluarkan dari semua sesi lain</label>
                   </div>
                   <div className="pt-2 text-right">
@@ -793,6 +805,41 @@ export default function AdminProfilePage({csrfLoading}: CsrfLoadingProps) {
           </div>
         </div>
       )}
+
+      {/* Nonaktif Change Modal */}
+      {activeModal === 'nonActive' && (
+        <div className="fixed inset-0 z-50" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full m-4">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold">Nonaktifkan Akun Saya</h3>
+                <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
+              </div>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  const response = await adminProfileService.deactivateSelf();
+                  setSuccess(response.message || "Akun berhasil dinonaktifkan")
+                  await authService.logout();
+                  navigate({pathname: "/login"});
+                } catch (err: any) {
+                  setError(await decodeErrorResponse(err) || "Gagal menonaktifkan akun")
+                }
+              }}>
+                <div className="space-y-4">
+                  <p>Anda yakin ingin menonaktifkan akun anda? Tindakan ini tidak dapat dibatalkan tanpa bantuan System Admin</p>
+                  <div className="text-right">
+                    <button type="button" onClick={() => setActiveModal(null)} className="mr-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Batal</button>
+                    <button type="submit" className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700">Nonaktifkan</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }

@@ -259,7 +259,7 @@ export default function ReportTrackPage({csrfLoading}: CsrfLoadingProps) {
       {/* --- Daftar Laporan --- */}
       <div className="space-y-4">
         {loading ? (
-          [...Array(10)].map((_, i) => <SkeletonReportCard key={i} />)
+          [...Array(20)].map((_, i) => <SkeletonReportCard key={i} />)
         ) : error ? (
           <div className="text-center bg-white p-12 rounded-lg shadow"><p className="text-red-600">{error}</p></div>
         ) : reports.length > 0 ? (

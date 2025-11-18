@@ -17,6 +17,7 @@ import AdminPerformancePage from '@/pages/Admin/AdminPerformancePage';
 import { csrfService } from './services/api';
 import { AuthUser } from './types';
 import WavingTextLoader from '@/components/WavingTextLoader';
+import NotFoundPage from './pages/Callback/NotFoundPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -66,7 +67,7 @@ function App() {
       <div className="flex flex-col min-h-screen bg-gray-50">
         <Header isAuthenticated={isAuthenticated} user={user} onLogout={handleLogout} />
         
-        <main className="flex-grow px-6 py-12 sm:py-16">
+        <main className="flex-grow px-4 py-12 sm:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Routes>
               <Route path="/" element={<HomePage csrfLoading={!loading} />} />
@@ -99,7 +100,7 @@ function App() {
                 element={isAuthenticated ? <AdminPerformancePage csrfLoading={!loading} /> : <Navigate to="/login" />}
               />
 
-              <Route path="*" element={<Navigate to="/" />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </div>
         </main>

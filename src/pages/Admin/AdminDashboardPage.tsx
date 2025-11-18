@@ -1,16 +1,17 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { adminDashboardService, decodeErrorResponse } from '@/services/api';
 import { useNavigate } from 'react-router-dom';
-import { SkeletonAdminDashboard, Skeleton, SkeletonReportCard } from '@/components/SkeletonLoading';
-
-// 1. Import Chart.js dan komponennya
-import { Line, Pie, Bar } from 'react-chartjs-2'; 
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
+import { SkeletonAdminDashboard, Skeleton, SkeletonReportCard, SkeletonChartCard } from '@/components/SkeletonLoading';
 import { errorDiv } from '@/components/Error';
 import { CsrfLoadingProps, PaginationInfo, DOTS, generatePaginationItems } from '@/types';
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
-// 2. Definisikan tipe data yang lebih akurat
+// 1. Impor komponen dari Recharts
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
+} from 'recharts';
+
+// Definisi Tipe (Tidak Berubah)
 interface Stats {
   totalReports: number;
   reportsToday: number;
@@ -22,7 +23,7 @@ interface Report {
   id: number;
   title: string;
   description: string;
-  city: string; // Sesuai dengan blade
+  city: string;
   priority: string;
   assignee?: { id: number; full_name: string };
   statuses: string[];
@@ -34,8 +35,9 @@ interface FilterOptions {
     priorities: { value: string; name: string }[];
 }
 
-// Utilitas untuk format waktu seperti `diffForHumans`
+// Utilitas Waktu (Tidak Berubah)
 const formatRelativeTime = (dateString: string) => {
+    // ... implementasi tidak berubah
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
@@ -49,8 +51,11 @@ const formatRelativeTime = (dateString: string) => {
     return `${days} hari yang lalu`;
 };
 
+// 2. Definisikan palet warna untuk Pie Chart
+const PIE_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#38BDF8', '#EC4899'];
 
 export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
+  // Semua state dan hooks (useState, useEffect, dll) tetap sama
   const [stats, setStats] = useState<Stats | null>(null);
   const [charts, setCharts] = useState<{
     reportTrend: ChartData[];
@@ -74,13 +79,13 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Semua fungsi (fetchDashboardData, handleFilterChange, dll) tetap sama
   const fetchDashboardData = async (currentFilters: any, page: number = 1) => {
     try {
       const response = await adminDashboardService.getDashboardData({ ...currentFilters, page });
       
       if (!response.data) throw new Error("Respons data tidak valid");
 
-      // Statistik & chart hanya di-load sekali pada render pertama
       if (page === 1 && !stats) {
           setStats(response.data.stats);
           setCharts(response.data.charts);
@@ -88,7 +93,7 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
       }
 
       setReports(response.data.reports.data);
-      setPaginationInfo(response.data.reports); // Simpan semua info paginasi
+      setPaginationInfo(response.data.reports);
     } catch (err) {
       console.error('Error fetching dashboard:', err);
       setError((await decodeErrorResponse(err)) || 'Gagal memuat data dashboard');
@@ -103,14 +108,13 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   }, [csrfLoading]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    // [FIXED] Menggunakan nama input/select sebagai key dinamis
     setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    fetchDashboardData(filters, 1); // Selalu kembali ke halaman 1 saat search
+    fetchDashboardData(filters, 1);
   };
 
   const handleReset = () => {
@@ -130,20 +134,8 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
       }
   };
   
-  const reportTrendChartData = useMemo(() => ({
-    labels: charts?.reportTrend.map(d => d.label) || [],
-    datasets: [{ label: 'Laporan Masuk', data: charts?.reportTrend.map(d => d.value) || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3 }]
-  }), [charts]);
-  
-  const serviceDistributionChartData = useMemo(() => ({
-    labels: charts?.serviceDistribution.map(d => d.label) || [],
-    datasets: [{ data: charts?.serviceDistribution.map(d => d.value) || [], backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#38BDF8', '#EC4899'] }]
-  }), [charts]);
-
-  const topAdminsChartData = useMemo(() => ({
-    labels: charts?.topAdmins.map(d => d.label) || [],
-    datasets: [{ label: 'Laporan Selesai', data: charts?.topAdmins.map(d => d.value) || [], backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: '#3B82F6', borderWidth: 1 }]
-  }), [charts]);
+  // 3. Hapus useMemo yang spesifik untuk Chart.js
+  // Data dapat langsung dimasukkan ke komponen Recharts
 
   const paginationItems = paginationInfo 
     ? generatePaginationItems(paginationInfo.current_page, paginationInfo.last_page)
@@ -153,21 +145,22 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   const endEl = useRef<HTMLDivElement>(null);
 
   const scrollToTarget = (isUp: boolean = true) => {
-    if (isUp) {
-      if (filterEl.current) {
-        filterEl.current.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start',
-        });
+      // ... implementasi tidak berubah
+      if (isUp) {
+        if (filterEl.current) {
+          filterEl.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }
+      } else {
+        if (endEl.current) {
+          endEl.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }
       }
-    } else {
-      if (endEl.current) {
-        endEl.current.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start',
-        });
-      }
-    }
   };
 
   if (loading && !stats) {
@@ -180,6 +173,7 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   
   return (
     <div className="space-y-12">
+      {/* --- Bagian Header dan Statistik (Tidak Berubah) --- */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dasbor Analitik</h1>
         <p className="mt-2 text-gray-600">Ringkasan, tren, dan manajemen laporan Lapor.ai.</p>
@@ -191,14 +185,61 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
         <div className="bg-white p-6 rounded-xl shadow border"><p className="text-sm font-medium text-gray-500">Waktu Penyelesaian Rata-rata</p>{!stats && loading ? <Skeleton className="h-10 w-24 mt-2" /> : <p className="mt-1 text-3xl font-bold text-cyan-500">{stats?.avgResolutionTime || 'N/A'}</p>}</div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border"><h3 className="text-lg font-semibold text-gray-800 mb-4">Tren Laporan Masuk (30 Hari Terakhir)</h3><div className="h-80">
-          <Line data={reportTrendChartData} options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }} /></div></div>
-        <div className="bg-white p-6 rounded-xl shadow border"><h3 className="text-lg font-semibold text-gray-800 mb-4">Distribusi Laporan per Dinas</h3><div className="h-80"><Pie data={serviceDistributionChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} /></div></div>
+      {/* --- 4. Ganti JSX Chart dengan komponen Recharts --- */}
+      <section className="grid grid-cols-1 gap-8">
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Tren Laporan Masuk (30 Hari Terakhir)</h3>
+          <div className="h-80">
+            {
+              error ? renderError() : loading ? <Skeleton className='h-80 w-full' /> :
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={charts?.reportTrend} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" fontSize={12} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" name="Laporan Masuk" dataKey="value" stroke="#3B82F6" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            }
+          </div>
+        </div>
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Distribusi Laporan per Dinas</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={charts?.serviceDistribution} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={90}>
+                  {charts?.serviceDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </section>
-      <section className="bg-white p-6 rounded-xl shadow border"><h3 className="text-lg font-semibold text-gray-800 mb-4">Top 5 Admin Produktif (Laporan Selesai)</h3><div className="h-80"><Bar data={topAdminsChartData} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }} /></div></section>
+      <section className="bg-white p-6 rounded-xl shadow border">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Top 5 Admin Produktif (Laporan Selesai)</h3>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart layout="vertical" data={charts?.topAdmins} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" allowDecimals={false} />
+              <YAxis type="category" dataKey="label" width={100} fontSize={12} />
+              <Tooltip cursor={{ fill: '#f3f4f6' }} />
+              <Bar dataKey="value" name="Laporan Selesai" fill="rgba(59, 130, 246, 0.8)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
 
+      {/* --- Bagian Manajemen Laporan, Filter, dan Paginasi (Tidak Berubah) --- */}
       <section className="space-y-8">
+        {/* ... (kode filter, daftar laporan, dan paginasi tetap sama) ... */}
         <div><h2 className="text-2xl font-bold text-gray-900">Manajemen Laporan</h2><p className="mt-1 text-gray-600">Cari, filter, dan kelola semua laporan yang masuk.</p></div>
 
         <div className="bg-white p-6 rounded-xl shadow border" ref={filterEl}>
@@ -220,7 +261,7 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
 
         <div className="space-y-4">
           {error ? renderError() : loading ? (
-             Array.from({ length: 5 }).map((_, i) => <SkeletonReportCard key={i} />)
+             Array.from({ length: 20 }).map((_, i) => <SkeletonReportCard key={i} />)
           ) : reports.length > 0 ? (
             reports.map((report) => {
               const status = report.statuses[report.statuses.length - 1] || 'unknown';
