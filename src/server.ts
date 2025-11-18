@@ -414,51 +414,56 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 });
 
 // LOGOUT
-app.post('/api/auth/logout', authMiddleware, (req, res) => {
+app.post('/api/auth/logout', authMiddleware, async (req, res) => {
   return handleEncryptedRequest(req, res, null, (data) => 
     laravelAPI.post('/auth/logout', data, {
       headers: { 'Authorization': `Bearer ${req.session.auth_token}` }
     })
   ), () => {
     req.session.auth_token = '';
-      console.log('Token is removed to Express session.');
+    console.log('Token is removed to Express session.');
   };
 });
 
-// REGISTER START
-app.post('/api/auth/register/start', (req, res) => {
-  return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/register/send', data));
+// REGISTER
+app.post('/api/auth/register', async (req: Request, res: Response) => {
+  return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/register', data));
+});
+
+// REGISTER SEND
+app.post('/api/auth/register/send', upload.any(), (req, res) => {
+  try {
+    const form = new FormData();
+    if (req.body && typeof req.body === 'object') {
+      Object.entries(req.body).forEach(([key, value]) => {
+        form.append(key, value as string);
+      });
+    }
+
+    if (req.files && Array.isArray(req.files)) {
+      req.files.forEach((file: Express.Multer.File) => {
+        form.append(file.fieldname, file.buffer, file.originalname);
+      });
+    }
+
+    if (form.getBuffer().length === 0) {
+      return res.status(400).json({ message: 'Request body tidak boleh kosong.' });
+    }
+
+    return handleEncryptedRequest(req, res, form, (data) => laravelAPI.post('/auth/register/send', data, {
+      headers: { ...form.getHeaders() },
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+    }), () => {}, true);
+  } catch (error: any) {
+    console.error('Error creating report:', error.response?.data || error.message);
+    return res.status(error.response?.status || 500).json(error.response?.data);
+  }
 });
 
 // REGISTER VERIFY
 app.post('/api/auth/register/verify', (req, res) => {
   return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/register/verify/send', data));
-});
-
-// REGISTER
-app.post('/api/auth/register', async (req: Request, res: Response) => {
-  try {
-    const decodedData = req.body.d ? decodePayloadFromReact<any>(req.body.d) : req.body;
-    const encryptedData = { d: encodePayloadToLaravel(decodedData) };
-
-    const laravelResponse = await laravelAPI.post('/auth/register', encryptedData);
-    
-    const parsedResponse = processResponseData<any>(laravelResponse);
-    if (parsedResponse?.data?.token) {
-      req.session.auth_token = parsedResponse.data.token;
-    }
-
-    const encryptedResponse = encodePayloadToReact(laravelResponse.data);
-    return res.status(laravelResponse.status).json({ d: encryptedResponse });
-  } catch (error: any) {
-    if (error.response) {
-      const encryptedError = encodePayloadToReact(error.response.data);
-      return res.status(error.response.status).json({ d: encryptedError });
-    } else {
-      const encryptedError = encodePayloadToReact({ success: false, message: 'Internal Server Error' });
-      return res.status(500).json({ d: encryptedError });
-    }
-  }
 });
 
 // PASSWORD RESET
@@ -482,13 +487,18 @@ app.post('/api/auth/password-reset/confirm', authMiddleware, (req, res) => {
 // PROTECTED ENDPOINTS (Auth Required)
 // ================================
 
-const createAuthHandler = (url: string) => {
-  return (req: Request, res: Response) => {
-    const finalUrl = url.replace(/:([a-zA-Z0-9_]+)/g, (_, paramName) => req.params[paramName]);
+const createAuthHandler = (urlTemplate: string) => {
+  return async (req: Request, res: Response) => {
+    let finalUrl = urlTemplate;
+
+    for (const key in req.params) {
+      finalUrl = finalUrl.replace(`:${key}`, req.params[key]);
+    }
+
     return handleEncryptedRequest(req, res, null, (data) => 
       laravelAPI.post(finalUrl, data, {
         headers: { 'Authorization': `Bearer ${req.session.auth_token}` }
-      }), () => {}, true,
+      }), () => {}, true
     );
   };
 };
@@ -509,9 +519,11 @@ app.post('/api/admin/profile/verify-phone-change', authMiddleware, createAuthHan
 app.post('/api/admin/profile/deactivate-self', authMiddleware, createAuthHandler('/admin/profile/deactivate-self'));
 app.post('/api/admin/manage', authMiddleware, createAuthHandler('/admin/manage'));
 app.post('/api/admin/manage/:id', authMiddleware, createAuthHandler('/admin/manage/:id'));
-app.post('/api/admin/manage/:id', authMiddleware, createAuthHandler('/admin/manage/:id'));
+app.post('/api/admin/manage/:id/activity', authMiddleware, createAuthHandler('/admin/manage/:id/activity'));
 app.post('/api/admin/manage/:id/toggle-status', authMiddleware, createAuthHandler('/admin/manage/:id/toggle-status'));
 app.post('/api/admin/manage/:id/reset-password', authMiddleware, createAuthHandler('/admin/manage/:id/reset-password'));
+app.post('/api/admin/manage/:id/accept', authMiddleware, createAuthHandler('/admin/manage/:id/accept'));
+app.post('/api/admin/manage/:id/reject', authMiddleware, createAuthHandler('/admin/manage/:id/reject'));
 app.post('/api/admin/performance', authMiddleware, createAuthHandler('/admin/performance'));
 app.post('/api/admin/performance/export', authMiddleware, createAuthHandler('/admin/performance/export'));
 
