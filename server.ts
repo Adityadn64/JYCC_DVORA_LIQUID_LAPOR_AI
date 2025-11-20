@@ -46,7 +46,7 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 app.use(limiter);
 
 // ================================
@@ -240,7 +240,7 @@ const handleEncryptedRequest = async (
   reqData: any = null,
   laravelRequest: (data: any) => Promise<AxiosResponse<any>>,
   handleRequest: (parsedResponse: any) => void = () => {},
-  debug: boolean = false,
+  debug: boolean = true,
 ) => {
   try {
     if (debug) {
@@ -265,6 +265,19 @@ const handleEncryptedRequest = async (
     if (debug) {
       console.log('Laravel response status:', laravelResponse.status);
       console.log('Laravel response data:', laravelResponse.data);
+      console.log('Laravel response headers:', laravelResponse.headers);
+    }
+
+    const contentType = laravelResponse.headers['content-type'];
+    
+    if (contentType && (contentType.startsWith('image/') || contentType.startsWith('video/'))) {
+        if (debug) {
+            console.log(`Detected file response (${contentType}). Bypassing encryption/decryption.`);
+        }
+
+        res.set(laravelResponse.headers);
+        
+        return res.status(laravelResponse.status).send(laravelResponse.data);
     }
 
     const decodedResponse = processResponseData<any>(laravelResponse);
@@ -309,15 +322,15 @@ const handleEncryptedRequest = async (
 // AUTH MIDDLEWARE
 // ================================
 
-const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+const authMiddleware = (req: Request, res: Response, next: NextFunction, isOptional: boolean = false) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
-  if (!token) {
+  if (!token && !isOptional) {
     return res.status(401).json({ message: 'Unauthorized: No token provided.' });
   }
 
-  req.session.auth_token = token;
+  if (token) req.session.auth_token = token;
   next();
 };
 
@@ -360,8 +373,17 @@ app.post('/api/regencies', (req, res) => {
   return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/regencies', data));
 });
 
+app.post(
+  '/api/get-file', (req: Request, res: Response, next: NextFunction) =>
+  authMiddleware(req, res, next, true), async (req: Request, res: Response) =>
+  handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/get-file', data,{
+      responseType: 'arraybuffer' 
+    }
+  )
+));
+
 app.post('/api/home', async (req, res) => {
-  return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/home', data), () => {}, true);
+  return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/home', data), );
 });
 
 app.post('/api/report/create', upload.any(), async (req: Request, res: Response) => {
@@ -387,7 +409,7 @@ app.post('/api/report/create', upload.any(), async (req: Request, res: Response)
       headers: { ...form.getHeaders() },
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
-    }), () => {}, true);
+    }), );
   } catch (error: any) {
     console.error('Error creating report:', error.response?.data || error.message);
     return res.status(error.response?.status || 500).json(error.response?.data);
@@ -395,12 +417,12 @@ app.post('/api/report/create', upload.any(), async (req: Request, res: Response)
 });
 
 app.post('/api/reports/track', (req, res) => {
-    return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/reports/track', data));
+    return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/reports/track', data), );
 });
 
 app.post('/api/report/:id/track', (req, res) => {
     const { id } = req.params;
-    return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post(`/report/${id}/track`, data));
+    return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post(`/report/${id}/track`, data), );
 });
 
 // LOGIN
@@ -455,7 +477,7 @@ app.post('/api/auth/register/send', upload.any(), (req, res) => {
       headers: { ...form.getHeaders() },
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
-    }), () => {}, true);
+    }), );
   } catch (error: any) {
     console.error('Error creating report:', error.response?.data || error.message);
     return res.status(error.response?.status || 500).json(error.response?.data);
@@ -464,24 +486,20 @@ app.post('/api/auth/register/send', upload.any(), (req, res) => {
 
 // REGISTER VERIFY
 app.post('/api/auth/register/verify', (req, res) => {
-  return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/register/verify/send', data));
+  return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/register/verify', data), );
 });
 
 // PASSWORD RESET
 app.post('/api/auth/password-reset/request', (req, res) => {
-  return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/forgot-password', data));
+  return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/password-reset/request', data), );
 });
 
 app.post('/api/auth/password-reset/verify', (req, res) => {
-    return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/reset-password', data));
+    return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/password-reset/verify', data), );
 });
 
 app.post('/api/auth/password-reset/confirm', authMiddleware, (req, res) => {
-  return handleEncryptedRequest(req, res, null, (data) => 
-    laravelAPI.post('/reset-password', data, {
-      headers: { 'Authorization': `Bearer ${req.session.auth_token}` }
-    })
-  );
+    return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/password-reset/confirm', data), );
 });
 
 // ================================
@@ -499,7 +517,7 @@ const createAuthHandler = (urlTemplate: string) => {
     return handleEncryptedRequest(req, res, null, (data) => 
       laravelAPI.post(finalUrl, data, {
         headers: { 'Authorization': `Bearer ${req.session.auth_token}` }
-      }), () => {}, true
+      }), 
     );
   };
 };
@@ -618,7 +636,7 @@ app.listen(PORT, async () => {
 
   console.log(`
 ╔═══════════════════════════════════════╗
-║     EXPRESS API GATEWAY RUNNING        ║
+║     EXPRESS API GATEWAY RUNNING       ║
 ╚═══════════════════════════════════════╝
 
 🚀 Server running on: http://localhost:${PORT}
