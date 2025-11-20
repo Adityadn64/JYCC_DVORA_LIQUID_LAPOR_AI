@@ -12,6 +12,8 @@ use App\Enums\PriorityEnum;
 use App\Enums\RegencyEnum;
 use App\Enums\ReportCategoryEnum;
 use App\Enums\ServiceCodeEnum;
+use App\Models\ReportMediaUser;
+use App\Models\ReportMediaWork;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +24,6 @@ class Report extends Model
 {
     use HasFactory, SoftDeletes;
 
-    // ... (properti $table, $fillable, $casts tidak berubah) ...
     protected $table = 'reports';
 
     protected $fillable = [
@@ -30,7 +31,7 @@ class Report extends Model
         'reporter_contact', 'title', 'description', 'address', 'city', 
         'district', 'category', 'priority', 'statuses', 
         'review_timestamps', 'reviewing_admin_ids', 'review_notes', 
-        'agreements_history', 'disagreements_history'
+        'status_change_history'
     ];
 
     protected $casts = [
@@ -43,14 +44,10 @@ class Report extends Model
         'review_timestamps' => 'array',
         'reviewing_admin_ids' => 'array',
         'review_notes' => 'array',
-        'agreements_history' => 'array',
-        'disagreements_history' => 'array',
+        'status_change_history' => 'array',
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-     */
-    protected $appends = ['city_name', 'district_name'];
+    protected $appends = ['city_name', 'district_name', 'media', 'contributors'];
 
     protected function cityName(): Attribute
     {
@@ -71,9 +68,6 @@ class Report extends Model
         );
     }
 
-    /**
-     * Dapatkan nama asli dari Kecamatan (district) langsung dari database.
-     */
     protected function districtName(): Attribute
     {
         return Attribute::make(
@@ -90,7 +84,6 @@ class Report extends Model
         );
     }
 
-    // ... (Relasi Model Anda tidak berubah) ...
     public function serviceProfile(): BelongsTo
     {
         return $this->belongsTo(ServiceProfile::class, 'service_id');
@@ -101,8 +94,41 @@ class Report extends Model
         return $this->belongsTo(Administrator::class, 'assignee_admin_id');
     }
 
-    public function media(): HasOne
+    public function userMedia(): HasOne
     {
-        return $this->hasOne(ReportMedia::class, 'report_id');
+        return $this->hasOne(ReportMediaUser::class, 'report_id');
+    }
+
+    public function workMedia(): HasOne
+    {
+        return $this->hasOne(ReportMediaWork::class, 'report_id');
+    }
+
+    public function getMediaAttribute(): array
+    {
+        return [
+            'user' => $this->userMedia ?? [],
+            'work' => $this->workMedia ?? [],
+        ];
+    }
+
+    public function getContributorsAttribute()
+    {
+        $ids = $this->reviewing_admin_ids;
+
+        if (empty($ids)) {
+            return [];
+        }
+
+        $admins = Administrator::whereIn('id', $ids)->get()->keyBy('id');
+
+        return collect($ids)->map(function ($id) use ($admins) {
+            // Jika ID adalah -1, kembalikan null
+            if ($id == -1) {
+                return null;
+            }
+
+            return $admins->get($id);
+        })->all();
     }
 }

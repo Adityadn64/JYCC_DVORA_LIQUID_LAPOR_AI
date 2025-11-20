@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('phone')->unique();
             $table->foreign('phone')->references('phone')->on('administrators')->onDelete('cascade');
-            $table->string('otp_code');
+            $table->string('token');
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('expires_at');
         });

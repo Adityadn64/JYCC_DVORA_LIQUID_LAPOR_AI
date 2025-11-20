@@ -17,8 +17,8 @@
         @csrf
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <label for="email_otp">Kode OTP Email</label>
-                <input type="text" name="email_otp" id="email_otp" required class="mt-1 block w-full text-center tracking-[.5em]">
+                <label for="email_token">Kode Token Email</label>
+                <input type="text" name="email_token" id="email_token" required class="mt-1 block w-full text-center tracking-[.5em]">
             </div>
             <div>
                 <label for="phone_otp">Kode OTP Telepon</label>

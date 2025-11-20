@@ -12,7 +12,7 @@ use App\Enums\RoleAdministratorEnum;
 use App\Enums\ReportCategoryEnum;
 use App\Enums\PriorityEnum;
 use App\Enums\ReportStatusEnum;
-use App\Traits\ApiResponseTrait;
+use App\Traits\Controller\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Validator;

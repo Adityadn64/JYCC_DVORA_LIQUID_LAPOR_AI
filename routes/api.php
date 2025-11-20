@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Data\RegionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StorageController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -25,12 +26,11 @@ Route::prefix('auth')->name('auth.')->group(function () {
     
         Route::post('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
         Route::post('/register/send', [RegisterController::class, 'startRegistration'])->name('register.send');
-        Route::post('/register/verify', [RegisterController::class, 'showVerificationForm'])->name('register.verify.form');
-        Route::post('/register/verify/send', [RegisterController::class, 'completeRegistration'])->name('register.complete');
+        Route::post('/register/verify', [RegisterController::class, 'completeRegistration'])->name('register.complete');
     
-        Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
-        Route::post('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
-        Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('password.update');
+        Route::post('/password-reset/request', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
+        Route::post('/password-reset/verify', [ForgotPasswordController::class, 'verifyToken'])->name('password.reset');
+        Route::post('/password-reset/confirm', [ForgotPasswordController::class, 'resetPassword'])->name('password.update');
     });
     
     Route::middleware(['auth:sanctum'])->group(function () {
@@ -86,4 +86,5 @@ Route::middleware(['auth:sanctum', 'admin.status'])->prefix('admin')->name('admi
 });
 
 Route::post('/regencies', [RegionController::class, 'getFormattedRegions'])->name('regions.formatted');
+Route::post('/get-file', [StorageController::class, 'getFile'])->name('storage.read.file');
 // });

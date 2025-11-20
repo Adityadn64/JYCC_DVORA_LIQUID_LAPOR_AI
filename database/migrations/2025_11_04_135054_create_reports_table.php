@@ -29,8 +29,7 @@ return new class extends Migration
             $table->jsonb('review_timestamps')->nullable();
             $table->jsonb('reviewing_admin_ids')->nullable();
             $table->jsonb('review_notes')->nullable();
-            $table->jsonb('agreements_history')->nullable();
-            $table->jsonb('disagreements_history')->nullable();
+            $table->jsonb('status_change_history')->nullable();
         });
     }
 

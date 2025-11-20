@@ -8,7 +8,7 @@ use App\Models\Administrator;
 use App\Models\ServiceProfile;
 use App\Enums\RoleAdministratorEnum;
 use App\Enums\ReportStatusEnum;
-use App\Traits\ApiResponseTrait;
+use App\Traits\Controller\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

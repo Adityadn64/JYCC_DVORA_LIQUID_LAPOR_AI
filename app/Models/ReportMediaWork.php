@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class ReportMediaWork extends Model
+{
+    use HasFactory;
+
+    protected $table = 'report_media_work';
+
+    public $timestamps = false;
+    protected $fillable = ['report_id', 'files_path', 'files_type', 'created_at'];
+
+    protected $casts = [
+        'files_path' => 'array',
+        'files_type' => 'array',
+    ];
+
+    public function report(): BelongsTo
+    {
+        return $this->belongsTo(Report::class, 'report_id');
+    }
+}

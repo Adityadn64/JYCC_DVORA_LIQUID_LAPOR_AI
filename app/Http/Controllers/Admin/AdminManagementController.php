@@ -7,7 +7,7 @@ use App\Models\Administrator;
 use App\Models\ServiceProfile;
 use App\Enums\RoleAdministratorEnum;
 use App\Enums\AdminStatusEnum;
-use App\Traits\ApiResponseTrait;
+use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;

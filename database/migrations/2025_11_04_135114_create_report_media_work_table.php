@@ -8,17 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('phone_registrations', function (Blueprint $table) {
+        Schema::create('report_media_work', function (Blueprint $table) {
             $table->id();
-            $table->string('phone')->unique();
-            $table->string('token');
+            $table->foreignId('report_id')->constrained('reports')->onDelete('cascade');
+            $table->jsonb('files_path');
+            $table->jsonb('files_type')->nullable();
             $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('expires_at');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('phone_registrations');
+        Schema::dropIfExists('report_media_work');
     }
 };

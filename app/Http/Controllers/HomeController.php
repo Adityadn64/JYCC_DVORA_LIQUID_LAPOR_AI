@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ReportStatusEnum;
 use App\Models\Report;
-use App\Traits\ApiResponseTrait;
+use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;

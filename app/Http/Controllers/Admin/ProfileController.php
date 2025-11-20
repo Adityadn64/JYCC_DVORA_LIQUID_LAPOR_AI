@@ -9,7 +9,7 @@ use App\Enums\ReportStatusEnum;
 use App\Enums\RoleAdministratorEnum;
 use App\Http\Controllers\Auth\LoginController;
 use App\Rules\CurrentPassword;
-use App\Traits\ApiResponseTrait;
+use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -44,9 +44,12 @@ class ProfileController extends Controller
         //     'activity' => $activity,
         // ]);
 
+        if ($admin->role === RoleAdministratorEnum::BaseAdmin) {
+            $admin->activity = $activity;
+        }
+
         return $this->successResponse([
             'admin' => $admin,
-            'activity' => $activity,
         ]);
     }
 
@@ -127,32 +130,6 @@ class ProfileController extends Controller
         ];
     }
 
-    /**
-     * POINT 2: Memperbarui info dasar (NIP).
-     * Nama lengkap dipisah karena mungkin perlu validasi berbeda.
-     */
-    public function updateInfo(Request $request)
-    {
-        /** @var Request $request */
-        $request = $this->decodeRequest($request);
-
-        $admin = Auth::user();
-
-        Validator::make($request->all(), [
-            'full_name' => 'required|string|max:255',
-            'nip' => 'required|string|max:50|unique:administrators,nip,' . $admin->id,
-        ])->validate();
-
-        $admin->update($request->all());
-
-        // return back()->with('success_info', 'Informasi akun berhasil diperbarui.');
-
-        return $this->successResponse([], 'Informasi akun berhasil diperbarui.');
-    }
-
-    /**
-     * POINT 2: Memperbarui nama lengkap dengan password.
-     */
     public function updateFullName(Request $request)
     {
         /** @var Request $request */
@@ -160,12 +137,18 @@ class ProfileController extends Controller
 
         $admin = Auth::user();
 
-        Validator::make($request->all(), [
+        $this->validateRequest($request, [
             'full_name' => 'required|string|max:255',
-        ])->validate();
+        ], [
+            'full_name.required' => 'Nama lengkap wajib diisi.',
+            'full_name.string' => 'Nama lengkap harus berupa teks.',
+            'full_name.max' => 'Nama lengkap tidak boleh lebih dari 255 karakter.',
+        ]);
 
         if (!Hash::check($request->password, $admin->password_hash)) {
-            return $this->errorResponse("Invalid credentials.", 422);
+            return $this->errorResponse("Invalid credentials.", 422, [
+                "password" => "Password yang anda masukkan salah"
+            ]);
         }
 
         $admin->update(['full_name' => $request->full_name]);
@@ -183,12 +166,20 @@ class ProfileController extends Controller
 
         $admin = Auth::user();
 
-        Validator::make($request->all(), [
+        $this->validateRequest($request, [
             'nip' => 'required|string|min:10|max:100|unique:administrators,nip,' . $admin->id,
-        ])->validate();
+        ], [
+            'nip.required' => 'NIP wajib diisi.',
+            'nip.string' => 'NIP harus berupa teks.',
+            'nip.min' => 'NIP minimal harus 10 karakter.',
+            'nip.max' => 'NIP tidak boleh lebih dari 100 karakter.',
+            'nip.unique' => 'NIP ini sudah digunakan oleh akun lain.',
+        ]);
 
         if (!Hash::check($request->password, $admin->password_hash)) {
-            return $this->errorResponse("Invalid credentials.", 422);
+            return $this->errorResponse("Invalid credentials.", 422, [
+                "password" => "Password yang anda masukkan salah"
+            ]);
         }
 
         $admin->update(['nip' => $request->nip]);
@@ -201,8 +192,13 @@ class ProfileController extends Controller
      */
     public function updateProfilePicture(Request $request)
     {
-        $request->validate([
-            'profile_picture' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        $this->validateRequest($request, [
+            'profile_picture' => 'required|image|mimes:jpeg,png,jpg|max:32768',
+        ], [
+            'profile_picture.required' => 'File foto profil wajib diunggah.',
+            'profile_picture.image' => 'File yang diunggah harus berupa gambar.',
+            'profile_picture.mimes' => 'Format foto profil harus jpeg, png, atau jpg.',
+            'profile_picture.max' => 'Ukuran foto profil tidak boleh lebih dari 2MB.',
         ]);
 
         $admin = Auth::user();
@@ -225,8 +221,13 @@ class ProfileController extends Controller
      */
     public function updateKtaScan(Request $request)
     {
-        $request->validate([
+        $this->validateRequest($request, [
             'kta_scan' => 'required|file|mimes:pdf,jpg,png|max:5120', // 5MB
+        ], [
+            'kta_scan.required' => 'File scan KTA wajib diunggah.',
+            'kta_scan.file' => 'Scan KTA harus berupa file.',
+            'kta_scan.mimes' => 'Format file harus pdf, jpg, atau png.',
+            'kta_scan.max' => 'Ukuran file tidak boleh lebih dari 5MB.',
         ]);
 
         $admin = Auth::user();
@@ -254,13 +255,19 @@ class ProfileController extends Controller
 
         $admin = Auth::user();
 
-        Validator::make($request->all(), [
-            'password' => 'required|string|min:8|confirmed',
+        $this->validateRequest($request, [
+            'password' => 'required|string|min:8',
             'logout_other_devices' => 'nullable|boolean',
-        ])->validate();
+        ], [
+            'password.required' => 'Password baru wajib diisi.',
+            'password.string' => 'Password harus berupa teks.',
+            'password.min' => 'Password minimal harus 8 karakter.',
+        ]);
 
         if (!Hash::check($request->current_password, $admin->password_hash)) {
-            return $this->errorResponse("Invalid credentials.", 422);
+            return $this->errorResponse("Invalid credentials.", 422, [
+                "password" => "Password yang anda masukkan salah"
+            ]);
         }
 
         // Update password
@@ -270,7 +277,7 @@ class ProfileController extends Controller
 
         // Logout dari sesi lain jika dicentang
         if ($request->logout_other_devices ?? false) {
-            Auth::guard('administrators')->logoutOtherDevices($request->password);
+            // Auth::logoutOtherDevices($request->password);
         }
 
         // return back()->with('success_password', 'Password berhasil diubah.');
@@ -287,12 +294,20 @@ class ProfileController extends Controller
         $request = $this->decodeRequest($request);
 
         $admin = Auth::user();
-        Validator::make($request->all(), [
+
+        $this->validateRequest($request, [
             'new_email' => 'required|email|max:255|unique:administrators,email',
-        ])->validate();
+        ], [
+            'new_email.required' => 'Alamat email baru wajib diisi.',
+            'new_email.email' => 'Format alamat email tidak valid.',
+            'new_email.max' => 'Alamat email tidak boleh lebih dari 255 karakter.',
+            'new_email.unique' => 'Alamat email ini sudah terdaftar.',
+        ]);
 
         if (!Hash::check($request->password, $admin->password_hash)) {
-            return $this->errorResponse("Invalid credentials.", 422);
+            return $this->errorResponse("Invalid credentials.", 422, [
+                "password" => "Password yang anda masukkan salah"
+            ]);
         }
 
         $newEmail = $request->new_email;
@@ -326,9 +341,14 @@ class ProfileController extends Controller
         $request = $this->decodeRequest($request);
 
         $admin = Auth::user();
-        Validator::make($request->all(), [
+        
+        $this->validateRequest($request, [
             'otp' => 'required|numeric|digits:6',
-        ])->validate();
+        ], [
+            'otp.required' => 'Kode OTP wajib diisi.',
+            'otp.numeric' => 'Kode OTP harus berupa angka.',
+            'otp.digits' => 'Kode OTP harus terdiri dari 6 digit.',
+        ]);
 
         // Cek data session
         $sessionOtp = Session::get('profile_change_otp');
@@ -377,12 +397,20 @@ class ProfileController extends Controller
         $request = $this->decodeRequest($request);
 
         $admin = Auth::user();
-        Validator::make($request->all(), [
+
+        $this->validateRequest($request, [
             'new_phone' => 'required|string|max:20|unique:administrators,phone',
-        ])->validate();
+        ], [
+            'new_phone.required' => 'Nomor telepon baru wajib diisi.',
+            'new_phone.string' => 'Nomor telepon harus berupa teks.',
+            'new_phone.max' => 'Nomor telepon tidak boleh lebih dari 20 karakter.',
+            'new_phone.unique' => 'Nomor telepon ini sudah terdaftar.',
+        ]);
 
         if (!Hash::check($request->password, $admin->password_hash)) {
-            return $this->errorResponse("Invalid credentials.", 422);
+            return $this->errorResponse("Invalid credentials.", 422, [
+                "password" => "Password yang anda masukkan salah"
+            ]);
         }
 
         $newPhone = $request->new_phone;
@@ -410,9 +438,14 @@ class ProfileController extends Controller
         $request = $this->decodeRequest($request);
 
         $admin = Auth::user();
-        Validator::make($request->all(), [
+
+        $this->validateRequest($request, [
             'otp_phone' => 'required|numeric|digits:6',
-        ])->validate();
+        ], [
+            'otp_phone.required' => 'Kode OTP wajib diisi.',
+            'otp_phone.numeric' => 'Kode OTP harus berupa angka.',
+            'otp_phone.digits' => 'Kode OTP harus terdiri dari 6 digit.',
+        ]);
 
         // Ambil dari key session telepon
         $sessionOtp = Session::get('profile_change_phone_otp');
@@ -457,7 +490,7 @@ class ProfileController extends Controller
         $admin = Auth::user();
 
         if ($admin->role === RoleAdministratorEnum::BaseAdmin) {
-            $admin->update(['status'=> AdminStatusEnum::Pending]);
+            $admin->update(['status'=> AdminStatusEnum::Suspended]);
             return $this->successResponse([],'Akun Anda telah berhasil dinonaktifkan.');
         }
 

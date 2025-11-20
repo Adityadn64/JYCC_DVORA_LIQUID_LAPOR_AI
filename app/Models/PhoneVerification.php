@@ -10,7 +10,7 @@ class PhoneVerification extends Model
     public $incrementing = false;
     public $timestamps = false;
 
-    protected $fillable = ['phone', 'otp_code', 'created_at', 'expires_at'];
+    protected $fillable = ['phone', 'token', 'created_at', 'expires_at'];
 
     protected $casts = ['expires_at' => 'datetime'];
 }

@@ -1,0 +1,577 @@
+--- Daftar Path API yang Diuji untuk CORS ---
+/
+api/admin/analytics
+api/admin/analytics/export-reports
+api/admin/dashboard
+api/admin/manage
+api/admin/manage/{admin}/accept
+api/admin/manage/{admin}/activity
+api/admin/manage/{admin}/reject
+api/admin/manage/{admin}/send-reset
+api/admin/manage/{admin}/toggle-status
+api/admin/performance
+api/admin/profile
+api/admin/profile/deactivate-self
+api/admin/profile/export-profile
+api/admin/profile/request-email-change
+api/admin/profile/request-phone-change
+api/admin/profile/update-full-name
+api/admin/profile/update-info
+api/admin/profile/update-kta
+api/admin/profile/update-nip
+api/admin/profile/update-password
+api/admin/profile/update-picture
+api/admin/profile/verify-email-change
+api/admin/profile/verify-phone-change
+api/auth/forgot-password
+api/auth/login
+api/auth/logout
+api/auth/register
+api/auth/register/send
+api/auth/register/verify
+api/auth/register/verify/send
+api/auth/reset-password
+api/auth/reset-password/{token}
+api/home
+api/regencies
+api/report/create
+api/report/{report}/track
+api/reports/track
+sanctum/csrf-cookie
+up
+
+--- Memulai Tes CORS Menyeluruh ---
+
+Memulai Pengecekan CORS Menyeluruh untuk https://lalim.vercel.app
+
+--- (1/40) Menguji Path: / ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/
+  -> Method: GET
+  -> ACAO Received: None
+  [X] Tes Penerimaan GAGAL
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/
+  -> Method: GET
+  -> ACAO Received: None
+  [✓] Tes Penolakan SUKSES
+[XX] STATUS PATH: GAGAL
+
+--- (2/40) Menguji Path: api/admin/analytics ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/analytics
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/analytics
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (3/40) Menguji Path: api/admin/analytics/export-reports ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/analytics/export-reports
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/analytics/export-reports
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (4/40) Menguji Path: api/admin/dashboard ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/dashboard
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/dashboard
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (5/40) Menguji Path: api/admin/manage ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/manage
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/manage
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (6/40) Menguji Path: api/admin/manage/1/accept ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/accept
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/accept
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (7/40) Menguji Path: api/admin/manage/1/activity ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/activity
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/activity
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (8/40) Menguji Path: api/admin/manage/1/reject ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/reject
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/reject
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (9/40) Menguji Path: api/admin/manage/1/send-reset ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/send-reset
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/send-reset
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (10/40) Menguji Path: api/admin/manage/1/toggle-status ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/toggle-status
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/manage/1/toggle-status
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (11/40) Menguji Path: api/admin/performance ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/performance
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/performance
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (12/40) Menguji Path: api/admin/profile ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (13/40) Menguji Path: api/admin/profile/deactivate-self ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/deactivate-self
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/deactivate-self
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (14/40) Menguji Path: api/admin/profile/export-profile ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/export-profile
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/export-profile
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (15/40) Menguji Path: api/admin/profile/request-email-change ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/request-email-change
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/request-email-change
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (16/40) Menguji Path: api/admin/profile/request-phone-change ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/request-phone-change
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/request-phone-change
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (17/40) Menguji Path: api/admin/profile/update-full-name ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-full-name
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-full-name
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (18/40) Menguji Path: api/admin/profile/update-info ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-info
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-info
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (19/40) Menguji Path: api/admin/profile/update-kta ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-kta
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-kta
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (20/40) Menguji Path: api/admin/profile/update-nip ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-nip
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-nip
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (21/40) Menguji Path: api/admin/profile/update-password ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-password
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-password
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (22/40) Menguji Path: api/admin/profile/update-picture ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-picture
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/update-picture
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (23/40) Menguji Path: api/admin/profile/verify-email-change ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/verify-email-change
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/verify-email-change
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (24/40) Menguji Path: api/admin/profile/verify-phone-change ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/admin/profile/verify-phone-change
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/admin/profile/verify-phone-change
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (25/40) Menguji Path: api/auth/forgot-password ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/auth/forgot-password
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/auth/forgot-password
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (26/40) Menguji Path: api/auth/login ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/auth/login
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/auth/login
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (27/40) Menguji Path: api/auth/logout ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/auth/logout
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/auth/logout
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (28/40) Menguji Path: api/auth/register ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/auth/register
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/auth/register
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (29/40) Menguji Path: api/auth/register/send ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/auth/register/send
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/auth/register/send
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (30/40) Menguji Path: api/auth/register/verify ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/auth/register/verify
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/auth/register/verify
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (31/40) Menguji Path: api/auth/register/verify/send ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/auth/register/verify/send
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/auth/register/verify/send
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (32/40) Menguji Path: api/auth/reset-password ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/auth/reset-password
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/auth/reset-password
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (33/40) Menguji Path: api/auth/reset-password/1 ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/auth/reset-password/1
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/auth/reset-password/1
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (34/40) Menguji Path: api/home ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/home
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/home
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (35/40) Menguji Path: api/regencies ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/regencies
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/regencies
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (36/40) Menguji Path: api/report/create ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/report/create
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/report/create
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (37/40) Menguji Path: api/report/1/track ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/report/1/track
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/report/1/track
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (38/40) Menguji Path: api/reports/track ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/api/reports/track
+  -> Method: POST
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/api/reports/track
+  -> Method: POST
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (39/40) Menguji Path: sanctum/csrf-cookie ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/sanctum/csrf-cookie
+  -> Method: GET
+  -> ACAO Received: http://localhost:3001
+  [✓] Tes Penerimaan SUKSES
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/sanctum/csrf-cookie
+  -> Method: GET
+  -> ACAO Received: https://lalex.vercel.app
+  [✓] Tes Penolakan SUKSES
+[✓✓] STATUS PATH: LULUS
+
+--- (40/40) Menguji Path: up ---
+  -> Origin Sent: http://localhost:3001
+  -> URL: https://lalim.vercel.app/up
+  -> Method: GET
+  -> ACAO Received: None
+  [X] Tes Penerimaan GAGAL
+  -> Origin Sent: https://lalex.vercel.app
+  -> URL: https://lalim.vercel.app/up
+  -> Method: GET
+  -> ACAO Received: None
+  [✓] Tes Penolakan SUKSES
+[XX] STATUS PATH: GAGAL
+
+
+
+===================================
+      LAPORAN AKHIR TES CORS
+===================================
+Total Path Diuji: 40
+Path Lulus      : 38
+Path Gagal      : 2
+===================================
+
+PERINGATAN: Ditemukan 2 path dengan konfigurasi CORS yang salah. Silakan periksa log di atas.

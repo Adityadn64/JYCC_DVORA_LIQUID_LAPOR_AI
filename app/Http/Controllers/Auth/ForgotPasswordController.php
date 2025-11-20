@@ -4,78 +4,185 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Administrator;
-use App\Traits\ApiResponseTrait;
+use App\Models\EmailVerification;
+use App\Models\PhoneVerification;
+use App\Mail\PasswordResetMail; // Kita akan buat Mailable ini
+use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class ForgotPasswordController extends Controller
 {
     use ApiResponseTrait;
 
-    public function sendResetLinkEmail(Request $request)
+    public function sendResetLink(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'nip' => 'required|string',
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
+        $this->validateRequest($request, [
+            'email' => 'nullable|required_without:phone|string|email|max:255|exists:administrators,email',
+            'phone' => 'nullable|required_without:email|string|max:255|exists:administrators,phone',
+            'nip'   => 'required|string|exists:administrators,nip',
+        ], [
+            'email.exists' => 'Email tidak terdaftar.',
+            'phone.exists' => 'Nomor telepon tidak terdaftar.',
+            'nip.exists' => 'NIP tidak terdaftar.',
         ]);
 
-        $admin = Administrator::where('email', $request->email)
-                               ->where('nip', $request->nip)
-                               ->first();
-        
+        $admin = Administrator::where('nip', $request->nip)
+            ->when($request->email, function ($query) use ($request) {
+                return $query->where('email', $request->email);
+            })
+            ->when($request->phone, function ($query) use ($request) {
+                return $query->where('phone', $request->phone);
+            })
+            ->first();
+
         if (!$admin) {
-            return back()->withErrors(['email' => 'Email atau NIP tidak cocok.']);
+            return $this->errorResponse("Kredensial tidak valid. Pastikan NIP cocok dengan email/telepon yang terdaftar.", 401);
         }
 
-        $status = Password::broker('administrators')->sendResetLink(
-            $request->only('email')
-        );
+        $token = $request->has('email') && $admin->email
+            ? Str::random(10)
+            : random_int(100000, 999999);
 
-        // return $status == Password::RESET_LINK_SENT
-        //             ? back()->with('status', __($status))
-        //             : back()->withErrors(['email' => __($status)]);
+        if ($request->has('email') && $admin->email) {
+            EmailVerification::updateOrCreate(
+                ['email' => $admin->email],
+                [
+                    'token'      => $token,
+                    'created_at' => Carbon::now(),
+                    'expires_at' => Carbon::now()->addMinutes(15),
+                ]
+            );
 
-        return $this->successResponse([
-            'status' => __($status),
-        ]);
+            // try {
+                Mail::to($admin->email)->send(new PasswordResetMail($token));
+            // } catch (\Exception $e) {
+            //     return $this->errorResponse('Gagal mengirim email reset password. Silakan coba lagi.', 500);
+            // }
+
+            return $this->successResponse(null, 'Token telah dikirim ke email Anda.');
+        }
+
+        if ($request->has('phone') && $admin->phone) {
+            PhoneVerification::updateOrCreate(
+                ['phone' => $admin->phone],
+                [
+                    'token'   => $token,
+                    'created_at' => Carbon::now(),
+                    'expires_at' => Carbon::now()->addMinutes(15),
+                ]
+            );
+
+            // try {
+                Mail::to($admin->email)->send(new PasswordResetMail($token));
+            // } catch (\Exception $e) {
+            //     return $this->errorResponse('Gagal mengirim email reset password. Silakan coba lagi.', 500);
+            // }
+
+            return $this->successResponse(null, 'Kode OTP telah dikirim ke nomor telepon Anda.');
+        }
+
+        return $this->errorResponse('Tidak dapat memproses permintaan.', 422);
     }
 
-    public function showResetForm(Request $request, $token = null)
+    public function verifyToken(Request $request)
     {
-        // return view('auth.passwords.reset')->with(
-        //     ['token' => $token, 'email' => $request->email]
-        // );
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
 
-        return $this->successResponse([
-            'token' => $token,
-            'email' => $request->email,
+        $this->validateRequest($request, [
+            'email' => 'nullable|required_without:phone|string|email|max:255|exists:administrators,email',
+            'phone' => 'nullable|required_without:email|string|max:255|exists:administrators,phone',
+            'token' => 'required|string',
+        ], [
+            'email.required_without' => 'Email atau nomor telepon wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.exists' => 'Email yang Anda masukkan tidak terdaftar.',
+            'phone.required_without' => 'Email atau nomor telepon wajib diisi.',
+            'phone.exists' => 'Nomor telepon yang Anda masukkan tidak terdaftar.',
+            'token.required' => 'Token verifikasi wajib diisi.',
         ]);
+
+        $verification = null;
+
+        if ($request->has('email') && $request->email) {
+            $verification = EmailVerification::where('email', $request->email)
+                ->where('token', $request->token)
+                ->first();
+        } 
+        // Cek verifikasi telepon
+        elseif ($request->has('phone') && $request->phone) {
+            $verification = PhoneVerification::where('phone', $request->phone)
+                ->where('token', $request->token)
+                ->first();
+        }
+
+        if (!$verification) {
+            return $this->errorResponse('Token atau OTP tidak valid.', 404);
+        }
+
+        if (Carbon::now()->isAfter($verification->expires_at)) {
+            $verification->delete();
+            return $this->errorResponse('Token atau OTP sudah kedaluwarsa.', 410);
+        }
+
+        // Jika valid, kirim respons sukses
+        return $this->successResponse(null, 'Verifikasi berhasil. Silakan atur password baru Anda.');
     }
 
-    public function reset(Request $request)
+    public function resetPassword(Request $request)
     {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|confirmed|min:8',
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+
+        $this->validateRequest($request, [
+            'email' => 'nullable|required_without:phone|string|email|max:255|exists:administrators,email',
+            'phone' => 'nullable|required_without:email|string|max:255|exists:administrators,phone',
+            'password' => 'required|min:8',
+            'token' => 'required|string',
+        ], [
+            'email.exists' => 'Email yang Anda masukkan tidak terdaftar.',
+            'phone.exists' => 'Nomor telepon yang Anda masukkan tidak terdaftar.',
+            'password.required' => 'Password baru wajib diisi.',
+            'password.min' => 'Password minimal harus 8 karakter.',
+            'token.required' => 'Token verifikasi wajib diisi.',
         ]);
 
-        $status = Password::broker('administrators')->reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->forceFill([
-                    'password_hash' => \Illuminate\Support\Facades\Hash::make($password)
-                ])->save();
-            }
-        );
+        $verification = null;
+        if ($request->has('email') && $request->email) {
+            $verification = EmailVerification::where('email', $request->email)->where('token', $request->token)->first();
+        } elseif ($request->has('phone') && $request->phone) {
+            $verification = PhoneVerification::where('phone', $request->phone)->where('token', $request->token)->first();
+        }
 
-        // return $status == Password::PASSWORD_RESET
-        //             ? redirect()->route('login')->with('status', __($status))
-        //             : back()->withInput($request->only('email'))
-        //                    ->withErrors(['email' => __($status)]);
+        // Cek jika token tidak ada atau sudah kedaluwarsa
+        if (!$verification || Carbon::now()->isAfter($verification->expires_at)) {
+            return $this->errorResponse('Token tidak valid atau sudah kedaluwarsa.', 401);
+        }
 
-        return $this->successResponse([
-            'status' => __($status),
+        // Dapatkan data admin
+        $identifier = $request->email ?? $request->phone;
+        $field = $request->email ? 'email' : 'phone';
+        $admin = Administrator::where($field, $identifier)->first();
+
+        if (!$admin) {
+            return $this->errorResponse('Pengguna tidak ditemukan.', 404);
+        }
+
+        // Update password
+        $admin->update([
+            'password_hash' => Hash::make($request->password),
         ]);
+
+        // Hapus token setelah berhasil digunakan agar tidak bisa dipakai lagi
+        $verification->delete();
+
+        return $this->successResponse(null, 'Password Anda telah berhasil direset.');
     }
 }

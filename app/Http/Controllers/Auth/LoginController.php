@@ -5,9 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Administrator;
 use App\Enums\AdminStatusEnum;
-use App\Traits\ApiResponseTrait;
+use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -20,10 +19,13 @@ class LoginController extends Controller
         /** @var Request $request */
         $request = $this->decodeRequest($request);
 
-        Validator::make($request->all(), [
+        $this->validateRequest($request, [
             'login_identifier' => 'required|string',
             'password' => 'required|string',
-        ])->validate();
+        ], [
+            'login_identifier.required' => 'Email, NIP, atau nomor telepon wajib diisi.',
+            'password.required' => 'Password wajib diisi.',
+        ]);
 
         // Access input using $request->input() or magic property
         $loginIdentifier = $request->input('login_identifier');
@@ -34,16 +36,22 @@ class LoginController extends Controller
                                 ->orWhere('nip', $loginIdentifier)
                                 ->first();
 
-        if (!$admin || !Hash::check($password, $admin->password_hash)) {
-            return $this->errorResponse('Kredensial yang diberikan tidak cocok dengan data kami.', 400);
+        if (!$admin) {
+            return $this->errorResponse('Akun tidak ditemukan.', 400);
+        }
+
+        if (!Hash::check($password, $admin->password_hash)) {
+            return $this->errorResponse("Invalid credentials.", 422, [
+                "password" => "Password yang anda masukkan salah"
+            ]);
         }
 
         if ($admin->status === AdminStatusEnum::Pending) {
-            return $this->errorResponse('Akun Anda sedang dalam proses peninjauan. Silakan coba lagi nanti.', 403);
+            return $this->errorResponse('Akun Anda sedang dalam proses peninjauan. Silakan coba lagi nanti.', 401);
         }
 
         if ($admin->status === AdminStatusEnum::Suspended) {
-            return $this->errorResponse('Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.', 403);
+            return $this->errorResponse('Akun Anda telah ditangguhkan. Silakan hubungi System Administrator.', 401);
         }
 
         $admin->tokens()->delete();

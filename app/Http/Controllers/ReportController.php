@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\District;
 use App\Models\Regency;
 use App\Models\Report;
-use App\Models\ReportMedia;
 use App\Models\ServiceProfile;
 use App\Models\Administrator;
 use App\Enums\RoleAdministratorEnum;
@@ -13,12 +12,11 @@ use App\Enums\ServiceCodeEnum;
 use App\Enums\ReportCategoryEnum;
 use App\Enums\PriorityEnum;
 use App\Enums\ReportStatusEnum;
+use App\Models\ReportMediaUser;
 use App\Time\Time;
-use App\Traits\ApiResponseTrait;
+use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
@@ -27,22 +25,33 @@ class ReportController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $this->validateRequest($request, [
             'name' => 'required|string|min:4',
             'phone' => 'required|string|min:4',
             'description' => 'required|string|min:20',
             'city' => 'required|string',
             'district' => 'required|string',
             'location' => 'required|string',
-            'images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'videos.*' => 'nullable|mimes:mp4|max:10240',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg|max:32768',
+            'videos.*' => 'nullable|mimes:mp4|max:1048576',
+        ], [
+            'name.required' => 'Nama pelapor wajib diisi.',
+            'name.min' => 'Nama pelapor minimal harus 4 karakter.',
+            'phone.required' => 'Nomor telepon pelapor wajib diisi.',
+            'phone.min' => 'Nomor telepon minimal harus 4 karakter.',
+            'description.required' => 'Deskripsi laporan wajib diisi.',
+            'description.min' => 'Deskripsi laporan minimal harus 20 karakter.',
+            'city.required' => 'Kota/Kabupaten wajib dipilih.',
+            'district.required' => 'Kecamatan wajib dipilih.',
+            'location.required' => 'Detail lokasi wajib diisi.',
+            'images.*.required' => 'Setidaknya satu gambar wajib diunggah.',
+            'images.*.image' => 'File yang diunggah harus berupa gambar.',
+            'images.*.mimes' => 'Format gambar harus jpeg, png, atau jpg.',
+            'images.*.max' => 'Ukuran setiap gambar tidak boleh lebih dari 2MB.',
+            'videos.*.mimes' => 'Format video harus mp4.',
+            'videos.*.max' => 'Ukuran setiap video tidak boleh lebih dari 10MB.',
         ]);
 
-        if ($validator->fails()) {
-            return $this->errorResponse('Validation failed', 422, $validator->errors()->toArray());
-        }
-
-        // Gunakan $request->input() atau property magic
         $regency = Regency::where('code', $request->input('city'))->first();
 
         if (!$regency) {
@@ -89,10 +98,9 @@ class ReportController extends Controller
 
             'statuses' => [ReportStatusEnum::Pending],
             'review_timestamps' => [Time::getNow()],
-            'reviewing_admin_ids' => [],
+            'reviewing_admin_ids' => [-1],
             'review_notes' => ['Laporan dibuat oleh sistem.'],
-            'agreements_history' => [],
-            'disagreements_history' => [],
+            'status_change_history' => [true],
         ]);
 
         $allPaths = [];
@@ -101,7 +109,7 @@ class ReportController extends Controller
         // Gunakan hasFile() dan file() method
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $path = Storage::disk(env("FILESYSTEM_DISK"))->put('reports', $image);
+                $path = Storage::disk("public")->put('reports/user', $image);
                 $allPaths[] = $path;
                 $allTypes[] = $image->getMimeType();
             }
@@ -109,14 +117,14 @@ class ReportController extends Controller
         
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $video) {
-                $path = Storage::disk(env("FILESYSTEM_DISK"))->put('reports', $video);
+                $path = Storage::disk("public")->put('reports/user', $video);
                 $allPaths[] = $path;
                 $allTypes[] = $video->getMimeType();
             }
         }
         
         if (!empty($allPaths)) {
-            ReportMedia::create([
+            ReportMediaUser::create([
                 'report_id' => $report->id,
                 'files_path' => $allPaths,
                 'files_type' => $allTypes,
@@ -198,10 +206,22 @@ class ReportController extends Controller
 
     public function trackShow(Report $report)
     {
-        $report->load('media', 'serviceProfile');
+        $report->load(['serviceProfile', 'assignee']);
+        $report->append(['contributors', 'media']);
 
         return $this->successResponse([
             'report' => $report,
         ]);
+    }
+
+    public function update(Request $request, Report $report)
+    {
+        $this->validateRequest($request, [
+
+        ], [
+
+        ]);
+
+        $report->load(['serviceProfile']);
     }
 }

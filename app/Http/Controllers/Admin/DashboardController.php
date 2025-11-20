@@ -7,7 +7,7 @@ use App\Models\Report;
 use App\Models\Administrator;
 use App\Enums\PriorityEnum;
 use App\Enums\RoleAdministratorEnum;
-use App\Traits\ApiResponseTrait;
+use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;

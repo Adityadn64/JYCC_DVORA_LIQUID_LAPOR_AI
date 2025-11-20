@@ -10,16 +10,18 @@ class OtpMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $otp;
+    public $token;
+    public $isEmail;
 
-    public function __construct($otp)
+    public function __construct($token, $isEmail)
     {
-        $this->otp = $otp;
+        $this->token = $token;
+        $this->isEmail = $isEmail;
     }
 
     public function build()
     {
         return $this->subject('Kode Verifikasi Registrasi Lapor.ai')
-                    ->view('emails.otp');
+                    ->view('emails.create-account');
     }
 }

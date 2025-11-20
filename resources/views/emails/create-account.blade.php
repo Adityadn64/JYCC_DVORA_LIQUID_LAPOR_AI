@@ -23,20 +23,17 @@
         </div>
 
         <div class="p-6 sm:p-8">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Konfirmasi Akun Anda</h2>
-            <p class="text-gray-600 mb-6">
-                Gunakan kode di bawah ini untuk menyelesaikan proses registrasi Anda. Kode ini hanya valid untuk waktu yang terbatas.
-            </p>
+            <p class="text-gray-600 mb-6">Anda menerima email ini karena kami menerima permintaan registrasi untuk akun Anda.</p>
+            <p class="text-gray-600 mb-6">{{ $isEmail ? "Token" : "Kode OTP" }} registrasi Anda adalah:</p>
             
             <div class="mb-6">
                 <div class="bg-blue-50 text-blue-700 text-4xl font-bold text-center py-4 px-6 rounded-lg tracking-widest border-2 border-dashed border-blue-200">
-                    {{ $otp }}
+                    <p><strong>{{ $token }}</strong></p>
                 </div>
             </div>
             
-            <p class="text-center text-sm text-gray-500">
-                Kode ini akan kedaluwarsa dalam <span class="font-semibold">10 menit</span>.
-            </p>
+            <p class="text-gray-600 mb-6">{{ $isEmail ? "Token" : "Kode OTP" }} ini akan kedaluwarsa dalam 15 menit.</p>
+            <p class="text-gray-600 mb-6">Jika Anda tidak merasa meminta registrasi, abaikan email ini.</p>
         </div>
 
         <div class="bg-yellow-50 border-t border-gray-200 p-6">
