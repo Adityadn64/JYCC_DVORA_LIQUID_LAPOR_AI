@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "start:web": "serve -s dist",
     "start:desktop": "electron .",
-    "check-deps": "depcheck"
+    "depcheck": "depcheck"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
