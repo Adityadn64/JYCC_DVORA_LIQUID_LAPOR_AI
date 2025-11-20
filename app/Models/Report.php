@@ -86,49 +86,65 @@ class Report extends Model
 
     public function serviceProfile(): BelongsTo
     {
-        return $this->belongsTo(ServiceProfile::class, 'service_id');
+        return $this->belongsTo(ServiceProfile::class, 'service_id')->withDefault([
+            'full_name' => 'Dinas Tidak Diketahui',
+        ]);
     }
 
     public function assignee(): BelongsTo
     {
-        return $this->belongsTo(Administrator::class, 'assignee_admin_id');
+        return $this->belongsTo(Administrator::class, 'assignee_admin_id')->withDefault([
+            'full_name' => 'Belum Ditugaskan',
+            'email' => '-',
+            'id' => null,
+        ]);
     }
 
     public function userMedia(): HasOne
     {
-        return $this->hasOne(ReportMediaUser::class, 'report_id');
+        return $this->hasOne(ReportMediaUser::class, 'report_id')->withDefault();
     }
 
     public function workMedia(): HasOne
     {
-        return $this->hasOne(ReportMediaWork::class, 'report_id');
+        return $this->hasOne(ReportMediaWork::class, 'report_id')->withDefault();
     }
 
     public function getMediaAttribute(): array
     {
+        $userData = $this->userMedia;
+        $workData = $this->workMedia;
+
         return [
-            'user' => $this->userMedia ?? [],
-            'work' => $this->workMedia ?? [],
+            'user' => $userData && $userData->exists ? $userData : null,
+            'work' => $workData && $workData->exists ? $workData : null,
         ];
     }
 
     public function getContributorsAttribute()
     {
-        $ids = $this->reviewing_admin_ids;
+        $ids = $this->reviewing_admin_ids ?? [];
 
         if (empty($ids)) {
             return [];
         }
 
-        $admins = Administrator::whereIn('id', $ids)->get()->keyBy('id');
+        $admins = Administrator::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
-        return collect($ids)->map(function ($id) use ($admins) {
-            // Jika ID adalah -1, kembalikan null
-            if ($id == -1) {
-                return null;
-            }
+        return collect($ids)
+            ->map(function ($id) use ($admins) {
+                if ($id == -1) {
+                    return [
+                        'id' => -1,
+                        'full_name' => 'Sistem AI',
+                        'role' => 'system'
+                    ];
+                }
 
-            return $admins->get($id);
-        })->all();
+                return $admins->get($id);
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 }

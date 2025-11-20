@@ -10,46 +10,46 @@ ALLOWED_TEST_ORIGIN = "http://localhost:3001"
 DISALLOWED_ORIGIN = "https://lalex.vercel.app"
 
 API_ROUTE_LIST_OUTPUT = """
-  GET|HEAD   / ........................................................................... generated::gMGpca29kV6QTaIr
-  POST       api/admin/analytics ......................... admin.analytics.analytics › Admin\AnalyticsController@index
-  POST       api/admin/analytics/export-reports admin.analytics.analytics.export-reports › Admin\AnalyticsController@…
-  POST       api/admin/dashboard ......................... admin.dashboard.dashboard › Admin\DashboardController@index
-  POST       api/admin/manage ............................. admin.manage.index › Admin\AdminManagementController@index
-  POST       api/admin/manage/{admin}/accept ............ admin.manage.accept › Admin\AdminManagementController@accept
-  POST       api/admin/manage/{admin}/activity .. admin.manage.activity › Admin\AdminManagementController@showActivity
-  POST       api/admin/manage/{admin}/reject ............ admin.manage.reject › Admin\AdminManagementController@reject
-  POST       api/admin/manage/{admin}/send-reset admin.manage.sendReset › Admin\AdminManagementController@sendPasswor…
-  POST       api/admin/manage/{admin}/toggle-status admin.manage.toggleStatus › Admin\AdminManagementController@toggl…
-  POST       api/admin/performance ....................... admin.performance.index › Admin\PerformanceController@index
-  POST       api/admin/profile ..................................... admin.profile.show › Admin\ProfileController@show
-  POST       api/admin/profile/deactivate-self . admin.profile.deactivateSelf › Admin\ProfileController@deactivateSelf
-  POST       api/admin/profile/export-profile admin.profile.profile.export-profile › Admin\ProfileController@exportPr…
-  POST       api/admin/profile/request-email-change admin.profile.requestEmailChange › Admin\ProfileController@reques…
-  POST       api/admin/profile/request-phone-change admin.profile.requestPhoneChange › Admin\ProfileController@reques…
-  POST       api/admin/profile/update-full-name admin.profile.updateFullName › Admin\ProfileController@updateFullName
-  POST       api/admin/profile/update-info ............. admin.profile.updateInfo › Admin\ProfileController@updateInfo
-  POST       api/admin/profile/update-kta ............ admin.profile.updateKta › Admin\ProfileController@updateKtaScan
-  POST       api/admin/profile/update-nip ................ admin.profile.updateNip › Admin\ProfileController@updateNip
-  POST       api/admin/profile/update-password . admin.profile.updatePassword › Admin\ProfileController@updatePassword
-  POST       api/admin/profile/update-picture admin.profile.updatePicture › Admin\ProfileController@updateProfilePict…
-  POST       api/admin/profile/verify-email-change admin.profile.verifyEmailChange › Admin\ProfileController@verifyEm…
-  POST       api/admin/profile/verify-phone-change admin.profile.verifyPhoneChange › Admin\ProfileController@verifyPh…
-  POST       api/auth/forgot-password ......... auth.password.email › Auth\ForgotPasswordController@sendResetLinkEmail
-  POST       api/auth/login .......................................... auth.login.attempt › Auth\LoginController@login
-  POST       api/auth/logout ............................................... auth.logout › Auth\LoginController@logout
-  POST       api/auth/register .......................... auth.register › Auth\RegisterController@showRegistrationForm
-  POST       api/auth/register/send ................... auth.register.send › Auth\RegisterController@startRegistration
-  POST       api/auth/register/verify ....... auth.register.verify.form › Auth\RegisterController@showVerificationForm
-  POST       api/auth/register/verify/send ..... auth.register.complete › Auth\RegisterController@completeRegistration
-  POST       api/auth/reset-password ...................... auth.password.update › Auth\ForgotPasswordController@reset
-  POST       api/auth/reset-password/{token} ....... auth.password.reset › Auth\ForgotPasswordController@verifyOTP
-  POST       api/home .................................................................... home › HomeController@index
-  POST       api/regencies ............................. regions.formatted › Data\RegionController@getFormattedRegions
-  POST       api/report/create ................................................. report.store › ReportController@store
-  POST       api/report/{report}/track ................................ report.track.show › ReportController@trackShow
-  POST       api/reports/track ...................................... report.track.index › ReportController@trackIndex
-  GET|HEAD   sanctum/csrf-cookie ................... sanctum.csrf-cookie › Laravel\Sanctum › CsrfCookieController@show
-  GET|HEAD   up .......................................................................... generated::bJsIyDtQuU4iAesH
+  GET|HEAD   / ................................................................................................................................. generated::13Sry9Pz9pLZHjiS
+  POST       api/admin/analytics ............................................................................... admin.analytics.analytics › Admin\AnalyticsController@index
+  POST       api/admin/analytics/export-reports ......................................... admin.analytics.analytics.export-reports › Admin\AnalyticsController@exportReports
+  POST       api/admin/dashboard ............................................................................... admin.dashboard.dashboard › Admin\DashboardController@index
+  POST       api/admin/manage ................................................................................... admin.manage.index › Admin\AdminManagementController@index
+  POST       api/admin/manage/{admin}/accept .................................................................. admin.manage.accept › Admin\AdminManagementController@accept
+  POST       api/admin/manage/{admin}/activity ........................................................ admin.manage.activity › Admin\AdminManagementController@showActivity
+  POST       api/admin/manage/{admin}/reject .................................................................. admin.manage.reject › Admin\AdminManagementController@reject
+  POST       api/admin/manage/{admin}/send-reset ................................................ admin.manage.sendReset › Admin\AdminManagementController@sendPasswordReset
+  POST       api/admin/manage/{admin}/toggle-status ............................................... admin.manage.toggleStatus › Admin\AdminManagementController@toggleStatus
+  POST       api/admin/performance ............................................................................. admin.performance.index › Admin\PerformanceController@index
+  POST       api/admin/profile ........................................................................................... admin.profile.show › Admin\ProfileController@show
+  POST       api/admin/profile/deactivate-self ....................................................... admin.profile.deactivateSelf › Admin\ProfileController@deactivateSelf
+  POST       api/admin/profile/export-profile ................................................. admin.profile.profile.export-profile › Admin\ProfileController@exportProfile
+  POST       api/admin/profile/request-email-change .......................................... admin.profile.requestEmailChange › Admin\ProfileController@requestEmailChange
+  POST       api/admin/profile/request-phone-change .......................................... admin.profile.requestPhoneChange › Admin\ProfileController@requestPhoneChange
+  POST       api/admin/profile/update-full-name ...................................................... admin.profile.updateFullName › Admin\ProfileController@updateFullName
+  POST       api/admin/profile/update-info ................................................................... admin.profile.updateInfo › Admin\ProfileController@updateInfo
+  POST       api/admin/profile/update-kta .................................................................. admin.profile.updateKta › Admin\ProfileController@updateKtaScan
+  POST       api/admin/profile/update-nip ...................................................................... admin.profile.updateNip › Admin\ProfileController@updateNip
+  POST       api/admin/profile/update-password ....................................................... admin.profile.updatePassword › Admin\ProfileController@updatePassword
+  POST       api/admin/profile/update-picture ................................................... admin.profile.updatePicture › Admin\ProfileController@updateProfilePicture
+  POST       api/admin/profile/verify-email-change ............................................. admin.profile.verifyEmailChange › Admin\ProfileController@verifyEmailChange
+  POST       api/admin/profile/verify-phone-change ............................................. admin.profile.verifyPhoneChange › Admin\ProfileController@verifyPhoneChange
+  POST       api/auth/login ................................................................................................ auth.login.attempt › Auth\LoginController@login
+  POST       api/auth/logout ..................................................................................................... auth.logout › Auth\LoginController@logout
+  POST       api/auth/password-reset/confirm ............................................................ auth.password.update › Auth\ForgotPasswordController@resetPassword
+  POST       api/auth/password-reset/request ............................................................. auth.password.email › Auth\ForgotPasswordController@sendResetLink
+  POST       api/auth/password-reset/verify ................................................................ auth.password.reset › Auth\ForgotPasswordController@verifyToken
+  POST       api/auth/register ................................................................................ auth.register › Auth\RegisterController@showRegistrationForm
+  POST       api/auth/register/send ......................................................................... auth.register.send › Auth\RegisterController@startRegistration
+  POST       api/auth/register/verify ................................................................ auth.register.complete › Auth\RegisterController@completeRegistration
+  POST       api/get-file .................................................................................................... storage.read.file › StorageController@getFile
+  POST       api/home .......................................................................................................................... home › HomeController@index
+  POST       api/regencies ................................................................................... regions.formatted › Data\RegionController@getFormattedRegions
+  POST       api/report/create ....................................................................................................... report.store › ReportController@store
+  POST       api/report/{report}/track ...................................................................................... report.track.show › ReportController@trackShow
+  POST       api/reports/track ............................................................................................ report.track.index › ReportController@trackIndex
+  GET|HEAD   sanctum/csrf-cookie ......................................................................... sanctum.csrf-cookie › Laravel\Sanctum › CsrfCookieController@show
+  GET|HEAD   up ................................................................................................................................ generated::fSUJL2NJocBWqzyX
 """
 
 API_ROUTE_LIST_CLEANED = re.sub(r'\s+', ' ', API_ROUTE_LIST_OUTPUT).strip()

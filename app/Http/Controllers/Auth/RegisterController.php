@@ -10,17 +10,11 @@ use App\Models\PhoneRegistration;
 use App\Enums\RoleAdministratorEnum;
 use App\Enums\AdminStatusEnum;
 use App\Mail\OtpMail;
-use App\Time\Time;
 use App\Traits\Controller\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rules\Enum;
-use Illuminate\Support\Facades\Validator;
-use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class RegisterController extends Controller

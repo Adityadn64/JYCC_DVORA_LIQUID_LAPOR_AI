@@ -2,22 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NotifyAssigneeAdmin;
+use App\Mail\NotifyHasGenerateNewReport;
 use App\Models\District;
 use App\Models\Regency;
 use App\Models\Report;
 use App\Models\ServiceProfile;
 use App\Models\Administrator;
 use App\Enums\RoleAdministratorEnum;
-use App\Enums\ServiceCodeEnum;
-use App\Enums\ReportCategoryEnum;
+use Illuminate\Support\Facades\Request as RequestFacade;
 use App\Enums\PriorityEnum;
 use App\Enums\ReportStatusEnum;
 use App\Models\ReportMediaUser;
 use App\Time\Time;
+use App\Http\Controllers\AIController;
 use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ReportController extends Controller
 {
@@ -32,8 +36,8 @@ class ReportController extends Controller
             'city' => 'required|string',
             'district' => 'required|string',
             'location' => 'required|string',
-            'images.*' => 'required|image|mimes:jpeg,png,jpg|max:32768',
-            'videos.*' => 'nullable|mimes:mp4|max:1048576',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg|max:10240',
+            'videos.*' => 'nullable|mimes:mp4|max:51200',
         ], [
             'name.required' => 'Nama pelapor wajib diisi.',
             'name.min' => 'Nama pelapor minimal harus 4 karakter.',
@@ -50,9 +54,11 @@ class ReportController extends Controller
             'images.*.max' => 'Ukuran setiap gambar tidak boleh lebih dari 2MB.',
             'videos.*.mimes' => 'Format video harus mp4.',
             'videos.*.max' => 'Ukuran setiap video tidak boleh lebih dari 10MB.',
+            'videos.*.uploaded' => 'Gagal mengunggah video. Ukuran file melebihi batas server (PHP Configuration).',
         ]);
 
-        $regency = Regency::where('code', $request->input('city'))->first();
+        $real_regency = $request->input('city');
+        $regency = Regency::where('code', $real_regency)->first();
 
         if (!$regency) {
             return $this->errorResponse('Validation failed', 422, [
@@ -60,7 +66,8 @@ class ReportController extends Controller
             ]);
         }
 
-        $district = District::where('code', $request->input('district'))
+        $real_district = $request->input('district');
+        $district = District::where('code', $real_district)
                             ->where('regency_id', $regency->id)
                             ->first();
 
@@ -70,31 +77,102 @@ class ReportController extends Controller
             ]);
         }
 
-        $aiDeterminedServiceCode = ServiceCodeEnum::DINKES;
-        $aiDeterminedCategory = ReportCategoryEnum::DINKES;
-        $serviceProfile = ServiceProfile::where('code', $aiDeterminedServiceCode)->firstOrFail();
+        $allPaths = [];
+        $allTypes = [];
+
+        $disk = config('filesystems.default');
+        $is_local = in_array($disk, ['local', 'public']);
+        $storage = $is_local ? Storage::disk("public") : Storage::disk($disk);
+        $folderPath = ($is_local ? '' : 'public/') . 'real/reports/user';
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $storage->put($folderPath, $image, 'public');
+                $allPaths[] = $path;
+                $allTypes[] = $image->getMimeType();
+            }
+        }
         
-        $aiResult = [
-            'title' => 'Judul Laporan Dihasilkan AI',
-            'category' => $aiDeterminedCategory,
-            'priority' => PriorityEnum::Medium,
-            'service_id' => $serviceProfile->id,
-            'service_code' => $serviceProfile->code,
-        ];
+        if ($request->hasFile('videos')) {
+            foreach ($request->file('videos') as $video) {
+                $path = $storage->put($folderPath, $video, 'public');
+                $allPaths[] = $path;
+                $allTypes[] = $video->getMimeType();
+            }
+        }
+
+        $reporter_phone = $request->input('phone');
+        $description = $request->input('description');
+        $address = $request->input('location');
+
+        $laporanTeks = "=====DESKRIPSI=====\n$description\n\n=====LOKASI=====\n$address\n$real_regency\n$real_district";
+        
+        $aiInternalRequest = RequestFacade::create(
+            '/api/analyze', 
+            'POST', 
+            ['laporan' => $laporanTeks],
+            [],
+            ['images' => $request->file('images')]
+        );
+
+        $aiController = new AIController();
+        $aiResponse = $aiController->analyze($aiInternalRequest);
+
+        if ($aiResponse->status() !== 200) {
+            return $this->errorResponse('AI Error: ' . $aiResponse->getData()->message, 500);
+        }
+        
+        \Log::info("AI Response: " . json_encode($aiResponse));
+
+        $aiResult = $aiResponse->getData(true);
+        $aiData = $aiResult['data'];
+
+        $aiTitle = $aiData['title'];
+        $aiCategory = $aiData['category'];
+        $aiPriority = $aiData['priority'];
+        $aiServiceCode = $aiData['service_code'];
+
+        $serviceProfile = ServiceProfile::where('code', $aiServiceCode)->firstOrFail();
+
+        $assigneeAdmin = Administrator::where('service_code', $aiServiceCode)
+            ->whereDoesntHave('assignedReports', function ($query) {
+                $query->whereRaw("statuses->>-1 IN (?, ?)", [
+                    ReportStatusEnum::Pending->value,
+                    ReportStatusEnum::Process->value
+                ]);
+            })
+            ->inRandomOrder()
+            ->first();
+
+        if (!$assigneeAdmin) {
+            $assigneeAdmin = Administrator::where('service_code', $aiServiceCode)
+                ->withCount(['assignedReports as active_workload' => function ($query) {
+                    $query->whereRaw("statuses->>-1 IN (?, ?)", [
+                        ReportStatusEnum::Pending->value,
+                        ReportStatusEnum::Process->value
+                    ]);
+                }])
+                ->orderBy('active_workload', 'asc')
+                ->inRandomOrder()
+                ->first();
+        }
+
+        $assigneeId = $assigneeAdmin?->id;
 
         $report = Report::create([
-            'description' => $request->input('description'),
-            'address' => $request->input('location'),
+            'description' => $description,
+            'address' => $address,
             'city' => $regency->code,
             'district' => $district->code,
 
             'reporter_name' => $request->input('name'),
-            'reporter_contact' => $request->input('phone'),
-            'title' => $aiResult['title'],
-            'category' => $aiResult['category'],
-            'priority' => $aiResult['priority'],
-            'service_id' => $aiResult['service_id'],
-            'service_code' => $aiResult['service_code'],
+            'reporter_contact' => $reporter_phone,
+            'title' => $aiTitle,
+            'category' => $aiCategory,
+            'priority' => $aiPriority,
+            'service_id' => $serviceProfile->id,
+            'service_code' => $aiServiceCode,
+            'assignee_admin_id' => $assigneeId,
 
             'statuses' => [ReportStatusEnum::Pending],
             'review_timestamps' => [Time::getNow()],
@@ -103,26 +181,6 @@ class ReportController extends Controller
             'status_change_history' => [true],
         ]);
 
-        $allPaths = [];
-        $allTypes = [];
-
-        // Gunakan hasFile() dan file() method
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = Storage::disk("public")->put('reports/user', $image);
-                $allPaths[] = $path;
-                $allTypes[] = $image->getMimeType();
-            }
-        }
-        
-        if ($request->hasFile('videos')) {
-            foreach ($request->file('videos') as $video) {
-                $path = Storage::disk("public")->put('reports/user', $video);
-                $allPaths[] = $path;
-                $allTypes[] = $video->getMimeType();
-            }
-        }
-        
         if (!empty($allPaths)) {
             ReportMediaUser::create([
                 'report_id' => $report->id,
@@ -131,6 +189,17 @@ class ReportController extends Controller
             ]);
         }
     
+        if ($assigneeAdmin?->email) {
+            Mail::to($assigneeAdmin->email)->send(new NotifyAssigneeAdmin($report));
+        }
+
+        try {
+            $fakeEmail = Str::replace('+', '', trim($reporter_phone)) . "@phone.id";
+            Mail::to($fakeEmail)->send(new NotifyHasGenerateNewReport($report));
+        } catch (\Exception $e) {
+            \Log::error("Gagal kirim email pelapor: " . $e->getMessage());
+        }
+
         return $this->successResponse([
             'id' => $report->id,
         ], 'Laporan Anda berhasil dikirim! Berikut adalah detailnya.');
