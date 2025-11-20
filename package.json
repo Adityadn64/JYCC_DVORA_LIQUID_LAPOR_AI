@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:web": "vite build",
+    "build:desktop": "electron-builder",
     "preview": "vite preview",
+    "start:web": "serve -s dist",
+    "start:desktop": "electron .",
     "check-deps": "depcheck"
   },
   "dependencies": {
@@ -15,8 +18,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^6.20.0",
-    "recharts": "^2.10.3",
-    "webpack-dev-server": "^5.2.2"
+    "recharts": "^2.10.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
@@ -25,7 +27,6 @@
     "@vitejs/plugin-basic-ssl": "^2.1.0",
     "@vitejs/plugin-react": "^5.0.0",
     "depcheck": "^1.4.7",
-    "vite": "^6.4.1",
-    "webpack-cli": "^6.0.1"
+    "vite": "^6.4.1"
   }
 }

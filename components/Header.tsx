@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '@/services/api';
 
@@ -11,6 +11,7 @@ interface HeaderProps {
 export default function Header({ isAuthenticated, user, onLogout }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -23,6 +24,11 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
       navigate('/');
     }
   };
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setAdminMenuOpen(false);
+  }, [window.location.href])
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">

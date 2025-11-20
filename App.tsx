@@ -4,8 +4,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import LoginPage from '@/pages/Auth/LoginPage';
 import HomePage from '@/pages/HomePage';
-import RegisterPage from '@/pages/Auth/RegisterPage';
-import PasswordResetPage from '@/pages/Auth/PasswordResetPage';
+import RegisterPage from '@/pages/Auth/Register/RequestRegisterPage';
+// import PasswordResetPage from '@/pages/Auth/PasswordResetPage';
 import ReportCreatePage from '@/pages/Report/ReportCreatePage';
 import ReportTrackPage from '@/pages/Report/ReportTrackPage';
 import ReportTrackShowPage from '@/pages/Report/ReportTrackShowPage';
@@ -18,6 +18,10 @@ import { csrfService } from './services/api';
 import { AuthUser } from './types';
 import WavingTextLoader from '@/components/WavingTextLoader';
 import NotFoundPage from './pages/Callback/NotFoundPage';
+import RequestResetPage from './pages/Auth/ResetPassword/RequestResetPage';
+import VerifyOtpResetPasswordPage from './pages/Auth/ResetPassword/VerifyOtpResetPasswordPage';
+import VerifyOtpRegisterPage from './pages/Auth/Register/VerifyOtpRegisterPage';
+import UpdatePasswordPage from './pages/Auth/ResetPassword/UpdatePasswordPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -31,7 +35,7 @@ function App() {
         const userData = localStorage.getItem('user_data');
         const auth_token = localStorage.getItem('auth_token');
 
-        if (userData && auth_token) {
+        if (userData && userData.trim() && auth_token && auth_token.trim()) {
           setIsAuthenticated(true);
           setUser(JSON.parse(userData));
         }
@@ -73,11 +77,14 @@ function App() {
               <Route path="/" element={<HomePage csrfLoading={!loading} />} />
               <Route path="/login" element={<LoginPage csrfLoading={!loading} />} />
               <Route path="/register" element={<RegisterPage csrfLoading={!loading} />} />
-              <Route path="/password-reset" element={<PasswordResetPage csrfLoading={!loading} />} />
+              <Route path="/register/verify-otp" element={<VerifyOtpRegisterPage/>}></Route>
+              <Route path="/password-reset" element={<RequestResetPage />} />
+              <Route path="/password-reset/verify-otp" element={<VerifyOtpResetPasswordPage />} />
+              <Route path="/password-reset/update" element={<UpdatePasswordPage />} />
               
               <Route path="/report/create" element={<ReportCreatePage csrfLoading={!loading} />} />
               <Route path="/report/track" element={<ReportTrackPage csrfLoading={!loading} />} />
-              <Route path="/report/:id/track" element={<ReportTrackShowPage csrfLoading={!loading} />} />
+              <Route path="/report/:id/track" element={<ReportTrackShowPage csrfLoading={!loading} user={user} isAuthenticated={isAuthenticated} />} />
 
               <Route 
                 path="/admin/dashboard" 

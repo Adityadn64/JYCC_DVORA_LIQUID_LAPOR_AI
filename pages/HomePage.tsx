@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { decodeErrorResponse, homeService } from '@/services/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Skeleton, SkeletonChart } from '@/components/SkeletonLoading';
-import { errorDiv } from '@/components/Error';
+import { errorMessage } from '@/components/Error';
 import { CsrfLoadingProps } from '@/types';
 
 interface ReportStats {
@@ -84,7 +84,7 @@ export default function HomePage({csrfLoading}: CsrfLoadingProps) {
   }, [csrfLoading]);
 
   function renderError() {
-    return errorDiv(error || 'Terjadi kesalahan');
+    return errorMessage(error || 'Terjadi kesalahan');
   }
 
   return (

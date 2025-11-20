@@ -202,10 +202,19 @@ export const decodeErrorResponse = async (error: any): Promise<string> => {
       try {
       const decodedPayload = await aesDecrypt<ErrorResultResponseData>(encodedData.d, VITE_K4.toString());
 
+      console.log({decodedPayload})
+
         if (decodedPayload.errors) {
-          const firstErrorKey = Object.keys(decodedPayload.errors)[0];
-          const firstErrorMessage = decodedPayload.errors[firstErrorKey][0];
-          return firstErrorMessage;
+          // const firstErrorKey = Object.keys(decodedPayload.errors)[0];
+          // const firstErrorMessage = decodedPayload.errors[firstErrorKey][0];
+          // return firstErrorMessage;
+          let formattedMessage;
+          for (const [key, _] of Object.entries(decodedPayload.errors)) {
+            const errorMessage = decodedPayload.errors[key];
+            const mergeMessage = errorMessage.join(" ");
+            formattedMessage += `${errorMessage} => ${mergeMessage}\n`
+          }
+          return decodedPayload.errors = formattedMessage;
         }
 
         if (decodedPayload.message) {
@@ -263,6 +272,13 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   async (response) => {
+    const contentType = response.headers['content-type'];
+
+    if (contentType && (contentType.startsWith('image/') || contentType.startsWith('video/'))) {
+      console.log({contentType});
+      return response;
+    }
+
     if (response.data && response.data.d) {
       try {
         const data = response.data.d;
@@ -293,7 +309,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_data');
-      window.location.href = '/login';
+      if (!window.location.href.includes('/login')) window.location.href = '/login';
     }
 
     // Handle 403 Forbidden
@@ -307,6 +323,15 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const allService = {
+  async getBlobFile(filePath: string) {
+    const response = await apiClient.post('/get-file', { datapd: filePath }, {
+      responseType: 'blob'
+    });
+    return response.data;
+  }
+}
 
 // ================================
 // HOME SERVICE
@@ -369,22 +394,33 @@ export const authService = {
     return response.data;
   },
 
-  async registerVerifyOtp(data: { email: string; email_otp: string; phone_otp: string }) {
+  async registerVerifyToken(data: {
+    full_name: string;
+    email: string;
+    phone: string;
+    nip: string;
+    password: string;
+    role: 'system_admin' | 'base_admin' | '';
+    service_code: string | null;
+    kta_scan_path: string;
+    email_token: string,
+    phone_otp: string
+  }) {
     const response = await apiClient.post('/auth/register/verify', data);
     return response.data;
   },
 
-  async passwordResetRequest(email: string) {
-    const response = await apiClient.post('/auth/password-reset/request', { email });
+  async passwordResetRequest(data: { email?: string; phone?: string; nip: string }) {
+    const response = await apiClient.post('/auth/password-reset/request', data);
     return response.data;
   },
 
-  async passwordResetVerify(data: { email: string; token: string; otp_code: string }) {
+  async passwordResetVerify(data: { email?: string; phone?: string; token: string }) {
     const response = await apiClient.post('/auth/password-reset/verify', data);
     return response.data;
   },
 
-  async passwordResetConfirm(data: { email: string; token: string; password: string; password_confirmation: string }) {
+  async passwordResetConfirm(data: { email?: string; phone?: string; password: string; token: string }) {
     const response = await apiClient.post('/auth/password-reset/confirm', data);
     return response.data;
   }
@@ -568,12 +604,12 @@ export const adminProfileService = {
     return response.data;
   },
 
-  async verifyEmailChange(data: { otp: string }) {
+  async verifyEmailChange(data: { token: string }) {
     const response = await apiClient.post('/admin/profile/verify-email-change', data);
     return response.data;
   },
 
-  async verifyPhoneChange(data: { otp_phone: string }) {
+  async verifyPhoneChange(data: { token: string }) {
     const response = await apiClient.post('/admin/profile/verify-phone-change', data);
     return response.data;
   },

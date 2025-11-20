@@ -13,7 +13,7 @@ import {
     LineChart, Line, XAxis, YAxis,
     CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { errorDiv } from '@/components/Error';
+import { errorMessage } from '@/components/Error';
 import { CsrfLoadingProps, DOTS, generatePaginationItems, PaginationInfo } from '@/types';
 
 // [PERBAIKAN TOTAL] Interface data disesuaikan dengan struktur JSON dari API
@@ -162,7 +162,7 @@ export default function AdminAnalyticsPage({csrfLoading}: CsrfLoadingProps) {
     }, [data]);
     
     function renderError() {
-      return errorDiv(error || 'Terjadi kesalahan');
+      return errorMessage(error || 'Terjadi kesalahan');
     }
 
     const getStatusInfo = (statuses: string[]) => {

@@ -2,26 +2,26 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { adminManageService, decodeErrorResponse } from '@/services/api';
 import { CsrfLoadingProps, PaginationInfo, DOTS, generatePaginationItems } from '@/types';
 import { Skeleton } from '@/components/SkeletonLoading';
-import { errorDiv } from '@/components/Error';
+import { errorMessage } from '@/components/Error';
 
 // ===================================================================================
 // DEFINISI TIPE DATA (Berada di atas agar bisa digunakan oleh semua komponen)
 // ===================================================================================
 
 interface Admin {
-  id: number;
-  full_name: string;
-  email: string;
-  phone: string;
-  nip: string;
-  role: 'system_admin' | 'base_admin';
-  status: 'active' | 'suspended' | 'pending';
-  service_code: string | null;
-  service_profile?: { full_name: string };
-  profile_picture_path: string | null;
-  kta_scan_path: string | null;
-  created_at: string;
-  updated_at: string;
+    id: number;
+    full_name: string;
+    email: string;
+    phone: string;
+    nip: string;
+    role: 'system_admin' | 'base_admin';
+    status: 'active' | 'suspended' | 'pending';
+    service_code: string | null;
+    service_profile?: { full_name: string };
+    profile_picture_path: string | null;
+    kta_scan_path: string | null;
+    created_at: string;
+    updated_at: string;
 }
 
 interface FilterOptions {
@@ -119,7 +119,7 @@ const ActivityDrawer: React.FC<ActivityDrawerProps> = ({ isOpen, onClose, adminI
             </div>
             <div className="p-6 overflow-y-auto h-full">
                 {loading && <div className="text-center py-10">Memuat data aktivitas...</div>}
-                {error && errorDiv(error)}
+                {error && errorMessage(error)}
                 {activityData && (
                     <div className="space-y-6">
                         <div className="flex items-center space-x-4">
@@ -189,10 +189,10 @@ export default function AdminManagePage({ csrfLoading }: CsrfLoadingProps) {
                 pending: mode === 'pending',
             };
             const response = await adminManageService.getAdmins(params);
-            
+
             setAdmins(response.data.admins.data);
             setPaginationInfo(response.data.admins);
-            
+
             if (response.data.filterOptions) {
                 setFilterOptions(response.data.filterOptions);
             }
@@ -216,7 +216,7 @@ export default function AdminManagePage({ csrfLoading }: CsrfLoadingProps) {
 
     // HANDLER UNTUK INTERAKSI PENGGUNA
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        console.log({e: e.target.name + "_" + String(e.target.value)})
+        console.log({ e: e.target.name + "_" + String(e.target.value) })
         setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
@@ -229,7 +229,7 @@ export default function AdminManagePage({ csrfLoading }: CsrfLoadingProps) {
         const defaultFilters = { keyword: '', role: '', status: '', service_code: '' };
         setFilters(defaultFilters);
         fetchAdmins(1, defaultFilters);
-      };
+    };
 
     const handlePageChange = (page: number) => {
         if (page !== paginationInfo?.current_page) {
@@ -265,7 +265,7 @@ export default function AdminManagePage({ csrfLoading }: CsrfLoadingProps) {
     };
 
     const paginationItems = paginationInfo ? generatePaginationItems(paginationInfo.current_page, paginationInfo.last_page) : [];
-    
+
     // RENDER TABEL UTAMA
     const renderAdminTable = () => {
         if (loading) {
@@ -274,18 +274,18 @@ export default function AdminManagePage({ csrfLoading }: CsrfLoadingProps) {
             ));
         }
         if (error) {
-            return <tr><td colSpan={6}>{errorDiv(error)}</td></tr>;
+            return <tr><td colSpan={6}>{errorMessage(error)}</td></tr>;
         }
         if (admins.length === 0) {
             return <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500">Tidak ada administrator yang ditemukan.</td></tr>;
         }
 
         return admins.map(admin => (
-            <tr key={admin.id}>
+            <tr key={admin.id} className={`${admin.status !== "suspended" ? 'hover:bg-gray-100' : 'bg-red-200 hover:bg-red-300'} transition-colors`}>
                 <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                             {/* DIPERBAIKI: Path gambar menggunakan backtick `` */}
+                            {/* DIPERBAIKI: Path gambar menggunakan backtick `` */}
                             <img className="h-10 w-10 rounded-full object-cover" src={admin.profile_picture_path ? `/storage/${admin.profile_picture_path}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.full_name)}`} alt={admin.full_name} />
                         </div>
                         <div className="ml-4">
@@ -327,82 +327,86 @@ export default function AdminManagePage({ csrfLoading }: CsrfLoadingProps) {
     };
 
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">{viewMode === 'manage' ? 'Manajemen Administrator' : 'Permintaan Admin Tertunda'}</h1>
-                    <p className="mt-2 text-gray-600">{viewMode === 'manage' ? 'Buat dan kelola semua akun administrator sistem.' : `Total ${pendingCount} admin menunggu persetujuan.`}</p>
-                </div>
-                <div className="flex-shrink-0">
-                    {viewMode === 'manage' ? (
-                        <button onClick={() => setViewMode('pending')} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
-                            ({pendingCount}) Lihat Permintaan Tertunda
-                        </button>
-                    ) : (
-                        <button onClick={() => setViewMode('manage')} className="rounded-md bg-gray-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-700">
-                            Kembali ke Manajemen
-                        </button>
-                    )}
-                </div>
-            </div>
+        <div>
 
-            <div className="bg-white p-6 rounded-xl shadow-lg border">
-                <form onSubmit={handleSearch}>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <input name="keyword" value={filters.keyword} onChange={handleFilterChange} placeholder="Nama / Email / NIP..." className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500"/>
-                        <select name="role" value={filters.role} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500">
-                            <option value="">Semua Peran</option>
-                            {filterOptions.roles.map(r => <option key={r.value} value={r.value}>{r.name}</option>)}
-                        </select>
-                        {viewMode === 'manage' && (
-                             <select name="status" value={filters.status} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500">
-                                <option value="">Semua Status</option>
-                                {filterOptions.statuses.map(s => <option key={s.value} value={s.value}>{s.name}</option>)}
-                            </select>
+
+            <div className="space-y-8">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">{viewMode === 'manage' ? 'Manajemen Administrator' : 'Permintaan Admin Tertunda'}</h1>
+                        <p className="mt-2 text-gray-600">{viewMode === 'manage' ? 'Buat dan kelola semua akun administrator sistem.' : `Total ${pendingCount} admin menunggu persetujuan.`}</p>
+                    </div>
+                    <div className="flex-shrink-0">
+                        {viewMode === 'manage' ? (
+                            <button onClick={() => setViewMode('pending')} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
+                                ({pendingCount}) Lihat Permintaan Tertunda
+                            </button>
+                        ) : (
+                            <button onClick={() => setViewMode('manage')} className="rounded-md bg-gray-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-700">
+                                Kembali ke Manajemen
+                            </button>
                         )}
-                        <select name="service_code" value={filters.service_code} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500">
-                            <option value="">Semua Dinas</option>
-                            {filterOptions.services.map(s => <option key={s.code.value} value={s.code.value}>{s.full_name}</option>)}
-                        </select>
                     </div>
-                    <div className="mt-6 flex items-center justify-end gap-x-4">
-                        <button type="button" onClick={handleReset} className="text-sm font-semibold text-gray-600">Reset</button>
-                        <button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">Filter</button>
-                    </div>
-                </form>
-            </div>
-
-            <div className="bg-white shadow-lg rounded-xl border overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kontak</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Peran & Dinas</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Diperbarui</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">{renderAdminTable()}</tbody>
-                </table>
-            </div>
-
-            {paginationInfo && paginationInfo.total > 0 && !loading && (
-                <div className="pt-4 flex items-center justify-between">
-                    <p className="text-sm text-gray-700">
-                        Menampilkan <span className="font-medium">{paginationInfo.from}</span> sampai <span className="font-medium">{paginationInfo.to}</span> dari <span className="font-medium">{paginationInfo.total}</span> hasil
-                    </p>
-                    <nav aria-label="Pagination" className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                        <button onClick={() => handlePageChange(paginationInfo.current_page - 1)} disabled={paginationInfo.current_page === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">&lt;</button>
-                        {paginationItems.map((item, index) => item === DOTS ? <span key={`dots-${index}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span> : <button key={item} onClick={() => handlePageChange(item as number)} aria-current={item === paginationInfo.current_page ? 'page' : undefined} className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${item === paginationInfo.current_page ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}>{item}</button>)}
-                        <button onClick={() => handlePageChange(paginationInfo.current_page + 1)} disabled={paginationInfo.current_page === paginationInfo.last_page} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">&gt;</button>
-                    </nav>
                 </div>
-            )}
 
+                <div className="bg-white p-6 rounded-xl shadow-lg border">
+                    <form onSubmit={handleSearch}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <input name="keyword" value={filters.keyword} onChange={handleFilterChange} placeholder="Nama / Email / NIP..." className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500" />
+                            <select name="role" value={filters.role} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500">
+                                <option value="">Semua Peran</option>
+                                {filterOptions.roles.map(r => <option key={r.value} value={r.value}>{r.value.charAt(0).toUpperCase() + r.value.slice(1).split("_").join(" ")}</option>)}
+                            </select>
+                            {viewMode === 'manage' && (
+                                <select name="status" value={filters.status} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500">
+                                    <option value="">Semua Status</option>
+                                    {filterOptions.statuses.filter(s => s.value.toLowerCase() !== "pending").map(s => <option key={s.value} value={s.value}>{s.name}</option>)}
+                                </select>
+                            )}
+                            <select name="service_code" value={filters.service_code} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500">
+                                <option value="">Semua Dinas</option>
+                                {filterOptions.services.map(s => <option key={s.code.value} value={s.code.value}>{s.full_name}</option>)}
+                            </select>
+                        </div>
+                        <div className="mt-6 flex items-center justify-end gap-x-4">
+                            <button type="button" onClick={handleReset} className="text-sm font-semibold text-gray-600">Reset</button>
+                            <button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">Filter</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div className="bg-white shadow-lg rounded-xl border overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kontak</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Peran & Dinas</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Diperbarui</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">{renderAdminTable()}</tbody>
+                    </table>
+                </div>
+
+                {paginationInfo && paginationInfo.total > 0 && !loading && (
+                    <div className="pt-4 flex items-center justify-between">
+                        <p className="text-sm text-gray-700">
+                            Menampilkan <span className="font-medium">{paginationInfo.from}</span> sampai <span className="font-medium">{paginationInfo.to}</span> dari <span className="font-medium">{paginationInfo.total}</span> hasil
+                        </p>
+                        <nav aria-label="Pagination" className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                            <button onClick={() => handlePageChange(paginationInfo.current_page - 1)} disabled={paginationInfo.current_page === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">&lt;</button>
+                            {paginationItems.map((item, index) => item === DOTS ? <span key={`dots-${index}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span> : <button key={item} onClick={() => handlePageChange(item as number)} aria-current={item === paginationInfo.current_page ? 'page' : undefined} className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${item === paginationInfo.current_page ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}>{item}</button>)}
+                            <button onClick={() => handlePageChange(paginationInfo.current_page + 1)} disabled={paginationInfo.current_page === paginationInfo.last_page} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">&gt;</button>
+                        </nav>
+                    </div>
+                )}
+
+            </div>
+            <ConfirmationModal isOpen={!!confirmModalProps} onClose={() => setConfirmModalProps(null)} {...(confirmModalProps || { title: '', message: '', onConfirm: () => { } })} />
             <ActivityDrawer isOpen={!!activityAdminId} onClose={() => setActivityAdminId(null)} adminId={activityAdminId} />
-            <ConfirmationModal isOpen={!!confirmModalProps} onClose={() => setConfirmModalProps(null)} {...(confirmModalProps || { title: '', message: '', onConfirm: () => {} })} />
         </div>
     );
 }

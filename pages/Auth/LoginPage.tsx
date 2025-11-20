@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { authService, decodeErrorResponse } from '@/services/api';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CsrfLoadingProps } from '@/types';
 
 interface LoginFormData {
@@ -45,6 +45,7 @@ export default function LoginPage({csrfLoading}: CsrfLoadingProps) {
       }, 1000);
     } catch (err: any) {
       setError((await decodeErrorResponse(err)));
+      console.log(error)
     } finally {
       setLoading(false);
     }
@@ -114,9 +115,9 @@ export default function LoginPage({csrfLoading}: CsrfLoadingProps) {
             </label>
           </div>
           <div className="text-sm">
-            <a href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to="/password-reset" className="font-medium text-blue-600 hover:text-blue-500">
               Lupa password?
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -134,9 +135,9 @@ export default function LoginPage({csrfLoading}: CsrfLoadingProps) {
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
           Belum punya akun?
-          <a href="/register" className="font-medium text-blue-600 hover:text-blue-500 ml-1">
+          <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500 ml-1">
             Daftar di sini
-          </a>
+          </Link>
         </p>
       </div>
     </div>

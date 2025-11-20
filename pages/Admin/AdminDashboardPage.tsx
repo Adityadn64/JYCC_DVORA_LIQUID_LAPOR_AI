@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { adminDashboardService, decodeErrorResponse } from '@/services/api';
 import { useNavigate } from 'react-router-dom';
 import { SkeletonAdminDashboard, Skeleton, SkeletonReportCard, SkeletonChartCard } from '@/components/SkeletonLoading';
-import { errorDiv } from '@/components/Error';
+import { errorMessage } from '@/components/Error';
 import { CsrfLoadingProps, PaginationInfo, DOTS, generatePaginationItems } from '@/types';
 
 // 1. Impor komponen dari Recharts
@@ -32,7 +32,7 @@ interface Report {
 
 interface FilterOptions {
     admins: { id: number; full_name: string }[];
-    priorities: { value: string; name: string }[];
+    priorities: string[];
 }
 
 // Utilitas Waktu (Tidak Berubah)
@@ -168,7 +168,7 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   }
 
   function renderError() {
-    return errorDiv(error || 'Terjadi kesalahan');
+    return errorMessage(error || 'Terjadi kesalahan');
   }
   
   return (
@@ -247,7 +247,7 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div><label htmlFor="search_term" className="block text-sm font-medium text-gray-700">Judul / Deskripsi</label><input type="text" name="search_term" id="search_term" value={filters.search_term} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"/></div>
                 <div><label htmlFor="search_location" className="block text-sm font-medium text-gray-700">Lokasi</label><input type="text" name="search_location" id="search_location" value={filters.search_location} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"/></div>
-                <div><label htmlFor="search_priority" className="block text-sm font-medium text-gray-700">Prioritas</label><select name="search_priority" id="search_priority" value={filters.search_priority} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"><option value="">Semua</option>{filterOptions.priorities.map(p => <option key={p.value} value={p.value}>{p.name}</option>)}</select></div>
+                <div><label htmlFor="search_priority" className="block text-sm font-medium text-gray-700">Prioritas</label><select name="search_priority" id="search_priority" value={filters.search_priority} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"><option value="">Semua</option>{filterOptions.priorities.map((p, idx) => <option key={idx} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}</select></div>
                 <div><label htmlFor="search_admin" className="block text-sm font-medium text-gray-700">Ditangani Oleh</label><select name="search_admin" id="search_admin" value={filters.search_admin} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"><option value="">Semua</option>{filterOptions.admins.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}</select></div>
                 <div><label htmlFor="search_id" className="block text-sm font-medium text-gray-700">ID Laporan</label><input type="number" name="search_id" id="search_id" value={filters.search_id} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"/></div>
                 <div><label htmlFor="sort" className="block text-sm font-medium text-gray-700">Urutkan</label><select name="sort" id="sort" value={filters.sort} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"><option value="updated_at_desc">Diperbarui (Terbaru)</option><option value="updated_at_asc">Diperbarui (Terlama)</option><option value="created_at_desc">Dibuat (Terbaru)</option><option value="created_at_asc">Dibuat (Terlama)</option></select></div>
@@ -274,7 +274,7 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
               const statusClassName = statusClassMap[status] || 'bg-gray-100 text-gray-800';
 
               return (
-                <div key={report.id} onClick={() => navigate(`/report/${report.id}/track`)} className="bg-white shadow rounded-lg transition-all hover:shadow-lg cursor-pointer">
+                <a key={report.id} href={`/report/${report.id}/track`} target="_blank" className="bg-white shadow rounded-lg transition-all hover:shadow-lg cursor-pointer">
                   <div className="block p-5">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex-1 min-w-0">
@@ -295,7 +295,7 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
                         <span><strong>Penanggung Jawab:</strong> {report.assignee?.full_name ?? 'Belum Ditugaskan'}</span>
                     </div>
                   </div>
-                </div>
+                </a>
               );
             })
           ) : (

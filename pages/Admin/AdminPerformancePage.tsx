@@ -364,7 +364,7 @@ export default function AdminPerformancePage({csrfLoading}: CsrfLoadingProps) {
                                 ) : (
                                     performanceData?.slaBreaches.map(report => (
                                         <li key={report.id} className="py-3">
-                                            <a href={`/report/track/${report.id}`} className="block hover:bg-red-100 p-2 rounded-md">
+                                            <a target='_blank' href={`/report/${report.id}/track`} className="block hover:bg-red-100 p-2 rounded-md">
                                                 <div className="flex justify-between items-center">
                                                     <p className="text-sm font-medium text-red-900 truncate">{report.title} (#{report.id})</p>
                                                     {/* PERBAIKAN #5: `report.priority` sekarang adalah string */}
