@@ -14,13 +14,13 @@ class AIController extends Controller
     public function analyze(Request $request)
     {
         $this->validateRequest($request, [
-            'laporan' => 'required|string|min:10',
+            'report' => 'required|string|min:10',
             'images' => 'required|array|min:1',
             'images.*' => 'image|mimes:jpeg,png,jpg|max:32768',
         ], [
-            'laporan.required' => 'Deskripsi laporan wajib diisi.',
-            'laporan.string' => 'Deskripsi laporan harus berupa teks.',
-            'laporan.min' => 'Deskripsi laporan minimal harus 10 karakter.',
+            'report.required' => 'Deskripsi laporan wajib diisi.',
+            'report.string' => 'Deskripsi laporan harus berupa teks.',
+            'report.min' => 'Deskripsi laporan minimal harus 10 karakter.',
             'images.required' => 'Wajib melampirkan foto bukti laporan.',
             'images.array' => 'Format pengiriman gambar tidak valid.',
             'images.min' => 'Harap lampirkan minimal 1 foto bukti.',
@@ -47,7 +47,7 @@ class AIController extends Controller
             }
 
             $response = $httpClient->post($aiEndpoint, [
-                'laporan' => $request->laporan
+                'report' => $request->report
             ]);
 
             if ($response->failed()) {

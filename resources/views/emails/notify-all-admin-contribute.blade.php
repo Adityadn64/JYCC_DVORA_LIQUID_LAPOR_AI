@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notifikasi Penugasan Lapor.ai</title>
+    <title>Notifikasi Pembaruan Lapor.ai</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,18 +18,18 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
         <div class="text-center p-6 border-b border-gray-200">
             <h1 class="text-2xl font-bold text-blue-600">
-                Lapor<span class="text-gray-900">.ai</span> Penugasan
+                Lapor<span class="text-gray-900">.ai</span> Pembaruan Laporan
             </h1>
         </div>
 
         <div class="p-6 sm:p-8">
-            <p class="text-gray-600 mb-6">Halo Admin, sistem telah menugaskan Anda untuk menangani laporan baru berikut:</p>
+            <p class="text-gray-600 mb-6">Halo Admin, laporan berikut baru saja diperbarui atau ada kontribusi baru dari penanggung jawab saat ini:</p>
             
             <div class="mb-6">
-                <div class="bg-blue-50 border-2 border-dashed border-blue-200 rounded-lg p-6">
+                <div class="bg-green-50 border-2 border-dashed border-green-300 rounded-lg p-6">
                     <div class="text-center mb-4">
-                        <span class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">
-                            {{ $report->priority }} Priority
+                        <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">
+                            Laporan Diperbarui
                         </span>
                     </div>
                     
@@ -39,28 +39,25 @@
                     
                     <div class="text-sm text-gray-600 text-center space-y-1">
                         <p><strong>ID Laporan:</strong> #{{ $report->id }}</p>
-                        <p><strong>Kategori:</strong> {{ $report->category }}</p>
-                        <p><strong>Lokasi:</strong> {{ $report->address }}, {{ $report->district_name }}, {{ $report->city_name }}</p>
+                        <p><strong>Status Saat Ini:</strong> {{ $report->current_status }}</p>
                     </div>
                 </div>
             </div>
 
-            <p class="text-gray-600 mb-4"><strong>Deskripsi Singkat:</strong></p>
-            <div class="bg-gray-50 p-4 rounded text-sm text-gray-700 italic mb-6 border border-gray-100">
-                "{{ Str::limit($report->description, 150) }}"
-            </div>
-
+            <p class="text-gray-600 mb-4">Anda dapat melihat detail pembaruan dan memantau progresnya.</p>
+           
             <div class="text-center">
-                <a href="{{ "https://" . ($is_https ? "lapor-ai-jatim.vercel.app" : "localhost:3000") . "/report/" . $report->id . "/track" }}" class="inline-block bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">
-                    Proses Laporan Sekarang
+                {{-- URL disesuaikan untuk admin melihat laporan --}}
+                <a href="{{ "https://" . ($is_https ? "lapor-ai-jatim.vercel.app" : "localhost:3000") . "/report/" . $report->id . "/track" }}" class="inline-block bg-green-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 shadow-md">
+                    Lihat Detail Laporan
                 </a>
             </div>
         </div>
 
-        <div class="bg-yellow-50 border-t border-gray-200 p-6">
-            <h3 class="text-sm font-semibold text-yellow-800">Target Respon (SLA)</h3>
-            <p class="mt-1 text-xs text-yellow-700">
-                Mohon segera melakukan verifikasi awal atau update status laporan ini dalam waktu <strong>24 jam</strong> sesuai standar operasional prosedur (SOP).
+        <div class="bg-blue-50 border-t border-gray-200 p-6">
+            <h3 class="text-sm font-semibold text-blue-800">Informasi</h3>
+            <p class="mt-1 text-xs text-blue-700">
+                Laporan ini sedang ditangani oleh admin lain dalam tim Anda. Email ini hanya untuk tujuan pemantauan dan transparansi.
             </p>
         </div>
     </div>

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AdminStatusEnum;
+use App\Enums\RoleAdministratorEnum;
 use App\Mail\NotifyAssigneeAdmin;
 use App\Mail\NotifyHasGenerateNewReport;
 use App\Models\District;
@@ -9,16 +11,20 @@ use App\Models\Regency;
 use App\Models\Report;
 use App\Models\ServiceProfile;
 use App\Models\Administrator;
-use App\Enums\RoleAdministratorEnum;
 use Illuminate\Support\Facades\Request as RequestFacade;
 use App\Enums\PriorityEnum;
 use App\Enums\ReportStatusEnum;
 use App\Models\ReportMediaUser;
 use App\Time\Time;
 use App\Http\Controllers\AIController;
+use App\Mail\NotifyAdminIdHasChanged;
+use App\Mail\NotifyAllAdminContribute;
+use App\Mail\NotifyHasUpdateReport;
 use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -77,30 +83,6 @@ class ReportController extends Controller
             ]);
         }
 
-        $allPaths = [];
-        $allTypes = [];
-
-        $disk = config('filesystems.default');
-        $is_local = in_array($disk, ['local', 'public']);
-        $storage = $is_local ? Storage::disk("public") : Storage::disk($disk);
-        $folderPath = ($is_local ? '' : 'public/') . 'real/reports/user';
-
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $storage->put($folderPath, $image, 'public');
-                $allPaths[] = $path;
-                $allTypes[] = $image->getMimeType();
-            }
-        }
-        
-        if ($request->hasFile('videos')) {
-            foreach ($request->file('videos') as $video) {
-                $path = $storage->put($folderPath, $video, 'public');
-                $allPaths[] = $path;
-                $allTypes[] = $video->getMimeType();
-            }
-        }
-
         $reporter_phone = $request->input('phone');
         $description = $request->input('description');
         $address = $request->input('location');
@@ -110,7 +92,7 @@ class ReportController extends Controller
         $aiInternalRequest = RequestFacade::create(
             '/api/analyze', 
             'POST', 
-            ['laporan' => $laporanTeks],
+            ['report' => $laporanTeks],
             [],
             ['images' => $request->file('images')]
         );
@@ -122,7 +104,7 @@ class ReportController extends Controller
             return $this->errorResponse('AI Error: ' . $aiResponse->getData()->message, 500);
         }
         
-        \Log::info("AI Response: " . json_encode($aiResponse));
+        Log::info("AI Response: " . json_encode($aiResponse));
 
         $aiResult = $aiResponse->getData(true);
         $aiData = $aiResult['data'];
@@ -135,6 +117,8 @@ class ReportController extends Controller
         $serviceProfile = ServiceProfile::where('code', $aiServiceCode)->firstOrFail();
 
         $assigneeAdmin = Administrator::where('service_code', $aiServiceCode)
+            ->where('status', AdminStatusEnum::Active->value)
+            ->where('role', RoleAdministratorEnum::BaseAdmin->value)
             ->whereDoesntHave('assignedReports', function ($query) {
                 $query->whereRaw("statuses->>-1 IN (?, ?)", [
                     ReportStatusEnum::Pending->value,
@@ -146,13 +130,14 @@ class ReportController extends Controller
 
         if (!$assigneeAdmin) {
             $assigneeAdmin = Administrator::where('service_code', $aiServiceCode)
+                ->where('status', AdminStatusEnum::Active->value)
+                ->where('role', RoleAdministratorEnum::BaseAdmin->value)
                 ->withCount(['assignedReports as active_workload' => function ($query) {
                     $query->whereRaw("statuses->>-1 IN (?, ?)", [
                         ReportStatusEnum::Pending->value,
                         ReportStatusEnum::Process->value
                     ]);
                 }])
-                ->orderBy('active_workload', 'asc')
                 ->inRandomOrder()
                 ->first();
         }
@@ -181,6 +166,32 @@ class ReportController extends Controller
             'status_change_history' => [true],
         ]);
 
+        $allPaths = [];
+        $allTypes = [];
+
+        $disk = config('filesystems.default');
+        $is_local = in_array($disk, ['local', 'public']);
+        $storage = $is_local ? Storage::disk("public") : Storage::disk($disk);
+        $folderPath = ($is_local ? '' : 'public/') . 'real/reports/user';
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $storage->put($folderPath, $image, 'public');
+                /** @disregard P1013 */
+                $allPaths[] = 'pu/' . ($is_local ? $path : base64_encode(($path)));
+                $allTypes[] = $image->getMimeType();
+            }
+        }
+        
+        if ($request->hasFile('videos')) {
+            foreach ($request->file('videos') as $video) {
+                $path = $storage->put($folderPath, $video, 'public');
+                /** @disregard P1013 */
+                $allPaths[] = 'pu/' . ($is_local ? $path : base64_encode(($path)));
+                $allTypes[] = $video->getMimeType();
+            }
+        }
+
         if (!empty($allPaths)) {
             ReportMediaUser::create([
                 'report_id' => $report->id,
@@ -188,16 +199,32 @@ class ReportController extends Controller
                 'files_type' => $allTypes,
             ]);
         }
+
+        $is_https = str_contains(config('app.url'), 'https://');
     
         if ($assigneeAdmin?->email) {
-            Mail::to($assigneeAdmin->email)->send(new NotifyAssigneeAdmin($report));
+            Mail::to($assigneeAdmin->email)->send(new NotifyAssigneeAdmin($report, $is_https));
+        }
+
+        $otherAdminsInService = Administrator::where('service_code', $report->service_code)
+            ->where('id', '!=', $report->assignee_admin_id)
+            ->where('status', AdminStatusEnum::Active->value)
+            ->where('role', RoleAdministratorEnum::BaseAdmin->value)
+            ->get();
+
+        $recipientEmails = $otherAdminsInService->pluck('email')->filter()->values();
+
+        if ($recipientEmails->isNotEmpty()) {
+            Mail::to($recipientEmails->first())->send(
+                new NotifyAllAdminContribute($report, $is_https)
+            );
         }
 
         try {
-            $fakeEmail = Str::replace('+', '', trim($reporter_phone)) . "@phone.id";
-            Mail::to($fakeEmail)->send(new NotifyHasGenerateNewReport($report));
+            $fakeEmail = (Str::replace('+', '', trim($reporter_phone)) ?? "number0123456789") . "@phone.id";
+            Mail::to($fakeEmail)->send(new NotifyHasGenerateNewReport($report, $is_https));
         } catch (\Exception $e) {
-            \Log::error("Gagal kirim email pelapor: " . $e->getMessage());
+            Log::error("Gagal kirim email pelapor: " . $e->getMessage());
         }
 
         return $this->successResponse([
@@ -278,19 +305,201 @@ class ReportController extends Controller
         $report->load(['serviceProfile', 'assignee']);
         $report->append(['contributors', 'media']);
 
+        $reportStatuses = ReportStatusEnum::cases();
+
+        $admins = Administrator::where('service_code', $report->service_code)
+            ->where('status', AdminStatusEnum::Active->value)
+            ->where('role', RoleAdministratorEnum::BaseAdmin->value)
+            ->select('id', 'full_name')
+            ->get();
+
         return $this->successResponse([
-            'report' => $report,
+            'report'   => $report,
+            'statuses' => $reportStatuses,
+            'admins'   => $admins,
         ]);
     }
 
-    public function update(Request $request, Report $report)
+    public function addComment(Request $request)
     {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+        
         $this->validateRequest($request, [
-
+            'report_id' => 'required|integer|exists:reports,id',
+            'status' => ['required', 'string', 'in:' . implode(',', array_column(ReportStatusEnum::cases(), 'value'))],
+            'comment' => 'required|string|min:10|max:5000',
         ], [
-
+            'report_id.required' => 'ID Laporan wajib disertakan.',
+            'report_id.exists' => 'Laporan tidak ditemukan.',
+            'status.required' => 'Status laporan wajib dipilih.',
+            'status.in' => 'Status yang dipilih tidak valid.',
+            'comment.required' => 'Komentar wajib disertakan.',
+            'comment.min' => 'Komentar minimal harus 20 karakter.',
+            'comment.max' => 'Komentar tidak boleh lebih dari 5000 karakter.',
         ]);
 
-        $report->load(['serviceProfile']);
+        $admin = Auth::user();
+
+        /** @var \App\Models\Report $report */
+        $report = Report::findOrFail($request->input('report_id'));
+
+        if ($report->service_code !== $admin->service_code) {
+            return $this->errorResponse('Unauthorized', 422, [
+                'auth' => ['Anda tidak memiliki wewenang untuk memperbarui laporan ini.']
+            ]);
+        }
+
+        $assigneAdminId = $report->assignee_admin_id;
+        $isAssigneAdmin = $assigneAdminId === $admin->id;
+        $assigneAdminData = Administrator::find($assigneAdminId);
+
+        try {
+            $updated_at = Time::getNow();
+            $report->statuses = array_merge($report->statuses, [$request->input('status')]);
+            $report->review_timestamps = array_merge($report->review_timestamps, [$updated_at]);
+            $report->reviewing_admin_ids = array_merge($report->reviewing_admin_ids, [$admin->id]);
+            $report->review_notes = array_merge($report->review_notes, [$request->input('comment') ?? '']);
+            $report->status_change_history = array_merge($report->status_change_history, [$isAssigneAdmin]);
+
+            $report->updated_at = $updated_at;
+            $report->save();
+
+            try {
+                $is_https = str_contains(config('app.url'), 'https://');
+                $fakeEmail = (Str::replace('+', '', subject: trim($report->reporter_contact)) ?? "number0123456789") . "@phone.id";
+                Mail::to($fakeEmail)->send(new NotifyHasUpdateReport($report, $is_https));
+                Mail::to($assigneAdminData->email)->send(new NotifyHasUpdateReport($report, $is_https));
+            } catch (\Exception $e) {
+                Log::error("Gagal kirim email pelapor: " . $e->getMessage());
+            }
+        } catch (\Throwable $e) {
+            Log::error("Gagal memperbarui status laporan: " . $e->getMessage());
+            return $this->errorResponse('Gagal memperbarui status laporan karena kesalahan server.', 500);
+        }
+
+        $reportStatuses = ReportStatusEnum::cases();
+
+        return $this->successResponse([
+            'report' => $report,
+            'statuses' => $reportStatuses,
+        ]);
+    }
+
+    public function changeStatus(Request $request)
+    {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+        
+        $this->validateRequest($request, [
+            'report_id' => 'required|integer|exists:reports,id',
+            'statuses_idx' => 'required|integer',
+            'visibility' => 'required|boolean',
+        ], [
+            'report_id.required' => 'ID Laporan wajib disertakan.',
+            'report_id.exists' => 'Laporan tidak ditemukan.',
+            'statuses_idx.required' => 'Indeks status wajib disertakan.',
+            'statuses_idx.integer' => 'Indeks status harus berupa angka.',
+            'visibility.required' => 'Status visibilitas wajib disertakan.',
+            'visibility.boolean' => 'Status visibilitas harus berupa boolean (true/false, 1/0).',
+        ]);
+
+        $admin = Auth::user();
+
+        /** @var \App\Models\Report $report */
+        $report = Report::findOrFail($request->input('report_id'));
+
+        if ($report->service_code !== $admin->service_code && $report->assignee_admin_id !== $admin->id) {
+            return $this->errorResponse('Unauthorized', 422, [
+                'auth' => ['Anda tidak memiliki wewenang untuk memperbarui laporan ini.']
+            ]);
+        }
+
+        try {
+            $status_change_history = $report->status_change_history ?? []; 
+            $status_change_history[$request->input('statuses_idx')] = $request->input('visibility');
+            $report->status_change_history = $status_change_history;
+            $report->save();
+
+            $contributeAdmins = Administrator::find($report->reviewing_admin_ids);
+
+            if ($contributeAdmins && $contributeAdmins->first()->email) {
+                $is_https = (config('app.env') === 'production' || str_contains(config('app.url'), 'https://'));
+                
+                Mail::to($contributeAdmins->first()->email)->send(new NotifyHasUpdateReport($report, $is_https));
+            }
+        } catch (\Throwable $e) {
+            Log::error("Gagal memperbarui status laporan: " . $e->getMessage());
+            return $this->errorResponse('Gagal memperbarui status laporan karena kesalahan server.', 500);
+        }
+
+        $reportStatuses = ReportStatusEnum::cases();
+
+        return $this->successResponse([
+            'report' => $report,
+            'statuses' => $reportStatuses,
+        ]);
+    }
+
+    public function changeAdmin(Request $request)
+    {
+        /** @var Request $request */
+        $request = $this->decodeRequest($request);
+        
+        $this->validateRequest($request, [
+            'report_id' => 'required|integer|exists:reports,id',
+            'new_admin_id' => 'required|integer',
+        ], [
+            'report_id.required' => 'ID Laporan wajib disertakan.',
+            'report_id.exists' => 'Laporan tidak ditemukan.',
+            'new_admin_id.required' => 'ID Admin wajib disertakan.',
+            'new_admin_id.integer' => 'ID Admin harus berupa angka.',
+        ]);
+
+        $admin = Auth::user();
+
+        /** @var \App\Models\Report $report */
+        $report = Report::findOrFail($request->input('report_id'));
+
+        if ($admin->role !== RoleAdministratorEnum::SystemAdmin) {
+            return $this->errorResponse('Unauthorized', 422, [
+                'auth' => ['Anda tidak memiliki wewenang untuk memperbarui laporan ini.']
+            ]);
+        }
+
+        $new_admin_id = $request->new_admin_id;
+
+        $last_admin_idx = $report->assignee_admin_id;
+        $last_admin = Administrator::find($last_admin_idx);
+        $new_admin = Administrator::find($new_admin_id);
+
+        if (!$new_admin) {
+            return $this->errorResponse('ID Admin baru tidak valid. Admin tidak ditemukan.', 422, [
+                'new_admin_id' => ['Admin baru tidak ditemukan dalam sistem.']
+            ]);
+        }
+
+        try {
+            $report->assignee_admin_id = $new_admin_id;
+            $report->save();
+
+            $contributeAdmins = Administrator::find($report->reviewing_admin_ids);
+
+            if ($contributeAdmins && $contributeAdmins->first()->email) {
+                $is_https = (config('app.env') === 'production' || str_contains(config('app.url'), 'https://'));
+                
+                Mail::to($contributeAdmins->first()->email)->send(new NotifyAdminIdHasChanged($report, $new_admin, $last_admin, $is_https));
+            }
+        } catch (\Throwable $e) {
+            Log::error("Gagal memperbarui status laporan: " . $e->getMessage());
+            return $this->errorResponse('Gagal memperbarui status laporan karena kesalahan server.', 500);
+        }
+
+        $reportStatuses = ReportStatusEnum::cases();
+
+        return $this->successResponse([
+            'report' => $report,
+            'statuses' => $reportStatuses,
+        ]);
     }
 }

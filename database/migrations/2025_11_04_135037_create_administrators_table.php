@@ -10,8 +10,7 @@ return new class extends Migration
     {
         Schema::create('administrators', function (Blueprint $table) {
             $table->id();
-            $table->string('service_code');
-            $table->foreign('service_code')->references('code')->on('service_profiles')->onUpdate('cascade');
+            $table->string('service_code')->nullable();
             $table->string('nip')->unique()->nullable();
             $table->string('full_name');
             $table->string('email')->unique();

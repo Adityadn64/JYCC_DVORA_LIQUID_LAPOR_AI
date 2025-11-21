@@ -7,7 +7,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Report;
 
-class NotifyHasGenerateNewReport  extends Mailable
+class NotifyHasUpdateReport  extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -23,6 +23,6 @@ class NotifyHasGenerateNewReport  extends Mailable
     public function build()
     {
         return $this->subject('Laporan Diterima: #' . $this->report->id . ' - Lapor.ai')
-                    ->view('emails.notify-new-report');
+                    ->view('emails.notify-update-report');
     }
 }

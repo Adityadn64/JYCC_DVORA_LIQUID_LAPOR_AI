@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AdminStatusEnum;
 use App\Enums\DistrictEnum;
 use App\Enums\RegencyEnum;
 use Illuminate\Support\Str;
@@ -19,15 +20,6 @@ class ReportFactory extends Factory
     public function definition(): array
     {
         $serviceProfile = ServiceProfile::inRandomOrder()->first();
-        $assigneeAdmin = Administrator::where('role', RoleAdministratorEnum::BaseAdmin)
-                                    ->inRandomOrder()
-                                    ->first();
-
-        if (!$assigneeAdmin) {
-            $assigneeAdmin = Administrator::factory()->create([
-                'role' => RoleAdministratorEnum::BaseAdmin,
-            ]);
-        }
         
         $allAdminIds = Administrator::pluck('id')->toArray();
 
@@ -82,10 +74,24 @@ class ReportFactory extends Factory
                                     ? true : $this->faker->boolean();
         }
 
+        $service_code = $serviceProfile->code;
+
+        $assigneeAdmin = Administrator::where('role', RoleAdministratorEnum::BaseAdmin)
+                                    ->where('service_code', $service_code)
+                                    ->where('status', AdminStatusEnum::Active)
+                                    ->inRandomOrder()
+                                    ->first();
+
+        if (!$assigneeAdmin) {
+            $assigneeAdmin = Administrator::factory()->create([
+                'role' => RoleAdministratorEnum::BaseAdmin,
+            ]);
+        }
+
         return [
             'assignee_admin_id' => $assigneeAdmin->id,
             'service_id' => $serviceProfile->id,
-            'service_code' => $serviceProfile->code,
+            'service_code' => $service_code,
             'reporter_name' => $this->faker->name(),
             'reporter_contact' => $this->faker->phoneNumber(),
             'title' => $this->faker->sentence(6),

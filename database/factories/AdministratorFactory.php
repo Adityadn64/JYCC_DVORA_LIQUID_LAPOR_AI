@@ -12,11 +12,11 @@ class AdministratorFactory extends Factory
 {
     public function definition(): array
     {
-        // Ambil service code acak dari dinas yang sudah ada
         $serviceProfile = ServiceProfile::inRandomOrder()->first();
+        $role = $this->faker->randomElement(RoleAdministratorEnum::cases());
 
         return [
-            'service_code' => $serviceProfile->code,
+            'service_code' => $role === RoleAdministratorEnum::BaseAdmin ? $serviceProfile->code : null,
             'nip' => $this->faker->unique()->numerify('##################'), // 18 digit NIP
             'full_name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
@@ -24,7 +24,7 @@ class AdministratorFactory extends Factory
             'password_hash' => Hash::make('password'), // Default password
             'profile_picture_path' => null,
             'kta_scan_path' => null,
-            'role' => $this->faker->randomElement(RoleAdministratorEnum::cases()),
+            'role' => $role,
             'status' => $this->faker->randomElement(AdminStatusEnum::cases()),
         ];
     }

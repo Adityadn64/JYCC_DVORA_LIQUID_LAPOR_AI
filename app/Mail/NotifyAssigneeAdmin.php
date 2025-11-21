@@ -12,10 +12,12 @@ class NotifyAssigneeAdmin extends Mailable
     use Queueable, SerializesModels;
 
     public $report;
+    public $is_https;
 
-    public function __construct(Report $report)
+    public function __construct(Report $report, bool $is_https)
     {
         $this->report = $report;
+        $this->is_https = $is_https;
     }
 
     public function build()

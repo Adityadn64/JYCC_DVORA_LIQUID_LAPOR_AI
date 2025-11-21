@@ -20,7 +20,6 @@ trait CheckTheAdminTrait
         $authorizationHeader = $request->header('Authorization');
 
         if (!$authorizationHeader || !str_starts_with(strtolower($authorizationHeader), 'bearer ')) {
-            // Jika header tidak ada atau formatnya salah
             return $this->errorResponse('Token format is invalid.', 401);
         }
 
@@ -38,7 +37,6 @@ trait CheckTheAdminTrait
 
         $admin = $accessToken->tokenable;
 
-        // Cek status user
         if ($admin->status !== AdminStatusEnum::Active) {
             $accessToken->delete();
 

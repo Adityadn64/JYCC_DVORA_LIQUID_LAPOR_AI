@@ -10,13 +10,7 @@ use App\Enums\AdminStatusEnum;
 use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class AdminManagementController extends Controller
 {
@@ -124,15 +118,7 @@ class AdminManagementController extends Controller
     {
         $request = $this->decodeRequest($request);
 
-        // Di aplikasi nyata, ini akan men-trigger Mailable dengan signed link.
-        // Untuk saat ini, kita hanya log sebagai placeholder.
-
-        // $token = app('auth.password.broker')->createToken($admin);
         // Mail::to($admin->email)->send(new AdminPasswordResetLink($token));
-
-        Log::info("System Admin memicu reset password untuk: {$admin->email}");
-
-        // return redirect()->route('admin.manage.index')->with('success', "Link reset password (placeholder) telah dikirim ke {$admin->email}.");
 
         return $this->successResponse([], 'Link reset password (placeholder) telah dikirim ke {$admin->email}.');
     }

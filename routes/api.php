@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\Admin\PerformanceController;
+use App\Traits\Controller\ApiResponseTrait;
 
 // Route::prefix('api')->name('api.')->group(function () {
 Route::post('/home', [HomeController::class, 'index'])->name('home');
@@ -39,18 +40,29 @@ Route::prefix('auth')->name('auth.')->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'admin.status'])->prefix('admin')->name('admin.')->group(function () {
+    Route::post('/', [ProfileController::class, 'verify'])->name('verify');
+
+    Route::prefix('report')->name('report.')->group(function () {
+        Route::post('/add-comment', [ReportController::class, 'addComment'])->name('report.add.comment');
+        Route::post('/change-status', [ReportController::class, 'changeStatus'])->name('report.add.status');
+
+        Route::middleware('systemadmin')->group(function () {
+            Route::post('/change-admin', [ReportController::class, 'changeAdmin'])->name('report.change.admin');
+        });
+    });
+
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
         Route::post('/', [DashboardController::class, 'index'])->name('dashboard');
     });
 
     Route::prefix('analytics')->name('analytics.')->group(function () {
         Route::post('/', [AnalyticsController::class, 'index'])->name('analytics');
-        Route::post('/export-reports', [AnalyticsController::class, 'exportReports'])->name('analytics.export-reports');
     });
 
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::post('/', [ProfileController::class, 'show'])->name('show');
-        Route::post('/export-profile', [ProfileController::class, 'exportProfile'])->name('profile.export-profile');
+
+        Route::post('/check-password', [ProfileController::class, 'checkPassword'])->name('check.password');
 
         Route::post('/update-info', [ProfileController::class, 'updateInfo'])->name('updateInfo');
         Route::post('/update-full-name', [ProfileController::class, 'updateFullName'])->name('updateFullName');

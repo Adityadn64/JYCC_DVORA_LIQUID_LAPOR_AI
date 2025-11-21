@@ -7,7 +7,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Report;
 
-class NotifyHasGenerateNewReport  extends Mailable
+class NotifyAllAdminContribute extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -22,7 +22,8 @@ class NotifyHasGenerateNewReport  extends Mailable
 
     public function build()
     {
-        return $this->subject('Laporan Diterima: #' . $this->report->id . ' - Lapor.ai')
-                    ->view('emails.notify-new-report');
+        // Subjek yang lebih umum
+        return $this->subject('Pembaruan Laporan: #' . $this->report->id . ' - ' . $this->report->title)
+                    ->view('emails.notify-all-admin-contribute'); // Menggunakan view yang baru
     }
 }

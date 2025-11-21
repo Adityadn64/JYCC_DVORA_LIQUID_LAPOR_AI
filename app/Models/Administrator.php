@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Enums\AdminStatusEnum;
 use App\Enums\RoleAdministratorEnum;
-use App\Enums\ServiceCodeEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,7 +26,6 @@ class Administrator extends Authenticatable
     protected $hidden = ['password_hash'];
 
     protected $casts = [
-        'service_code' => ServiceCodeEnum::class,
         'role' => RoleAdministratorEnum::class,
         'status' => AdminStatusEnum::class,
         'password_hash' => 'hashed',

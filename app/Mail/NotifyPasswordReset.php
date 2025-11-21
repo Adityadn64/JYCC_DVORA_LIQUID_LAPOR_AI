@@ -6,14 +6,14 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class OtpMail extends Mailable
+class NotifyPasswordReset extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $token;
     public $isEmail;
 
-    public function __construct($token, $isEmail)
+    public function __construct(string $token, bool $isEmail)
     {
         $this->token = $token;
         $this->isEmail = $isEmail;
@@ -21,7 +21,7 @@ class OtpMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Kode Verifikasi Registrasi Lapor.ai')
-                    ->view('emails.create-account');
+        return $this->subject('Reset Password Akun Anda')
+                    ->view('emails.password-reset');
     }
 }

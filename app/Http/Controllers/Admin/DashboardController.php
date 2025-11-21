@@ -17,7 +17,7 @@ use Carbon\Carbon;
 class DashboardController extends Controller
 {
     use ApiResponseTrait;
-    
+
     public function index(Request $request)
     {
         /** @var Request $request */

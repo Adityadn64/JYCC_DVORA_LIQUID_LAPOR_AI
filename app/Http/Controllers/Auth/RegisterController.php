@@ -9,7 +9,7 @@ use App\Models\EmailRegistration;
 use App\Models\PhoneRegistration;
 use App\Enums\RoleAdministratorEnum;
 use App\Enums\AdminStatusEnum;
-use App\Mail\OtpMail;
+use App\Mail\NotifyRegistration;
 use App\Traits\Controller\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -96,7 +96,7 @@ class RegisterController extends Controller
             );
 
             // try {
-                Mail::to($request->email)->send(new OtpMail($token['email'], true));
+                Mail::to($request->email)->send(new NotifyRegistration($token['email'], true));
             // } catch (\Exception $e) {
             //     return $this->errorResponse('Gagal mengirim email reset password. Silakan coba lagi.', 500);
             // }
@@ -111,7 +111,8 @@ class RegisterController extends Controller
             );
 
             // try {
-                Mail::to($request->email)->send(new OtpMail($token['phone'], false));
+                $fakeEmail = (Str::replace('+', '', trim($request->phone)) ?? "number0123456789") . "@phone.id";
+                Mail::to($fakeEmail)->send(new NotifyRegistration($token['phone'], false));
             // } catch (\Exception $e) {
             //     return $this->errorResponse('Gagal mengirim email reset password. Silakan coba lagi.', 500);
             // }
@@ -185,7 +186,7 @@ class RegisterController extends Controller
             'password_hash' => $request->password,
             'nip' => $request->nip,
             'role' => $request->role,
-            'service_code' => $request->service_code ?? "DISKOMINFO",
+            'service_code' => $request->service_code,
             'kta_scan_path' => $request->kta_scan_path,
             'status' => AdminStatusEnum::Pending,
         ]);

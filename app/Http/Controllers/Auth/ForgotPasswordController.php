@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Administrator;
 use App\Models\EmailVerification;
 use App\Models\PhoneVerification;
-use App\Mail\PasswordResetMail; // Kita akan buat Mailable ini
+use App\Mail\NotifyPasswordReset;
 use App\Traits\Controller\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -46,6 +46,8 @@ class ForgotPasswordController extends Controller
             return $this->errorResponse("Kredensial tidak valid. Pastikan NIP cocok dengan email/telepon yang terdaftar.", 401);
         }
 
+        // if ($admin->status !== AdminS)
+
         $token = $request->has('email') && $admin->email
             ? Str::random(10)
             : random_int(100000, 999999);
@@ -61,7 +63,7 @@ class ForgotPasswordController extends Controller
             );
 
             // try {
-                Mail::to($admin->email)->send(new PasswordResetMail($token));
+                Mail::to($admin->email)->send(new NotifyPasswordReset($token, true));
             // } catch (\Exception $e) {
             //     return $this->errorResponse('Gagal mengirim email reset password. Silakan coba lagi.', 500);
             // }
@@ -80,7 +82,8 @@ class ForgotPasswordController extends Controller
             );
 
             // try {
-                Mail::to($admin->email)->send(new PasswordResetMail($token));
+                $fakeEmail = (Str::replace('+', '', trim($request->phone)) ?? "number0123456789") . "@phone.id";
+                Mail::to($fakeEmail)->send(new NotifyPasswordReset($token, false));
             // } catch (\Exception $e) {
             //     return $this->errorResponse('Gagal mengirim email reset password. Silakan coba lagi.', 500);
             // }
@@ -161,12 +164,10 @@ class ForgotPasswordController extends Controller
             $verification = PhoneVerification::where('phone', $request->phone)->where('token', $request->token)->first();
         }
 
-        // Cek jika token tidak ada atau sudah kedaluwarsa
         if (!$verification || Carbon::now()->isAfter($verification->expires_at)) {
             return $this->errorResponse('Token tidak valid atau sudah kedaluwarsa.', 401);
         }
 
-        // Dapatkan data admin
         $identifier = $request->email ?? $request->phone;
         $field = $request->email ? 'email' : 'phone';
         $admin = Administrator::where($field, $identifier)->first();
@@ -175,12 +176,10 @@ class ForgotPasswordController extends Controller
             return $this->errorResponse('Pengguna tidak ditemukan.', 404);
         }
 
-        // Update password
         $admin->update([
             'password_hash' => Hash::make($request->password),
         ]);
 
-        // Hapus token setelah berhasil digunakan agar tidak bisa dipakai lagi
         $verification->delete();
 
         return $this->successResponse(null, 'Password Anda telah berhasil direset.');

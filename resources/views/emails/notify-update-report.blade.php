@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Berhasil Dibuat</title>
+    <title>Status Laporan Diperbarui</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,13 +24,14 @@
 
         <div class="p-6 sm:p-8">
             <p class="text-gray-600 mb-6">Halo <strong>{{ $report->reporter_name }}</strong>,</p>
-            <p class="text-gray-600 mb-6">Terima kasih telah peduli dengan lingkungan Anda. Laporan Anda telah berhasil direkam oleh sistem kami dan sedang menunggu verifikasi admin.</p>
+            <p class="text-gray-600 mb-6">Status laporan Anda telah diperbarui. Terima kasih atas kesabaran Anda.</p>
             
             <div class="mb-6">
                 <div class="bg-blue-50 border-2 border-dashed border-blue-200 rounded-lg p-6 relative overflow-hidden">
                     <div class="absolute top-0 right-0 mt-4 mr-4">
-                        <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide border border-yellow-200">
-                            Pending
+                        <!-- Example of dynamic status, assuming $report->status is available -->
+                        <span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide border border-green-200">
+                            {{ $report->status ?? 'Verified' }} 
                         </span>
                     </div>
 
@@ -62,8 +63,9 @@
         <div class="bg-green-50 border-t border-gray-200 p-6">
             <h3 class="text-sm font-semibold text-green-800">Apa Selanjutnya?</h3>
             <ul class="mt-2 text-xs text-green-700 list-disc list-inside space-y-1">
-                <li>Admin akan memverifikasi laporan Anda.</li>
-                <li>Jika valid, laporan akan diteruskan ke dinas terkait.</li>
+                <!-- Example of dynamic next steps based on assumed $report->status -->
+                <li>Status saat ini: <strong>{{ $report->status ?? 'Verified' }}</strong>.</li>
+                <li>Pihak terkait sedang memproses laporan Anda.</li>
                 <li>Anda akan menerima update status selanjutnya via email/WhatsApp.</li>
             </ul>
         </div>

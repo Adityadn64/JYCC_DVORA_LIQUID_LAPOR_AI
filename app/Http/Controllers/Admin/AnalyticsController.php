@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Export\ExportFile;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\ReportController;
 use App\Models\Report;
 use App\Models\Administrator;
 use App\Models\ServiceProfile;
@@ -15,7 +13,6 @@ use App\Enums\ReportStatusEnum;
 use App\Traits\Controller\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -384,51 +381,5 @@ class AnalyticsController extends Controller
         $start = $request->filled('date_start') ? Carbon::parse($request->date_start) : now()->subDays(30);
         $end = $request->filled('date_end') ? Carbon::parse($request->date_end) : now();
         return $start->diffInDays($end);
-    }
-
-    public function exportReports(Request $request) {
-        /** @var Request $request */
-        $request = $this->decodeRequest($request);
-
-        ValidatorFacade::make($request->all(), [
-            'exportType' => ['required', 'string', Rule::in(['CSV', 'Excel'])],
-        ])->validate();
-
-        $baseQuery = $this->buildBaseQuery($request);
-
-        $reports = (clone $baseQuery)
-            ->with(['assignee', 'serviceProfile'])
-            ->orderBy('updated_at', 'desc')
-            ->cursor();
-
-        $columns = [
-            'ID' => 'id',
-            'JUDUL' => 'title',
-            'STATUS' => function($report) {
-                $statusesArray = $report->statuses;
-                return !empty($statusesArray) ? ucfirst(end($statusesArray)) : 'Unknown';
-            },
-            'KATEGORI' => function($report) {
-                return $report->category->name ?? 'N/A';
-            },
-            'DINAS' => function($report) {
-                return $report->serviceProfile->full_name ?? 'N/A';
-            },
-            'ADMIN' => function($report) {
-                return $report->assignee->full_name ?? 'Belum Ditugaskan';
-            },
-            'DIBUAT' => fn($report) => $report->created_at->toDateTimeString(),
-            'DIPERBARUI' => fn($report) => $report->updated_at->toDateTimeString(),
-            'LINK' => function($report) {
-                return route('report.track.show', ['report' => $report]);
-            }
-        ];
-
-        $exportType = $request->input('exportType');
-        $fileName = 'laporan-analisis-' . now()->format('YmdHis');
-
-        return $exportType === "CSV"
-            ? ExportFile::exportCSV($reports, $columns, $fileName . '.csv')
-            : ExportFile::exportExcel($reports, $columns, $fileName . '.xlsx');
     }
 }
