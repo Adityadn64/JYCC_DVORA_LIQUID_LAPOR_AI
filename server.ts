@@ -326,11 +326,12 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction, isOptio
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
+  if (token) req.session.auth_token = token;
+
   if (!token && !isOptional) {
     return res.status(401).json({ message: 'Unauthorized: No token provided.' });
   }
 
-  if (token) req.session.auth_token = token;
   next();
 };
 
@@ -374,13 +375,17 @@ app.post('/api/regencies', (req, res) => {
 });
 
 app.post(
-  '/api/get-file', (req: Request, res: Response, next: NextFunction) =>
-  authMiddleware(req, res, next, true), async (req: Request, res: Response) =>
-  handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/get-file', data,{
-      responseType: 'arraybuffer' 
-    }
-  )
-));
+  '/api/get-file',
+  (req, res, next) => authMiddleware(req, res, next, true),
+  async (req: Request, res: Response) => {
+    return handleEncryptedRequest(req, res, null, (data) =>
+      laravelAPI.post('/get-file', data, {
+        headers: { 'Authorization': `Bearer ${req.session.auth_token}` },
+        responseType: 'arraybuffer'
+      })
+    );
+  }
+);
 
 app.post('/api/home', async (req, res) => {
   return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/home', data), );
@@ -498,7 +503,7 @@ app.post('/api/auth/password-reset/verify', (req, res) => {
     return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/password-reset/verify', data), );
 });
 
-app.post('/api/auth/password-reset/confirm', authMiddleware, (req, res) => {
+app.post('/api/auth/password-reset/confirm', (req, res) => {
     return handleEncryptedRequest(req, res, null, (data) => laravelAPI.post('/auth/password-reset/confirm', data), );
 });
 
@@ -523,10 +528,14 @@ const createAuthHandler = (urlTemplate: string) => {
 };
 
 // ADMIN DASHBOARD
+app.post('/api/report/add-comment', authMiddleware, createAuthHandler('/admin/report/add-comment'));
+app.post('/api/report/change-status', authMiddleware, createAuthHandler('/admin/report/change-status'));
+app.post('/api/report/change-admin', authMiddleware, createAuthHandler('/admin/report/change-admin'));
 app.post('/api/admin/dashboard', authMiddleware, createAuthHandler('/admin/dashboard'));
 app.post('/api/admin/analytics', authMiddleware, createAuthHandler('/admin/analytics'));
-app.post('/api/admin/analytics/export-reports', authMiddleware, createAuthHandler('/admin/analytics/export-reports'));
+app.post('/api/admin', authMiddleware, createAuthHandler('/admin'));
 app.post('/api/admin/profile', authMiddleware, createAuthHandler('/admin/profile'));
+app.post('/api/admin/profile/check-password', authMiddleware, createAuthHandler('/admin/profile/check-password'));
 app.post('/api/admin/profile/update-info', authMiddleware, createAuthHandler('/admin/profile/update-info'));
 app.post('/api/admin/profile/update-full-name', authMiddleware, createAuthHandler('/admin/profile/update-full-name'));
 app.post('/api/admin/profile/update-nip', authMiddleware, createAuthHandler('/admin/profile/update-nip'));
@@ -544,59 +553,67 @@ app.post('/api/admin/manage/:id/reset-password', authMiddleware, createAuthHandl
 app.post('/api/admin/manage/:id/accept', authMiddleware, createAuthHandler('/admin/manage/:id/accept'));
 app.post('/api/admin/manage/:id/reject', authMiddleware, createAuthHandler('/admin/manage/:id/reject'));
 app.post('/api/admin/performance', authMiddleware, createAuthHandler('/admin/performance'));
-app.post('/api/admin/performance/export', authMiddleware, createAuthHandler('/admin/performance/export'));
 
 // ADMIN PROFILE FILE UPLOADS - NO ENCRYPTION
-app.post('/api/admin/profile/update-picture', authMiddleware, upload.single('profile_picture'), async (req: Request, res: Response) => {
+app.post('/api/admin/profile/update-picture', upload.any(), authMiddleware, async (req: Request, res: Response) => {
   try {
     const form = new FormData();
-    if (req.file) {
-      form.append('profile_picture', req.file.buffer, req.file.originalname);
+    if (req.body && typeof req.body === 'object') {
+      Object.entries(req.body).forEach(([key, value]) => {
+        form.append(key, value as string);
+      });
     }
-    const response = await laravelAPI.post('/admin/profile/update-picture', form, {
+
+    if (req.files && Array.isArray(req.files)) {
+      req.files.forEach((file: Express.Multer.File) => {
+        form.append(file.fieldname, file.buffer, file.originalname);
+      });
+    }
+
+    if (form.getBuffer().length === 0) {
+      return res.status(400).json({ message: 'Request body tidak boleh kosong.' });
+    }
+
+    return handleEncryptedRequest(req, res, form, (data) => laravelAPI.post('/admin/profile/update-picture', data, {
       headers: {
         'Authorization': `Bearer ${req.session.auth_token}`,
-        ...form.getHeaders(),
+        ...form.getHeaders()
       },
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
-    });
-    res.json(response.data);
+    }), );
   } catch (error: any) {
     return res.status(error.response?.status || 500).json(error.response?.data);
   }
 });
 
-app.post('/api/admin/profile/update-kta', authMiddleware, upload.single('kta_scan'), async (req: Request, res: Response) => {
+app.post('/api/admin/profile/update-kta', upload.any(), authMiddleware, async (req: Request, res: Response) => {
   try {
     const form = new FormData();
-    if (req.file) {
-      form.append('kta_scan', req.file.buffer, req.file.originalname);
+    if (req.body && typeof req.body === 'object') {
+      Object.entries(req.body).forEach(([key, value]) => {
+        form.append(key, value as string);
+      });
     }
-    const response = await laravelAPI.post('/admin/profile/update-kta', form, {
+
+    if (req.files && Array.isArray(req.files)) {
+      req.files.forEach((file: Express.Multer.File) => {
+        form.append(file.fieldname, file.buffer, file.originalname);
+      });
+    }
+
+    if (form.getBuffer().length === 0) {
+      return res.status(400).json({ message: 'Request body tidak boleh kosong.' });
+    }
+
+    return handleEncryptedRequest(req, res, form, (data) => laravelAPI.post('/admin/profile/update-kta', data, {
       headers: {
         'Authorization': `Bearer ${req.session.auth_token}`,
-        ...form.getHeaders(),
+        ...form.getHeaders()
       },
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
-    });
-    res.json(response.data);
-  } catch (error: any) {
-    return res.status(error.response?.status || 500).json(error.response?.data);
-  }
-});
-
-// ADMIN PROFILE EXPORT - Stream response, NO encryption
-app.post('/api/admin/profile/export-profile', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const response = await laravelAPI.post('/admin/profile/export-profile', req.body, {
-      headers: { 'Authorization': `Bearer ${req.session.auth_token}` },
-      responseType: 'stream'
-    });
-    res.setHeader('Content-Type', response.headers['content-type'] || 'application/csv');
-    res.setHeader('Content-Disposition', response.headers['content-disposition'] || 'attachment; filename="profile.csv"');
-    response.data.pipe(res);
+    }), );
   } catch (error: any) {
     return res.status(error.response?.status || 500).json(error.response?.data);
   }
