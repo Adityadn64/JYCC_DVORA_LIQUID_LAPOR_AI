@@ -55,6 +55,12 @@ export default function ReportTrackShowPage({
 
   const [report, setReport] = useState<Report | null>(null);
   const [statuses, setStatuses] = useState<string[]>([]);
+  const [admins, setAdmins] = useState<
+    {
+      id: number;
+      full_name: string;
+    }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -63,6 +69,9 @@ export default function ReportTrackShowPage({
     category: "",
     comment: "",
   });
+  const [changeAdminFormData, setChangeAdminFormData] = useState<number | null>(
+    null
+  );
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [activeModalStatus, setActiveModalStatus] = useState<ActiveModalStatus>(
     { type: "", change: false, comment: "" }
@@ -172,6 +181,8 @@ export default function ReportTrackShowPage({
 
       setReport(reportData);
       setStatuses(response.data.statuses);
+      setAdmins(response.data.admins);
+      setChangeAdminFormData(reportData.assignee?.id || null);
 
       console.log(reportData.service_code, user?.service_code);
     } catch (err) {
@@ -207,8 +218,6 @@ export default function ReportTrackShowPage({
       });
 
       console.log({ response });
-
-      const reportData: Report = response.data.report;
 
       setSuccess("Status/Tanggapan berhasil diperbarui!");
       setTimeout(() => {
@@ -417,10 +426,9 @@ export default function ReportTrackShowPage({
                   <th className="px-4 py-2 text-left">Status</th>
                   <th className="px-4 py-2 text-left">Catatan</th>
                   <th className="px-4 py-2 text-left">Waktu</th>
-                  {isAuthenticated &&
-                    user?.id === report.assignee_admin_id && (
-                      <th className="px-4 py-2 text-left">Aksi</th>
-                    )}
+                  {isAuthenticated && user?.id === report.assignee_admin_id && (
+                    <th className="px-4 py-2 text-left">Aksi</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -731,14 +739,61 @@ export default function ReportTrackShowPage({
               </div>
             )}
             <p className="mb-4">Ubah penanggung jawab untuk laporan ini</p>
-            <form onSubmit={() => {}}>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!id || !changeAdminFormData) return;
+
+                setIsSubmitting(true);
+                setError(null);
+                setSuccess(null);
+
+                try {
+                  const response = await reportService.changeAdmin({
+                    report_id: Number(id),
+                    new_admin_id: changeAdminFormData,
+                  });
+
+                  console.log({ response });
+
+                  setSuccess("Status/Tanggapan berhasil diperbarui!");
+                  setTimeout(() => {
+                    setActiveModal(null);
+                    setChangeAdminFormData(-1);
+                    fetchReport();
+                  }, 1500);
+
+                  window.location.reload();
+                } catch (err: any) {
+                  const errorMessage =
+                    err.response?.data?.message ||
+                    "Terjadi kesalahan saat mengirim data.";
+                  setError(errorMessage);
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+            >
               <div className="space-y-4">
                 <select
                   name="category"
                   className="w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    setChangeAdminFormData(Number(value));
+                  }}
+                  value={String(changeAdminFormData)}
                   required
                 >
                   <option>Pilih Penanggung Jawab</option>
+                  {admins.map((admin) => (
+                    <option key={admin.id} value={admin.id}>
+                      {admin.id +
+                        ". " +
+                        admin.full_name.charAt(0).toUpperCase() +
+                        admin.full_name.slice(1)}
+                    </option>
+                  ))}
                 </select>
                 <div className="flex justify-end gap-2">
                   <button

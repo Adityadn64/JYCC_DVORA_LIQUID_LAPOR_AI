@@ -560,10 +560,7 @@ export const reportService = {
     return response.data;
   },
 
-  async changeAdmin(data: {
-    report_id: number;
-    new_admin_id: number;
-  }) {
+  async changeAdmin(data: { report_id: number; new_admin_id: number }) {
     const response = await apiClient.post("/report/change-admin", data);
     return response.data;
   },

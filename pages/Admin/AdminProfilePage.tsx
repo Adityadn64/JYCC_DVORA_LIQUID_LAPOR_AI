@@ -237,8 +237,8 @@ export default function AdminProfilePage({ csrfLoading }: CsrfLoadingProps) {
         logout_other_devices: false,
       });
       setActiveModal(null);
-      window.location.reload();
       setTimeout(() => {
+        window.location.reload();
         setSuccess(null);
       }, 1000);
     } catch (err: any) {
@@ -260,8 +260,8 @@ export default function AdminProfilePage({ csrfLoading }: CsrfLoadingProps) {
 
       setSuccess(response.message || "Informasi kontak berhasil diubah");
       setActiveModal(null);
-      window.location.reload();
       setTimeout(() => {
+        window.location.reload();
         setSuccess(null);
       }, 1000);
     } catch (err: any) {
@@ -284,8 +284,8 @@ export default function AdminProfilePage({ csrfLoading }: CsrfLoadingProps) {
       setSuccess("Foto profil berhasil diperbarui.");
       setActiveModal(null);
       setPasswordFormData((prev) => ({ ...prev, current_password: "" }));
-      window.location.reload();
       setTimeout(() => {
+        window.location.reload();
         setSuccess(null);
       }, 1000);
     } catch (err: any) {
@@ -1027,8 +1027,8 @@ export default function AdminProfilePage({ csrfLoading }: CsrfLoadingProps) {
                     });
                     setSuccess("Alamat email Anda berhasil diperbarui.");
                     setActiveModal(null);
-                    window.location.reload();
                     setTimeout(() => {
+                      window.location.reload();
                       setSuccess(null);
                     }, 1000);
                   } catch (err: any) {
@@ -1286,8 +1286,8 @@ export default function AdminProfilePage({ csrfLoading }: CsrfLoadingProps) {
                     });
                     setSuccess("Nomor telepon Anda berhasil diperbarui.");
                     setActiveModal(null);
-                    window.location.reload();
                     setTimeout(() => {
+                      window.location.reload();
                       setSuccess(null);
                     }, 1000);
                   } catch (err: any) {
@@ -1415,8 +1415,8 @@ export default function AdminProfilePage({ csrfLoading }: CsrfLoadingProps) {
                     setSuccess("Nama lengkap berhasil diperbarui.");
                     setEmailChangeFormData({ new_email: "", password: "" });
                     setActiveModal(null);
-                    window.location.reload();
                     setTimeout(() => {
+                      window.location.reload();
                       setSuccess(null);
                     }, 1000);
                   } catch (err: any) {
@@ -1556,8 +1556,8 @@ export default function AdminProfilePage({ csrfLoading }: CsrfLoadingProps) {
                     setSuccess("NIP berhasil diperbarui.");
                     setPhoneChangeFormData({ new_phone: "", password: "" });
                     setActiveModal(null);
-                    window.location.reload();
                     setTimeout(() => {
+                      window.location.reload();
                       setSuccess(null);
                     }, 1000);
                   } catch (err: any) {
