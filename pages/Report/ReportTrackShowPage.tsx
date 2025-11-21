@@ -53,8 +53,6 @@ export default function ReportTrackShowPage({
   const { id } = useParams();
   const navigate = useNavigate();
 
-  console.log({userD: user});
-
   const [report, setReport] = useState<Report | null>(null);
   const [statuses, setStatuses] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,6 +172,8 @@ export default function ReportTrackShowPage({
 
       setReport(reportData);
       setStatuses(response.data.statuses);
+
+      console.log(reportData.service_code, user?.service_code);
     } catch (err) {
       console.error("Error fetching report:", err);
     } finally {
@@ -467,6 +467,27 @@ export default function ReportTrackShowPage({
                         {/* {timestamp || "-"} */}
                         {new Date(timestamp).toLocaleDateString("id-ID")}
                       </td>
+                      <td>
+                        {report.assignee?.id === user?.id &&
+                          isAuthenticated &&
+                          index > 0 && (
+                            <button
+                              onClick={() =>
+                                setActiveModalStatus({
+                                  type: "editStatus",
+                                  change: !!report.status_change_history[index], // force boolean
+                                  comment: note || "Tidak ada catatan",
+                                  statuses_id: index,
+                                })
+                              }
+                              className="text-orange-600 hover:text-orange-900 hover:underline text-left"
+                            >
+                              {report.status_change_history[index]
+                                ? "Sembunyikan"
+                                : "Tampilkan"}
+                            </button>
+                          )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -523,6 +544,7 @@ export default function ReportTrackShowPage({
           </div>
         )}
 
+        {/* Trigger Modal Feedback (Auth Only) */}
         {isAuthenticated && user?.id === report.assignee_admin_id && (
           <div className="mt-4 text-right">
             <button
