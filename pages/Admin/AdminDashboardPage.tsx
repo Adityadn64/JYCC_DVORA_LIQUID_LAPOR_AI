@@ -1,15 +1,36 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { adminDashboardService, decodeErrorResponse } from '@/services/api';
-import { useNavigate } from 'react-router-dom';
-import { SkeletonAdminDashboard, Skeleton, SkeletonReportCard, SkeletonChartCard } from '@/components/SkeletonLoading';
-import { errorMessage } from '@/components/Error';
-import { CsrfLoadingProps, PaginationInfo, DOTS, generatePaginationItems } from '@/types';
+import React, { useEffect, useState, useRef } from "react";
+import { adminDashboardService, decodeErrorResponse } from "../../services/api";
+import { useNavigate } from "react-router-dom";
+import {
+  SkeletonAdminDashboard,
+  Skeleton,
+  SkeletonReportCard,
+  SkeletonChartCard,
+} from "../../components/SkeletonLoading/Admin/SkeletonLoadingAdminPage";
+import { errorMessage } from "../../components/Error";
+import {
+  CsrfLoadingProps,
+  PaginationInfo,
+  DOTS,
+  generatePaginationItems,
+} from "../../types";
 
 // 1. Impor komponen dari Recharts
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
-} from 'recharts';
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 // Definisi Tipe (Tidak Berubah)
 interface Stats {
@@ -17,7 +38,10 @@ interface Stats {
   reportsToday: number;
   avgResolutionTime: string;
 }
-interface ChartData { label: string; value: number; }
+interface ChartData {
+  label: string;
+  value: number;
+}
 
 interface Report {
   id: number;
@@ -31,30 +55,38 @@ interface Report {
 }
 
 interface FilterOptions {
-    admins: { id: number; full_name: string }[];
-    priorities: string[];
+  admins: { id: number; full_name: string }[];
+  priorities: string[];
 }
 
 // Utilitas Waktu (Tidak Berubah)
 const formatRelativeTime = (dateString: string) => {
-    // ... implementasi tidak berubah
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
-    const minutes = Math.round(seconds / 60);
-    const hours = Math.round(minutes / 60);
-    const days = Math.round(hours / 24);
+  // ... implementasi tidak berubah
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
+  const minutes = Math.round(seconds / 60);
+  const hours = Math.round(minutes / 60);
+  const days = Math.round(hours / 24);
 
-    if (seconds < 60) return `${seconds} detik yang lalu`;
-    if (minutes < 60) return `${minutes} menit yang lalu`;
-    if (hours < 24) return `${hours} jam yang lalu`;
-    return `${days} hari yang lalu`;
+  if (seconds < 60) return `${seconds} detik yang lalu`;
+  if (minutes < 60) return `${minutes} menit yang lalu`;
+  if (hours < 24) return `${hours} jam yang lalu`;
+  return `${days} hari yang lalu`;
 };
 
 // 2. Definisikan palet warna untuk Pie Chart
-const PIE_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#38BDF8', '#EC4899'];
+const PIE_COLORS = [
+  "#3B82F6",
+  "#10B981",
+  "#F59E0B",
+  "#8B5CF6",
+  "#EF4444",
+  "#38BDF8",
+  "#EC4899",
+];
 
-export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
+export default function AdminDashboardPage({ csrfLoading }: CsrfLoadingProps) {
   // Semua state dan hooks (useState, useEffect, dll) tetap sama
   const [stats, setStats] = useState<Stats | null>(null);
   const [charts, setCharts] = useState<{
@@ -64,17 +96,22 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   } | null>(null);
 
   const [reports, setReports] = useState<Report[]>([]);
-  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo | null>(null);
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ admins: [], priorities: [] });
-  const [filters, setFilters] = useState({
-    search_term: '',
-    search_location: '',
-    search_priority: '',
-    search_admin: '',
-    search_id: '',
-    sort: 'updated_at_desc'
+  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo | null>(
+    null
+  );
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    admins: [],
+    priorities: [],
   });
-  
+  const [filters, setFilters] = useState({
+    search_term: "",
+    search_location: "",
+    search_priority: "",
+    search_admin: "",
+    search_id: "",
+    sort: "updated_at_desc",
+  });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -82,21 +119,26 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   // Semua fungsi (fetchDashboardData, handleFilterChange, dll) tetap sama
   const fetchDashboardData = async (currentFilters: any, page: number = 1) => {
     try {
-      const response = await adminDashboardService.getDashboardData({ ...currentFilters, page });
-      
+      const response = await adminDashboardService.getDashboardData({
+        ...currentFilters,
+        page,
+      });
+
       if (!response.data) throw new Error("Respons data tidak valid");
 
       if (page === 1 && !stats) {
-          setStats(response.data.stats);
-          setCharts(response.data.charts);
-          setFilterOptions(response.data.filters);
+        setStats(response.data.stats);
+        setCharts(response.data.charts);
+        setFilterOptions(response.data.filters);
       }
 
       setReports(response.data.reports.data);
       setPaginationInfo(response.data.reports);
     } catch (err) {
-      console.error('Error fetching dashboard:', err);
-      setError((await decodeErrorResponse(err)) || 'Gagal memuat data dashboard');
+      console.error("Error fetching dashboard:", err);
+      setError(
+        (await decodeErrorResponse(err)) || "Gagal memuat data dashboard"
+      );
     } finally {
       setLoading(false);
     }
@@ -107,8 +149,10 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
     if (csrfLoading) fetchDashboardData(filters, 1);
   }, [csrfLoading]);
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleFilterChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setFilters((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -119,48 +163,55 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
 
   const handleReset = () => {
     const defaultFilters = {
-      search_term: '', search_location: '', search_priority: '',
-      search_admin: '', search_id: '', sort: 'updated_at_desc'
+      search_term: "",
+      search_location: "",
+      search_priority: "",
+      search_admin: "",
+      search_id: "",
+      sort: "updated_at_desc",
     };
     setFilters(defaultFilters);
     setLoading(true);
     fetchDashboardData(defaultFilters, 1);
   };
-  
+
   const handlePageChange = (page: number) => {
-      if (page !== paginationInfo?.current_page) {
-          setLoading(true);
-          fetchDashboardData(filters, page);
-      }
+    if (page !== paginationInfo?.current_page) {
+      setLoading(true);
+      fetchDashboardData(filters, page);
+    }
   };
-  
+
   // 3. Hapus useMemo yang spesifik untuk Chart.js
   // Data dapat langsung dimasukkan ke komponen Recharts
 
-  const paginationItems = paginationInfo 
-    ? generatePaginationItems(paginationInfo.current_page, paginationInfo.last_page)
+  const paginationItems = paginationInfo
+    ? generatePaginationItems(
+        paginationInfo.current_page,
+        paginationInfo.last_page
+      )
     : [];
-    
+
   const filterEl = useRef<HTMLDivElement>(null);
   const endEl = useRef<HTMLDivElement>(null);
 
   const scrollToTarget = (isUp: boolean = true) => {
-      // ... implementasi tidak berubah
-      if (isUp) {
-        if (filterEl.current) {
-          filterEl.current.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start',
-          });
-        }
-      } else {
-        if (endEl.current) {
-          endEl.current.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start',
-          });
-        }
+    // ... implementasi tidak berubah
+    if (isUp) {
+      if (filterEl.current) {
+        filterEl.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       }
+    } else {
+      if (endEl.current) {
+        endEl.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }
   };
 
   if (loading && !stats) {
@@ -168,51 +219,108 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
   }
 
   function renderError() {
-    return errorMessage(error || 'Terjadi kesalahan');
+    return errorMessage(error || "Terjadi kesalahan");
   }
-  
+
   return (
     <div className="space-y-12">
       {/* --- Bagian Header dan Statistik (Tidak Berubah) --- */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dasbor Analitik</h1>
-        <p className="mt-2 text-gray-600">Ringkasan, tren, dan manajemen laporan Lapor.ai.</p>
+        <p className="mt-2 text-gray-600">
+          Ringkasan, tren, dan manajemen laporan Lapor.ai.
+        </p>
       </div>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow border"><p className="text-sm font-medium text-gray-500">Total Laporan</p>{!stats && loading ? <Skeleton className="h-10 w-24 mt-2" /> : <p className="mt-1 text-3xl font-bold text-blue-600">{stats?.totalReports || 0}</p>}</div>
-        <div className="bg-white p-6 rounded-xl shadow border"><p className="text-sm font-medium text-gray-500">Laporan Hari Ini</p>{!stats && loading ? <Skeleton className="h-10 w-24 mt-2" /> : <p className="mt-1 text-3xl font-bold text-green-500">+{stats?.reportsToday || 0}</p>}</div>
-        <div className="bg-white p-6 rounded-xl shadow border"><p className="text-sm font-medium text-gray-500">Waktu Penyelesaian Rata-rata</p>{!stats && loading ? <Skeleton className="h-10 w-24 mt-2" /> : <p className="mt-1 text-3xl font-bold text-cyan-500">{stats?.avgResolutionTime || 'N/A'}</p>}</div>
+        <div className="bg-white p-6 rounded-xl shadow border">
+          <p className="text-sm font-medium text-gray-500">Total Laporan</p>
+          {!stats && loading ? (
+            <Skeleton className="h-10 w-24 mt-2" />
+          ) : (
+            <p className="mt-1 text-3xl font-bold text-blue-600">
+              {stats?.totalReports || 0}
+            </p>
+          )}
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow border">
+          <p className="text-sm font-medium text-gray-500">Laporan Hari Ini</p>
+          {!stats && loading ? (
+            <Skeleton className="h-10 w-24 mt-2" />
+          ) : (
+            <p className="mt-1 text-3xl font-bold text-green-500">
+              +{stats?.reportsToday || 0}
+            </p>
+          )}
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow border">
+          <p className="text-sm font-medium text-gray-500">
+            Waktu Penyelesaian Rata-rata
+          </p>
+          {!stats && loading ? (
+            <Skeleton className="h-10 w-24 mt-2" />
+          ) : (
+            <p className="mt-1 text-3xl font-bold text-cyan-500">
+              {stats?.avgResolutionTime || "N/A"}
+            </p>
+          )}
+        </div>
       </section>
 
       {/* --- 4. Ganti JSX Chart dengan komponen Recharts --- */}
       <section className="grid grid-cols-1 gap-8">
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Tren Laporan Masuk (30 Hari Terakhir)</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Tren Laporan Masuk (30 Hari Terakhir)
+          </h3>
           <div className="h-80">
-            {
-              error ? renderError() : loading ? <Skeleton className='h-80 w-full' /> :
+            {error ? (
+              renderError()
+            ) : loading ? (
+              <Skeleton className="h-80 w-full" />
+            ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={charts?.reportTrend} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                <LineChart
+                  data={charts?.reportTrend}
+                  margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" fontSize={12} />
                   <YAxis allowDecimals={false} />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" name="Laporan Masuk" dataKey="value" stroke="#3B82F6" strokeWidth={2} />
+                  <Line
+                    type="monotone"
+                    name="Laporan Masuk"
+                    dataKey="value"
+                    stroke="#3B82F6"
+                    strokeWidth={2}
+                  />
                 </LineChart>
               </ResponsiveContainer>
-            }
+            )}
           </div>
         </div>
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Distribusi Laporan per Dinas</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Distribusi Laporan per Dinas
+          </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={charts?.serviceDistribution} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={90}>
+                <Pie
+                  data={charts?.serviceDistribution}
+                  dataKey="value"
+                  nameKey="label"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                >
                   {charts?.serviceDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={PIE_COLORS[index % PIE_COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -223,15 +331,30 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
         </div>
       </section>
       <section className="bg-white p-6 rounded-xl shadow border">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Top 5 Admin Produktif (Laporan Selesai)</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          Top 5 Admin Produktif (Laporan Selesai)
+        </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart layout="vertical" data={charts?.topAdmins} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+            <BarChart
+              layout="vertical"
+              data={charts?.topAdmins}
+              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" allowDecimals={false} />
-              <YAxis type="category" dataKey="label" width={100} fontSize={12} />
-              <Tooltip cursor={{ fill: '#f3f4f6' }} />
-              <Bar dataKey="value" name="Laporan Selesai" fill="rgba(59, 130, 246, 0.8)" />
+              <YAxis
+                type="category"
+                dataKey="label"
+                width={100}
+                fontSize={12}
+              />
+              <Tooltip cursor={{ fill: "#f3f4f6" }} />
+              <Bar
+                dataKey="value"
+                name="Laporan Selesai"
+                fill="rgba(59, 130, 246, 0.8)"
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -240,125 +363,306 @@ export default function AdminDashboardPage({csrfLoading}: CsrfLoadingProps) {
       {/* --- Bagian Manajemen Laporan, Filter, dan Paginasi (Tidak Berubah) --- */}
       <section className="space-y-8">
         {/* ... (kode filter, daftar laporan, dan paginasi tetap sama) ... */}
-        <div><h2 className="text-2xl font-bold text-gray-900">Manajemen Laporan</h2><p className="mt-1 text-gray-600">Cari, filter, dan kelola semua laporan yang masuk.</p></div>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Manajemen Laporan
+          </h2>
+          <p className="mt-1 text-gray-600">
+            Cari, filter, dan kelola semua laporan yang masuk.
+          </p>
+        </div>
 
         <div className="bg-white p-6 rounded-xl shadow border" ref={filterEl}>
           <form onSubmit={handleSearch}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div><label htmlFor="search_term" className="block text-sm font-medium text-gray-700">Judul / Deskripsi</label><input type="text" name="search_term" id="search_term" value={filters.search_term} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"/></div>
-                <div><label htmlFor="search_location" className="block text-sm font-medium text-gray-700">Lokasi</label><input type="text" name="search_location" id="search_location" value={filters.search_location} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"/></div>
-                <div><label htmlFor="search_priority" className="block text-sm font-medium text-gray-700">Prioritas</label><select name="search_priority" id="search_priority" value={filters.search_priority} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"><option value="">Semua</option>{filterOptions.priorities.map((p, idx) => <option key={idx} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}</select></div>
-                <div><label htmlFor="search_admin" className="block text-sm font-medium text-gray-700">Ditangani Oleh</label><select name="search_admin" id="search_admin" value={filters.search_admin} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"><option value="">Semua</option>{filterOptions.admins.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}</select></div>
-                <div><label htmlFor="search_id" className="block text-sm font-medium text-gray-700">ID Laporan</label><input type="number" name="search_id" id="search_id" value={filters.search_id} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"/></div>
-                <div><label htmlFor="sort" className="block text-sm font-medium text-gray-700">Urutkan</label><select name="sort" id="sort" value={filters.sort} onChange={handleFilterChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"><option value="updated_at_desc">Diperbarui (Terbaru)</option><option value="updated_at_asc">Diperbarui (Terlama)</option><option value="created_at_desc">Dibuat (Terbaru)</option><option value="created_at_asc">Dibuat (Terlama)</option></select></div>
+              <div>
+                <label
+                  htmlFor="search_term"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Judul / Deskripsi
+                </label>
+                <input
+                  type="text"
+                  name="search_term"
+                  id="search_term"
+                  value={filters.search_term}
+                  onChange={handleFilterChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="search_location"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Lokasi
+                </label>
+                <input
+                  type="text"
+                  name="search_location"
+                  id="search_location"
+                  value={filters.search_location}
+                  onChange={handleFilterChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="search_priority"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Prioritas
+                </label>
+                <select
+                  name="search_priority"
+                  id="search_priority"
+                  value={filters.search_priority}
+                  onChange={handleFilterChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                >
+                  <option value="">Semua</option>
+                  {filterOptions.priorities.map((p, idx) => (
+                    <option key={idx} value={p}>
+                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="search_admin"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Ditangani Oleh
+                </label>
+                <select
+                  name="search_admin"
+                  id="search_admin"
+                  value={filters.search_admin}
+                  onChange={handleFilterChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                >
+                  <option value="">Semua</option>
+                  {filterOptions.admins.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="search_id"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  ID Laporan
+                </label>
+                <input
+                  type="number"
+                  name="search_id"
+                  id="search_id"
+                  value={filters.search_id}
+                  onChange={handleFilterChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="sort"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Urutkan
+                </label>
+                <select
+                  name="sort"
+                  id="sort"
+                  value={filters.sort}
+                  onChange={handleFilterChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                >
+                  <option value="updated_at_desc">Diperbarui (Terbaru)</option>
+                  <option value="updated_at_asc">Diperbarui (Terlama)</option>
+                  <option value="created_at_desc">Dibuat (Terbaru)</option>
+                  <option value="created_at_asc">Dibuat (Terlama)</option>
+                </select>
+              </div>
             </div>
             <div className="mt-6 flex items-center justify-end gap-x-4">
-                <button type="button" onClick={handleReset} className="text-sm font-semibold text-gray-600">Reset</button>
-                <button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50">{loading ? 'Mencari...' : 'Cari'}</button>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-sm font-semibold text-gray-600"
+              >
+                Reset
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? "Mencari..." : "Cari"}
+              </button>
             </div>
           </form>
         </div>
 
         <div className="space-y-4">
-          {error ? renderError() : loading ? (
-             Array.from({ length: 20 }).map((_, i) => <SkeletonReportCard key={i} />)
+          {error ? (
+            renderError()
+          ) : loading ? (
+            Array.from({ length: 20 }).map((_, i) => (
+              <SkeletonReportCard key={i} />
+            ))
           ) : reports.length > 0 ? (
             reports.map((report) => {
-              const status = report.statuses[report.statuses.length - 1] || 'unknown';
+              const status =
+                report.statuses[report.statuses.length - 1] || "unknown";
               const statusClassMap: { [key: string]: string } = {
-                pending: 'bg-yellow-100 text-yellow-800',
-                process: 'bg-cyan-100 text-cyan-800',
-                finished: 'bg-green-100 text-green-800',
-                rejected: 'bg-red-100 text-red-800',
+                pending: "bg-yellow-100 text-yellow-800",
+                process: "bg-cyan-100 text-cyan-800",
+                finished: "bg-green-100 text-green-800",
+                rejected: "bg-red-100 text-red-800",
               };
-              const statusClassName = statusClassMap[status] || 'bg-gray-100 text-gray-800';
+              const statusClassName =
+                statusClassMap[status] || "bg-gray-100 text-gray-800";
 
               return (
-                <a key={report.id} href={`/report/${report.id}/track`} target="_blank" className="bg-white shadow rounded-lg transition-all hover:shadow-lg cursor-pointer">
+                <a
+                  key={report.id}
+                  href={`/report/${report.id}/track`}
+                  target="_blank"
+                  className="block bg-white shadow rounded-lg transition-all hover:shadow-lg cursor-pointer"
+                >
                   <div className="block p-5">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-blue-600">Laporan #{report.id}</p>
-                        <p className="text-lg font-bold text-gray-900 mt-1 truncate">{report.title}</p>
-                        <p className="mt-2 text-sm text-gray-500 line-clamp-2">{report.description}</p>
+                        <p className="text-sm font-medium text-blue-600">
+                          Laporan #{report.id}
+                        </p>
+                        <p className="text-lg font-bold text-gray-900 mt-1 truncate">
+                          {report.title}
+                        </p>
+                        <p className="mt-2 text-sm text-gray-500 line-clamp-2">
+                          {report.description}
+                        </p>
                       </div>
                       <div className="mt-4 sm:mt-0 sm:ml-6 text-left sm:text-right flex-shrink-0">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClassName}`}>
-                              {status.charAt(0).toUpperCase() + status.slice(1)}
-                          </span>
-                          <p className="mt-2 text-xs text-gray-400">Diperbarui: {formatRelativeTime(report.updated_at)}</p>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClassName}`}
+                        >
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </span>
+                        <p className="mt-2 text-xs text-gray-400">
+                          Diperbarui: {formatRelativeTime(report.updated_at)}
+                        </p>
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-600">
-                        <span><strong>Lokasi:</strong> {report.city}</span>
-                        <span><strong>Prioritas:</strong> {report.priority.charAt(0).toUpperCase() + report.priority.slice(1)}</span>
-                        <span><strong>Penanggung Jawab:</strong> {report.assignee?.full_name ?? 'Belum Ditugaskan'}</span>
+                      <span>
+                        <strong>Lokasi:</strong> {report.city}
+                      </span>
+                      <span>
+                        <strong>Prioritas:</strong>{" "}
+                        {report.priority.charAt(0).toUpperCase() +
+                          report.priority.slice(1)}
+                      </span>
+                      <span>
+                        <strong>Penanggung Jawab:</strong>{" "}
+                        {report.assignee?.full_name ?? "Belum Ditugaskan"}
+                      </span>
                     </div>
                   </div>
                 </a>
               );
             })
           ) : (
-            <div className="text-center bg-white p-12 rounded-lg shadow"><h3 className="text-lg font-medium text-gray-900">Tidak Ada Laporan Ditemukan</h3><p className="mt-1 text-sm text-gray-500">Coba ubah filter pencarian Anda.</p></div>
+            <div className="text-center bg-white p-12 rounded-lg shadow">
+              <h3 className="text-lg font-medium text-gray-900">
+                Tidak Ada Laporan Ditemukan
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Coba ubah filter pencarian Anda.
+              </p>
+            </div>
           )}
         </div>
-        
+
         {paginationInfo && paginationInfo.total > 0 && !loading && (
-            <div className="pt-4 flex items-center justify-between md:flex-row flex-col gap-4">
-                <p className="text-sm text-gray-700">
-                    Menampilkan <span className="font-medium">{paginationInfo.from}</span> sampai <span className="font-medium">{paginationInfo.to}</span> dari <span className="font-medium">{paginationInfo.total}</span> hasil
-                </p>
-                <nav aria-label="Pagination" className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    <button
-                        onClick={() => {
-                          handlePageChange(parseInt(String(paginationInfo.current_page - 1)));
-                          scrollToTarget(false);
-                        }}
-                        disabled={paginationInfo.current_page === 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+          <div className="pt-4 flex items-center justify-between md:flex-row flex-col gap-4">
+            <p className="text-sm text-gray-700">
+              Menampilkan{" "}
+              <span className="font-medium">{paginationInfo.from}</span> sampai{" "}
+              <span className="font-medium">{paginationInfo.to}</span> dari{" "}
+              <span className="font-medium">{paginationInfo.total}</span> hasil
+            </p>
+            <nav
+              aria-label="Pagination"
+              className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+            >
+              <button
+                onClick={() => {
+                  handlePageChange(
+                    parseInt(String(paginationInfo.current_page - 1))
+                  );
+                  scrollToTarget(false);
+                }}
+                disabled={paginationInfo.current_page === 1}
+                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <span className="sr-only">Sebelumnya</span>
+                &lt;
+              </button>
+
+              {paginationItems.map((item, index) => {
+                if (item === DOTS) {
+                  return (
+                    <span
+                      key={`dots-${index}`}
+                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
                     >
-                        <span className="sr-only">Sebelumnya</span>
-                        &lt;
-                    </button>
+                      ...
+                    </span>
+                  );
+                }
 
-                    {paginationItems.map((item, index) => {
-                        if (item === DOTS) {
-                            return <span key={`dots-${index}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>;
-                        }
+                const isCurrent = item === paginationInfo.current_page;
+                return (
+                  <button
+                    key={item}
+                    onClick={() => {
+                      handlePageChange(parseInt(String(item)));
+                      scrollToTarget();
+                    }}
+                    aria-current={isCurrent ? "page" : undefined}
+                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                      isCurrent
+                        ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                        : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
 
-                        const isCurrent = item === paginationInfo.current_page;
-                        return (
-                            <button
-                                key={item}
-                                onClick={() => {
-                                  handlePageChange(parseInt(String(item)));
-                                  scrollToTarget();
-                                }}
-                                aria-current={isCurrent ? 'page' : undefined}
-                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                    isCurrent 
-                                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
-                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                }`}
-                            >
-                                {item}
-                            </button>
-                        );
-                    })}
-
-                    <button
-                        onClick={() => {
-                          handlePageChange(parseInt(String(paginationInfo.current_page + 1)));
-                          scrollToTarget();
-                        }}
-                        disabled={paginationInfo.current_page === paginationInfo.last_page}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                    >
-                        <span className="sr-only">Selanjutnya</span>
-                        &gt;
-                    </button>
-                </nav>
-            </div>
+              <button
+                onClick={() => {
+                  handlePageChange(
+                    parseInt(String(paginationInfo.current_page + 1))
+                  );
+                  scrollToTarget();
+                }}
+                disabled={
+                  paginationInfo.current_page === paginationInfo.last_page
+                }
+                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <span className="sr-only">Selanjutnya</span>
+                &gt;
+              </button>
+            </nav>
+          </div>
         )}
         <div className="mt-4" ref={endEl}>
           <br />

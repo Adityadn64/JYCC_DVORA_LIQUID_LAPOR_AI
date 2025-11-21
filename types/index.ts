@@ -1,22 +1,8 @@
+import { allService } from "../services/api";
+
 export interface CsrfLoadingProps {
   csrfLoading: boolean;
 }
-
-/*
-{
-  success: false,
-  message: 'Data yang diberikan tidak valid.',
-  errors: {
-    phone: [ 'Nomor telepon ini sudah terdaftar.' ],
-    nip: [ 'NIP ini sudah terdaftar.' ]
-  }
-}
-
-`
-Phone -> Nomor telepon ini sudah terdaftar.
-Nip -> NIP ini sudah terdaftar.
-`
-*/
 
 export interface ResponseData {
   d: string;
@@ -40,24 +26,30 @@ export interface AuthUser {
   email: string;
   phone: string;
   role: string;
+  service_code: string;
   profile_picture_path?: string;
 }
 
 export interface PaginationInfo {
-    current_page: number;
-    last_page: number;
-    total: number;
-    per_page: number;
-    from: number;
-    to: number;
-    links: { url: string | null; label: string; active: boolean }[];
+  current_page: number;
+  last_page: number;
+  total: number;
+  per_page: number;
+  from: number;
+  to: number;
+  links: { url: string | null; label: string; active: boolean }[];
 }
 
-export const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+export const clamp = (v: number, min: number, max: number) =>
+  Math.min(Math.max(v, min), max);
 
-export const DOTS = '...';
+export const DOTS = "...";
 
-export const generatePaginationItems = (currentPage, totalPages, siblingCount = 1) => {
+export const generatePaginationItems = (
+  currentPage: number,
+  totalPages: number,
+  siblingCount = 1
+) => {
   // Jumlah total item yang akan ditampilkan di pagination (angka + elipsis)
   // siblingCount + firstPage + lastPage + currentPage + 2*DOTS
   const totalPageNumbers = siblingCount + 5;
@@ -88,7 +80,10 @@ export const generatePaginationItems = (currentPage, totalPages, siblingCount = 
   // Kasus 3: Hanya tampilkan elipsis di kiri
   if (shouldShowLeftDots && !shouldShowRightDots) {
     let rightItemCount = 3 + 2 * siblingCount;
-    let rightRange = Array.from({ length: rightItemCount }, (_, i) => totalPages - rightItemCount + i + 1);
+    let rightRange = Array.from(
+      { length: rightItemCount },
+      (_, i) => totalPages - rightItemCount + i + 1
+    );
     return [firstPageIndex, DOTS, ...rightRange];
   }
 
@@ -105,10 +100,13 @@ export const generatePaginationItems = (currentPage, totalPages, siblingCount = 
   return [];
 };
 
-export const generateVideoThumbnail = (videoSource: Blob | string, seekTo: number = 0.5): Promise<string> => {
+export const generateVideoThumbnail = (
+  videoSource: Blob | string,
+  seekTo: number = 0.5
+): Promise<string> => {
   return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    video.style.display = 'none';
+    const video = document.createElement("video");
+    video.style.display = "none";
     video.muted = true;
     video.playsInline = true;
     video.crossOrigin = "anonymous"; // Penting jika URL dari domain berbeda
@@ -118,7 +116,7 @@ export const generateVideoThumbnail = (videoSource: Blob | string, seekTo: numbe
     let isCreatedUrl = false;
 
     // LOGIKA UTAMA PERBAIKAN:
-    if (typeof videoSource === 'string') {
+    if (typeof videoSource === "string") {
       // Jika input sudah berupa URL (contoh: blob:http://...), gunakan langsung
       videoUrl = videoSource;
     } else {
@@ -136,13 +134,13 @@ export const generateVideoThumbnail = (videoSource: Blob | string, seekTo: numbe
       if (isCreatedUrl) {
         URL.revokeObjectURL(videoUrl);
       }
-      
+
       if (document.body.contains(video)) {
         document.body.removeChild(video);
       }
     };
 
-    video.addEventListener('loadedmetadata', () => {
+    video.addEventListener("loadedmetadata", () => {
       if (video.duration < seekTo) {
         cleanup();
         reject("Video is too short to seek to the specified time.");
@@ -151,12 +149,12 @@ export const generateVideoThumbnail = (videoSource: Blob | string, seekTo: numbe
       video.currentTime = seekTo;
     });
 
-    video.addEventListener('seeked', () => {
-      const canvas = document.createElement('canvas');
+    video.addEventListener("seeked", () => {
+      const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
-      const ctx = canvas.getContext('2d');
+
+      const ctx = canvas.getContext("2d");
 
       if (!ctx) {
         cleanup();
@@ -166,28 +164,72 @@ export const generateVideoThumbnail = (videoSource: Blob | string, seekTo: numbe
 
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      canvas.toBlob((thumbnailBlob) => {
-        if (!thumbnailBlob) {
-          cleanup();
-          reject("Failed to generate thumbnail blob");
-          return;
-        }
+      canvas.toBlob(
+        (thumbnailBlob) => {
+          if (!thumbnailBlob) {
+            cleanup();
+            reject("Failed to generate thumbnail blob");
+            return;
+          }
 
-        try {
-          // URL Thumbnail ini harus di-revoke manual nanti oleh component
-          const thumbnailImageUrl = URL.createObjectURL(thumbnailBlob);
-          cleanup();
-          resolve(thumbnailImageUrl);
-        } catch (error) {
-          cleanup();
-          reject(error);
-        }
-      }, 'image/jpeg', 0.9);
+          try {
+            // URL Thumbnail ini harus di-revoke manual nanti oleh component
+            const thumbnailImageUrl = URL.createObjectURL(thumbnailBlob);
+            cleanup();
+            resolve(thumbnailImageUrl);
+          } catch (error) {
+            cleanup();
+            reject(error);
+          }
+        },
+        "image/jpeg",
+        0.9
+      );
     });
 
-    video.addEventListener('error', (err) => {
+    video.addEventListener("error", (err) => {
       cleanup();
       reject("Error loading video file for thumbnail generation.");
     });
   });
+};
+
+export const processFiles = async (filesPath: string[] = []) => {
+  const urls: string[] = [];
+  const types: string[] = [];
+  const thumbs: string[] = [];
+
+  for (const filePath of filesPath) {
+    try {
+      const blob = await allService.getBlobFile(filePath);
+      const contentType = blob.type;
+      const fileUri = URL.createObjectURL(blob);
+
+      urls.push(fileUri);
+      types.push(contentType);
+
+      // Generate Thumbnail
+      if (contentType.startsWith("image")) {
+        thumbs.push(fileUri);
+      } else if (contentType.startsWith("video")) {
+        try {
+          const thumbUrl = await generateVideoThumbnail(fileUri, 1);
+          thumbs.push(thumbUrl);
+        } catch (e) {
+          console.error("Gagal generate thumbnail:", e);
+          thumbs.push("/assets/video-placeholder.png"); // Fallback image jika ada
+        }
+      } else {
+        thumbs.push("/assets/file-placeholder.png"); // Fallback
+      }
+    } catch (err) {
+      console.error(`Error processing file ${filePath}:`, err);
+    }
+  }
+  return {
+    files_path: filesPath,
+    files_url: urls,
+    content_type: types,
+    thumbnails: thumbs,
+  };
 };

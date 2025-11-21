@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { authService } from '@/services/api';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { authService } from "../services/api";
 
 interface HeaderProps {
   isAuthenticated: boolean;
@@ -8,7 +8,11 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-export default function Header({ isAuthenticated, user, onLogout }: HeaderProps) {
+export default function Header({
+  isAuthenticated,
+  user,
+  onLogout,
+}: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
@@ -18,17 +22,17 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
     try {
       await authService.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     } finally {
       onLogout();
-      navigate('/');
+      navigate("/");
     }
   };
 
   useEffect(() => {
     setMobileMenuOpen(false);
     setAdminMenuOpen(false);
-  }, [window.location.href])
+  }, [window.location.href]);
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -42,13 +46,22 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
 
           <div className="hidden md:flex items-center space-x-8">
             <nav className="flex space-x-8">
-              <Link to="/" className="font-medium text-gray-600 hover:text-blue-600 transition-colors">
+              <Link
+                to="/"
+                className="font-medium text-gray-600 hover:text-blue-600 transition-colors"
+              >
                 Beranda
               </Link>
-              <Link to="/report/create" className="font-medium text-gray-600 hover:text-blue-600 transition-colors">
+              <Link
+                to="/report/create"
+                className="font-medium text-gray-600 hover:text-blue-600 transition-colors"
+              >
                 Buat Laporan
               </Link>
-              <Link to="/report/track" className="font-medium text-gray-600 hover:text-blue-600 transition-colors">
+              <Link
+                to="/report/track"
+                className="font-medium text-gray-600 hover:text-blue-600 transition-colors"
+              >
                 Lacak Laporan
               </Link>
             </nav>
@@ -64,38 +77,67 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
               </div>
             ) : (
               <div className="relative inline-block text-left group">
-                <button type="button" className="flex justify-center items-center gap-x-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
+                <button
+                  type="button"
+                  className="flex justify-center items-center gap-x-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                >
                   <img
                     className="h-8 w-8 rounded-full object-cover"
                     src={
                       user?.profile_picture_path
                         ? `http://localhost:8000/storage/${user.profile_picture_path}`
-                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || 'User')}`
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            user?.full_name || "User"
+                          )}`
                     }
                     alt="Admin"
                   />
                   <span>Menu Admin</span>
-                  <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-gray-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
                 <div className="absolute right-0 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden group-hover:block transition-all duration-300">
                   <div className="py-1">
-                    <Link to="/admin/dashboard" className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100">
+                    <Link
+                      to="/admin/dashboard"
+                      className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
+                    >
                       Dasbor
                     </Link>
-                    <Link to="/admin/analytics" className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100">
+                    <Link
+                      to="/admin/analytics"
+                      className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
+                    >
                       Analisis Laporan
                     </Link>
-                    <Link to="/admin/profile" className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100">
+                    <Link
+                      to="/admin/profile"
+                      className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
+                    >
                       Profil
                     </Link>
-                    {user?.role === 'system_admin' && (
+                    {user?.role === "system_admin" && (
                       <>
-                        <Link to="/admin/manage" className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100">
+                        <Link
+                          to="/admin/manage"
+                          className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
+                        >
                           Kelola Admin
                         </Link>
-                        <Link to="/admin/performance" className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100">
+                        <Link
+                          to="/admin/performance"
+                          className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
+                        >
                           Performa Admin
                         </Link>
                       </>
@@ -119,12 +161,36 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
             >
               <span className="sr-only">Buka menu utama</span>
               {!mobileMenuOpen ? (
-                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                <svg
+                  className="h-6 w-6"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16m-7 6h7"
+                  />
                 </svg>
               ) : (
-                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="h-6 w-6"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               )}
             </button>
@@ -135,19 +201,31 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
       {mobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+            <Link
+              to="/"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+            >
               Beranda
             </Link>
-            <Link to="/report/create" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+            <Link
+              to="/report/create"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+            >
               Buat Laporan
             </Link>
-            <Link to="/report/track" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+            <Link
+              to="/report/track"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+            >
               Lacak Laporan
             </Link>
           </div>
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200">
             {!isAuthenticated ? (
-              <Link to="/login" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+              <Link
+                to="/login"
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+              >
                 Masuk
               </Link>
             ) : (
@@ -157,27 +235,53 @@ export default function Header({ isAuthenticated, user, onLogout }: HeaderProps)
                   className="w-full flex justify-between items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 >
                   <span>Menu Admin</span>
-                  <svg className={`h-5 w-5 transform transition-transform ${adminMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                  <svg
+                    className={`h-5 w-5 transform transition-transform ${
+                      adminMenuOpen ? "rotate-180" : ""
+                    }`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
                 {adminMenuOpen && (
                   <div className="pl-4 mt-1 space-y-1">
-                    <Link to="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                    <Link
+                      to="/admin/dashboard"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    >
                       Dasbor
                     </Link>
-                    <Link to="/admin/analytics" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                    <Link
+                      to="/admin/analytics"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    >
                       Analisis Laporan
                     </Link>
-                    <Link to="/admin/profile" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                    <Link
+                      to="/admin/profile"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    >
                       Profil
                     </Link>
-                    {user?.role === 'system_admin' && (
+                    {user?.role === "system_admin" && (
                       <>
-                        <Link to="/admin/manage" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                        <Link
+                          to="/admin/manage"
+                          className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        >
                           Kelola Admin
                         </Link>
-                        <Link to="/admin/performance" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                        <Link
+                          to="/admin/performance"
+                          className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        >
                           Performa Admin
                         </Link>
                       </>
