@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+ollama
+gradio
+spaces
+python-dotenv
+Pillow
+google-generativeai
